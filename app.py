@@ -663,62 +663,201 @@ def safe_value(
     return str(value)
 
 
-def show_interview_questions(value) -> None:
-    """Display interview questions stored as JSON, list, or text."""
+def parse_stored_value(value):
+    """Parse stored JSON when possible without failing on malformed data."""
 
     if value is None:
-        st.info("No interview questions are available.")
-        return
+        return None
 
-    if isinstance(value, float) and pd.isna(value):
-        st.info("No interview questions are available.")
-        return
-
-    parsed_value = value
-
-    if isinstance(value, str):
+    if not isinstance(value, (dict, list, tuple, set)):
         try:
-            parsed_value = json.loads(value)
-        except json.JSONDecodeError:
-            parsed_value = value
+            if pd.isna(value):
+                return None
+        except (TypeError, ValueError):
+            pass
+
+    if not isinstance(value, str):
+        return value
+
+    text = value.strip()
+
+    if not text:
+        return None
+
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return text
+
+
+def evaluation_value(
+    evaluation_data,
+    field_names: tuple[str, ...],
+):
+    """Return the first available field from structured evaluation data."""
+
+    if not isinstance(evaluation_data, dict):
+        return None
+
+    for field_name in field_names:
+        value = parse_stored_value(
+            evaluation_data.get(field_name)
+        )
+
+        if value not in (None, "", [], {}):
+            return value
+
+    return None
+
+
+def display_items(value) -> list[str]:
+    """Normalize stored scalar or list content for safe display."""
+
+    parsed_value = parse_stored_value(value)
+
+    if parsed_value is None:
+        return []
+
+    if isinstance(parsed_value, list):
+        items = parsed_value
+    else:
+        items = [parsed_value]
+
+    return [
+        str(item).strip()
+        for item in items
+        if item is not None and str(item).strip()
+    ]
+
+
+def show_evaluation_detail(
+    label: str,
+    value,
+) -> None:
+    """Display one optional evaluation detail without inventing content."""
+
+    st.markdown(f"**{label}**")
+    items = display_items(value)
+
+    if not items:
+        st.caption("Not available")
+    elif len(items) == 1:
+        st.write(items[0])
+    else:
+        for item in items:
+            st.markdown(f"- {item}")
+
+
+def normalize_interview_questions(
+    value,
+) -> list[tuple[str | None, str]]:
+    """Normalize stored interview questions and real category metadata."""
+
+    parsed_value = parse_stored_value(value)
+
+    if parsed_value is None:
+        return []
+
+    inherited_category = None
 
     if isinstance(parsed_value, dict):
+        inherited_category = parsed_value.get("category")
         questions = parsed_value.get("questions", [])
-
-        if isinstance(questions, list) and questions:
-            for number, question in enumerate(
-                questions,
-                start=1,
-            ):
-                if isinstance(question, dict):
-                    question_text = question.get(
-                        "question",
-                        str(question),
-                    )
-                else:
-                    question_text = str(question)
-
-                st.write(f"{number}. {question_text}")
-        else:
-            st.write(str(parsed_value))
-
     elif isinstance(parsed_value, list):
-        for number, question in enumerate(
-            parsed_value,
-            start=1,
-        ):
-            if isinstance(question, dict):
-                question_text = question.get(
-                    "question",
-                    str(question),
-                )
-            else:
-                question_text = str(question)
-
-            st.write(f"{number}. {question_text}")
-
+        questions = parsed_value
     else:
-        st.write(str(parsed_value))
+        questions = [parsed_value]
+
+    if not isinstance(questions, list):
+        questions = [questions]
+
+    normalized_questions = []
+
+    for question in questions:
+        category = inherited_category
+
+        if isinstance(question, dict):
+            question_text = question.get(
+                "question",
+                question.get("text"),
+            )
+            category = question.get(
+                "category",
+                category,
+            )
+        else:
+            question_text = question
+
+        if question_text is None:
+            continue
+
+        question_text = str(question_text).strip()
+        category_text = (
+            str(category).strip()
+            if category is not None
+            else ""
+        )
+
+        if question_text:
+            normalized_questions.append(
+                (
+                    category_text or None,
+                    question_text,
+                )
+            )
+
+    return normalized_questions
+
+
+def show_interview_questions(value) -> None:
+    """Display stored interview questions as clean cards."""
+
+    questions = normalize_interview_questions(value)
+
+    if not questions:
+        st.info("No interview questions are available.")
+        return
+
+    categories = []
+
+    for category, _ in questions:
+        if category and category not in categories:
+            categories.append(category)
+
+    grouped_questions = [
+        (category, [
+            question
+            for item_category, question in questions
+            if item_category == category
+        ])
+        for category in categories
+    ]
+
+    unclassified_questions = [
+        question
+        for category, question in questions
+        if category is None
+    ]
+
+    if unclassified_questions:
+        grouped_questions.append(
+            (None, unclassified_questions)
+        )
+
+    question_number = 1
+
+    for category, category_questions in grouped_questions:
+        if category:
+            st.markdown(f"##### {category}")
+        elif categories:
+            st.markdown("##### Interview Questions")
+
+        for question in category_questions:
+            with st.container(border=True):
+                st.markdown(f"**Question {question_number}**")
+                st.write(question)
+
+            question_number += 1
 
 def get_status_class(status: str) -> str:
     """Return the CSS class for an application status."""
@@ -1779,58 +1918,94 @@ elif selected_page == "Candidates":
             evaluation_col, question_col = st.columns(2)
 
             with evaluation_col:
-                st.markdown("#### Recommendation")
-
-                recommendation = safe_value(
-                    selected_application,
-                    "recommendation",
+                stored_recommendation = parse_stored_value(
+                    selected_application.get(
+                        "recommendation",
+                        None,
+                    )
                 )
 
-                if recommendation.lower() in [
-                    "reject",
-                    "rejected",
-                ]:
-                    st.error(recommendation)
-
-                elif recommendation.lower() in [
-                    "shortlist",
-                    "shortlisted",
-                    "recommend",
-                    "recommended",
-                ]:
-                    st.success(recommendation)
-
+                if isinstance(stored_recommendation, dict):
+                    evaluation_data = stored_recommendation
+                    recommendation = evaluation_value(
+                        evaluation_data,
+                        ("recommendation", "decision"),
+                    )
                 else:
-                    st.info(recommendation)
+                    evaluation_data = {}
+                    recommendation = stored_recommendation
 
-                if (
-                    "matched_skills"
-                    in selected_application.index
-                ):
+                confidence_score = evaluation_value(
+                    evaluation_data,
+                    ("confidence_score", "confidence"),
+                )
+                main_reasons = evaluation_value(
+                    evaluation_data,
+                    ("main_reasons", "reasons"),
+                )
+                strengths = evaluation_value(
+                    evaluation_data,
+                    ("strengths",),
+                )
+                concerns = evaluation_value(
+                    evaluation_data,
+                    ("concerns",),
+                )
+                next_action = evaluation_value(
+                    evaluation_data,
+                    (
+                        "recommended_next_action",
+                        "next_action",
+                    ),
+                )
+
+                with st.container(border=True):
                     st.markdown(
-                        "#### Matched Skills"
+                        "#### AI hiring recommendation"
                     )
 
-                    st.write(
-                        safe_value(
-                            selected_application,
-                            "matched_skills",
-                        )
+                    recommendation_text = (
+                        str(recommendation).strip()
+                        if recommendation is not None
+                        else ""
                     )
 
-                if (
-                    "missing_skills"
-                    in selected_application.index
-                ):
-                    st.markdown(
-                        "#### Missing Skills"
-                    )
+                    if not recommendation_text:
+                        st.info("Recommendation not available")
+                    elif recommendation_text.lower() in [
+                        "reject",
+                        "rejected",
+                    ]:
+                        st.error(recommendation_text)
+                    elif recommendation_text.lower() in [
+                        "shortlist",
+                        "shortlisted",
+                        "recommend",
+                        "recommended",
+                    ]:
+                        st.success(recommendation_text)
+                    else:
+                        st.info(recommendation_text)
 
-                    st.write(
-                        safe_value(
-                            selected_application,
-                            "missing_skills",
-                        )
+                    show_evaluation_detail(
+                        "Confidence score",
+                        confidence_score,
+                    )
+                    show_evaluation_detail(
+                        "Main reasons",
+                        main_reasons,
+                    )
+                    show_evaluation_detail(
+                        "Strengths",
+                        strengths,
+                    )
+                    show_evaluation_detail(
+                        "Concerns",
+                        concerns,
+                    )
+                    show_evaluation_detail(
+                        "Recommended next action",
+                        next_action,
                     )
 
             with question_col:
