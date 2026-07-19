@@ -1345,15 +1345,38 @@ elif selected_page == "Candidates":
                 ):
                     experience = f"{experience} years"
 
-            application_stage = safe_value(
+            selected_application_id = safe_value(
                 selected_application,
-                "application_stage",
-                safe_value(
+                "id",
+                "",
+            )
+
+            if selected_application.empty:
+                application_stage = safe_value(
                     selected_raw_candidate,
                     "status",
                     "Pending Review",
-                ),
+                )
+            else:
+                application_stage = safe_value(
+                    selected_application,
+                    "application_stage",
+                    "Pending Review",
+                )
+
+            action_message = st.session_state.get(
+                "candidate_action_success"
             )
+
+            if (
+                action_message
+                and action_message.get("application_id")
+                == selected_application_id
+            ):
+                application_stage = action_message.get(
+                    "stage",
+                    application_stage,
+                )
 
             candidate_score = pd.to_numeric(
                 selected_application.get(
@@ -1479,12 +1502,6 @@ elif selected_page == "Candidates":
             # ---------------------------------------------
             # Candidate actions
             # ---------------------------------------------
-            selected_application_id = safe_value(
-                selected_application,
-                "id",
-                "",
-            )
-
             action_message = st.session_state.pop(
                 "candidate_action_success",
                 None,
@@ -1492,7 +1509,7 @@ elif selected_page == "Candidates":
 
             if (
                 action_message
-                and action_message["application_id"]
+                and action_message.get("application_id")
                 == selected_application_id
             ):
                 st.success(action_message["message"])
@@ -1530,6 +1547,7 @@ elif selected_page == "Candidates":
                             "Application stage updated to "
                             f"{new_stage}."
                         ),
+                        "stage": new_stage,
                     }
                     st.rerun()
 
