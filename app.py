@@ -1,16 +1,26 @@
 import html
 import json
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from components.candidate_communications import (
+    MESSAGE_TYPES,
+    build_candidate_messages,
+)
 from components.metric_cards import metric_card
 from services.supabase_service import (
+    create_interview,
+    create_recruiter_note,
     get_applications,
     get_candidates,
+    get_interviews,
     get_jobs,
+    get_recruiter_notes,
     update_application_stage,
+    update_interview,
 )
 
 
@@ -1749,6 +1759,615 @@ elif selected_page == "Candidates":
                             set_application_stage("Rejected")
 
             # ---------------------------------------------
+            # Interview scheduler
+            # ---------------------------------------------
+            st.markdown("### Interview Scheduler")
+
+            interview_message = st.session_state.pop(
+                "interview_scheduler_success",
+                None,
+            )
+
+            if (
+                interview_message
+                and interview_message.get("application_id")
+                == selected_application_id
+            ):
+                st.success(interview_message["message"])
+
+            if not selected_application_id:
+                st.info(
+                    "An application record is required to schedule "
+                    "an interview."
+                )
+            else:
+                default_interview_datetime = (
+                    datetime.now() + timedelta(minutes=30)
+                ).replace(
+                    second=0,
+                    microsecond=0,
+                )
+
+                with st.container(border=True):
+                    st.markdown("#### Schedule interview")
+
+                    with st.form(
+                        (
+                            "interview_scheduler_"
+                            f"{selected_application_id}"
+                        ),
+                        clear_on_submit=True,
+                    ):
+                        schedule_col1, schedule_col2 = st.columns(2)
+
+                        with schedule_col1:
+                            interview_date_value = st.date_input(
+                                "Interview date",
+                                value=(
+                                    default_interview_datetime.date()
+                                ),
+                                min_value=date.today(),
+                            )
+                            interview_type = st.selectbox(
+                                "Interview type",
+                                [
+                                    "Technical",
+                                    "HR",
+                                    "Managerial",
+                                    "Final",
+                                ],
+                            )
+                            interviewer = st.text_input(
+                                "Interviewer name"
+                            )
+
+                        with schedule_col2:
+                            interview_time_value = st.time_input(
+                                "Interview time",
+                                value=(
+                                    default_interview_datetime.time()
+                                ),
+                            )
+                            meeting_location = st.text_input(
+                                "Meeting location or meeting link"
+                            )
+                            interview_notes = st.text_area(
+                                "Interview notes"
+                            )
+
+                        schedule_submitted = st.form_submit_button(
+                            "Save interview",
+                            type="primary",
+                            width="stretch",
+                        )
+
+                    if schedule_submitted:
+                        scheduled_for = datetime.combine(
+                            interview_date_value,
+                            interview_time_value,
+                        )
+                        validation_errors = []
+
+                        if scheduled_for < datetime.now():
+                            validation_errors.append(
+                                "Interview date and time cannot be "
+                                "in the past."
+                            )
+
+                        if not interviewer.strip():
+                            validation_errors.append(
+                                "Interviewer name is required."
+                            )
+
+                        if not meeting_location.strip():
+                            validation_errors.append(
+                                "Meeting location or link is required."
+                            )
+
+                        if validation_errors:
+                            for validation_error in validation_errors:
+                                st.error(validation_error)
+                        else:
+                            interview_datetime = scheduled_for.isoformat(
+                                timespec="minutes"
+                            )
+
+                            try:
+                                create_interview(
+                                    selected_application_id,
+                                    interview_datetime,
+                                    interviewer.strip(),
+                                    {
+                                        "interview_type": interview_type,
+                                        "location": (
+                                            meeting_location.strip()
+                                        ),
+                                        "notes": interview_notes.strip(),
+                                    },
+                                )
+                            except Exception as error:
+                                st.error(
+                                    "Could not schedule the interview: "
+                                    f"{error}"
+                                )
+                            else:
+                                get_interviews.clear()
+                                st.session_state[
+                                    "interview_scheduler_success"
+                                ] = {
+                                    "application_id": (
+                                        selected_application_id
+                                    ),
+                                    "message": (
+                                        "Interview scheduled "
+                                        "successfully."
+                                    ),
+                                }
+                                st.rerun()
+
+                st.markdown("#### Scheduled interviews")
+                scheduled_interviews = get_interviews()
+
+                if (
+                    scheduled_interviews.empty
+                    or "application_id"
+                    not in scheduled_interviews.columns
+                ):
+                    candidate_interviews = pd.DataFrame()
+                else:
+                    candidate_interviews = scheduled_interviews[
+                        scheduled_interviews[
+                            "application_id"
+                        ].astype(str)
+                        == selected_application_id
+                    ].copy()
+
+                if candidate_interviews.empty:
+                    st.info(
+                        "No interviews are scheduled for this candidate."
+                    )
+                else:
+                    if "interview_date" in candidate_interviews.columns:
+                        candidate_interviews["_scheduled_for"] = (
+                            pd.to_datetime(
+                                candidate_interviews[
+                                    "interview_date"
+                                ],
+                                errors="coerce",
+                            )
+                        )
+                        candidate_interviews = (
+                            candidate_interviews.sort_values(
+                                "_scheduled_for",
+                                ascending=True,
+                                na_position="last",
+                            )
+                        )
+
+                    for _, interview_row in (
+                        candidate_interviews.iterrows()
+                    ):
+                        feedback_data = parse_stored_value(
+                            interview_row.get("feedback")
+                        )
+
+                        if isinstance(feedback_data, dict):
+                            scheduled_type = feedback_data.get(
+                                "interview_type",
+                                "Not available",
+                            )
+                            scheduled_location = feedback_data.get(
+                                "location",
+                                "Not available",
+                            )
+                            scheduled_notes = feedback_data.get(
+                                "notes",
+                                "Not available",
+                            )
+                        else:
+                            scheduled_type = "Not available"
+                            scheduled_location = "Not available"
+                            scheduled_notes = (
+                                feedback_data
+                                if feedback_data
+                                else "Not available"
+                            )
+
+                        scheduled_at = pd.to_datetime(
+                            interview_row.get("interview_date"),
+                            errors="coerce",
+                        )
+
+                        if pd.isna(scheduled_at):
+                            scheduled_date = safe_value(
+                                interview_row,
+                                "interview_date",
+                            )
+                            scheduled_time = "Not available"
+                        else:
+                            scheduled_date = scheduled_at.strftime(
+                                "%d %b %Y"
+                            )
+                            scheduled_time = scheduled_at.strftime(
+                                "%I:%M %p"
+                            )
+
+                        with st.container(border=True):
+                            st.write(
+                                "**Interview type:**",
+                                scheduled_type,
+                            )
+                            st.write(
+                                "**Date:**",
+                                scheduled_date,
+                            )
+                            st.write(
+                                "**Time:**",
+                                scheduled_time,
+                            )
+                            st.write(
+                                "**Interviewer:**",
+                                safe_value(
+                                    interview_row,
+                                    "interviewer",
+                                ),
+                            )
+                            st.write(
+                                "**Location or meeting link:**",
+                                scheduled_location,
+                            )
+                            st.write(
+                                "**Notes:**",
+                                scheduled_notes or "Not available",
+                            )
+                            st.write(
+                                "**Status:**",
+                                safe_value(
+                                    interview_row,
+                                    "status",
+                                ),
+                            )
+
+            # ---------------------------------------------
+            # Recruiter notes
+            # ---------------------------------------------
+            st.markdown("### Recruiter Notes")
+
+            recruiter_note_message = st.session_state.pop(
+                "recruiter_note_success",
+                None,
+            )
+
+            if (
+                recruiter_note_message
+                and recruiter_note_message.get("application_id")
+                == selected_application_id
+            ):
+                st.success(recruiter_note_message["message"])
+
+            if not selected_application_id:
+                st.info(
+                    "An application record is required to add "
+                    "recruiter notes."
+                )
+            else:
+                with st.container(border=True):
+                    st.markdown("#### Add note")
+
+                    with st.form(
+                        f"recruiter_note_{selected_application_id}",
+                        clear_on_submit=True,
+                    ):
+                        recruiter_name = st.text_input(
+                            "Recruiter name"
+                        )
+                        recruiter_note = st.text_area("Note")
+                        recruiter_note_submitted = (
+                            st.form_submit_button(
+                                "Save note",
+                                type="primary",
+                            )
+                        )
+
+                    if recruiter_note_submitted:
+                        if not recruiter_note.strip():
+                            st.error("Note text is required.")
+                        elif not recruiter_name.strip():
+                            st.error("Recruiter name is required.")
+                        else:
+                            try:
+                                create_recruiter_note(
+                                    selected_application_id,
+                                    recruiter_note,
+                                    recruiter_name,
+                                )
+                            except Exception as error:
+                                st.error(
+                                    "Could not save the recruiter note: "
+                                    f"{error}"
+                                )
+                            else:
+                                get_recruiter_notes.clear()
+                                st.session_state[
+                                    "recruiter_note_success"
+                                ] = {
+                                    "application_id": (
+                                        selected_application_id
+                                    ),
+                                    "message": (
+                                        "Recruiter note saved "
+                                        "successfully."
+                                    ),
+                                }
+                                st.rerun()
+
+                st.markdown("#### Previous notes")
+                recruiter_notes = get_recruiter_notes()
+
+                if (
+                    recruiter_notes.empty
+                    or "application_id"
+                    not in recruiter_notes.columns
+                ):
+                    selected_recruiter_notes = pd.DataFrame()
+                else:
+                    selected_recruiter_notes = recruiter_notes[
+                        recruiter_notes[
+                            "application_id"
+                        ].astype(str)
+                        == selected_application_id
+                    ].copy()
+
+                if selected_recruiter_notes.empty:
+                    st.info("No recruiter notes are available.")
+                else:
+                    if "created_at" in selected_recruiter_notes.columns:
+                        selected_recruiter_notes["_created_at"] = (
+                            pd.to_datetime(
+                                selected_recruiter_notes[
+                                    "created_at"
+                                ],
+                                errors="coerce",
+                                utc=True,
+                            )
+                        )
+                        selected_recruiter_notes = (
+                            selected_recruiter_notes.sort_values(
+                                "_created_at",
+                                ascending=False,
+                                na_position="last",
+                            )
+                        )
+
+                    for _, note_row in (
+                        selected_recruiter_notes.iterrows()
+                    ):
+                        note_created_at = note_row.get("_created_at")
+                        displayed_created_at = (
+                            "Not available"
+                            if note_created_at is None
+                            or pd.isna(note_created_at)
+                            else note_created_at.strftime(
+                                "%d %b %Y, %I:%M %p UTC"
+                            )
+                        )
+
+                        with st.container(border=True):
+                            st.write(
+                                safe_value(note_row, "note")
+                            )
+                            st.caption(
+                                "Created: "
+                                f"{displayed_created_at} · "
+                                "Recruiter: "
+                                f"{safe_value(note_row, 'recruiter_name')}"
+                            )
+
+            # ---------------------------------------------
+            # Candidate communication drafts
+            # ---------------------------------------------
+            st.markdown("### Candidate Communication Actions")
+
+            candidate_email = safe_value(
+                selected_raw_candidate,
+                "email",
+                "",
+            )
+            candidate_phone = safe_value(
+                selected_raw_candidate,
+                "phone",
+                "",
+            )
+            communication_interview = pd.Series(dtype="object")
+
+            if (
+                selected_application_id
+                and not candidate_interviews.empty
+            ):
+                communication_interviews = candidate_interviews.copy()
+
+                if "status" in communication_interviews.columns:
+                    scheduled_mask = (
+                        communication_interviews["status"]
+                        .fillna("")
+                        .astype(str)
+                        .str.strip()
+                        .str.casefold()
+                        .eq("scheduled")
+                    )
+                    scheduled_rows = communication_interviews[
+                        scheduled_mask
+                    ]
+
+                    if not scheduled_rows.empty:
+                        communication_interviews = scheduled_rows
+
+                if "interview_date" in communication_interviews.columns:
+                    communication_interviews["_communication_date"] = (
+                        pd.to_datetime(
+                            communication_interviews[
+                                "interview_date"
+                            ],
+                            errors="coerce",
+                            utc=True,
+                        )
+                    )
+                    future_interviews = communication_interviews[
+                        communication_interviews[
+                            "_communication_date"
+                        ]
+                        >= pd.Timestamp.now(tz="UTC")
+                    ].sort_values("_communication_date")
+
+                    if not future_interviews.empty:
+                        communication_interviews = future_interviews
+
+                if not communication_interviews.empty:
+                    communication_interview = (
+                        communication_interviews.iloc[0]
+                    )
+
+            communication_date = None
+            communication_time = None
+            communication_interviewer = None
+            communication_location = None
+
+            if not communication_interview.empty:
+                communication_datetime = pd.to_datetime(
+                    communication_interview.get("interview_date"),
+                    errors="coerce",
+                    utc=True,
+                )
+
+                if not pd.isna(communication_datetime):
+                    communication_date = (
+                        communication_datetime.strftime("%d %b %Y")
+                    )
+                    communication_time = (
+                        communication_datetime.strftime("%I:%M %p UTC")
+                    )
+
+                communication_interviewer = safe_value(
+                    communication_interview,
+                    "interviewer",
+                    "",
+                )
+                communication_metadata = parse_stored_value(
+                    communication_interview.get("feedback")
+                )
+
+                if isinstance(communication_metadata, dict):
+                    communication_location = (
+                        communication_metadata.get("meeting_link")
+                        or communication_metadata.get(
+                            "meeting_location"
+                        )
+                        or communication_metadata.get("location")
+                    )
+
+            with st.container(border=True):
+                selected_message_type = st.selectbox(
+                    "Message type",
+                    MESSAGE_TYPES,
+                    key=(
+                        "candidate_message_type_"
+                        f"{selected_candidate_id}"
+                    ),
+                )
+                message_drafts = build_candidate_messages(
+                    selected_message_type,
+                    candidate_name,
+                    role,
+                    application_stage,
+                    communication_date,
+                    communication_time,
+                    communication_interviewer,
+                    communication_location,
+                )
+                email_draft_col, whatsapp_draft_col = st.columns(2)
+
+                with email_draft_col:
+                    st.markdown("#### Email preview")
+                    st.caption(
+                        f"Recipient: {candidate_email or 'Not available'}"
+                    )
+                    email_subject = st.text_input(
+                        "Email subject",
+                        value=message_drafts["email_subject"],
+                        key=(
+                            "email_subject_"
+                            f"{selected_candidate_id}_"
+                            f"{selected_message_type}"
+                        ),
+                    )
+                    email_body = st.text_area(
+                        "Email message",
+                        value=message_drafts["email_body"],
+                        height=280,
+                        key=(
+                            "email_body_"
+                            f"{selected_candidate_id}_"
+                            f"{selected_message_type}"
+                        ),
+                    )
+
+                    with st.container(border=True):
+                        st.write("**Subject:**", email_subject)
+                        st.text(email_body)
+
+                    if st.button(
+                        "Email Candidate",
+                        key=(
+                            "email_candidate_"
+                            f"{selected_candidate_id}"
+                        ),
+                    ):
+                        if not candidate_email:
+                            st.error(
+                                "Candidate email is not available."
+                            )
+                        else:
+                            st.info(
+                                "Email draft is ready. No email was sent."
+                            )
+
+                with whatsapp_draft_col:
+                    st.markdown("#### WhatsApp preview")
+                    st.caption(
+                        f"Recipient: {candidate_phone or 'Not available'}"
+                    )
+                    whatsapp_body = st.text_area(
+                        "WhatsApp message",
+                        value=message_drafts["whatsapp_body"],
+                        height=280,
+                        key=(
+                            "whatsapp_body_"
+                            f"{selected_candidate_id}_"
+                            f"{selected_message_type}"
+                        ),
+                    )
+
+                    with st.container(border=True):
+                        st.text(whatsapp_body)
+
+                    if st.button(
+                        "WhatsApp Candidate",
+                        key=(
+                            "whatsapp_candidate_"
+                            f"{selected_candidate_id}"
+                        ),
+                    ):
+                        if not candidate_phone:
+                            st.error(
+                                "Candidate phone number is not available."
+                            )
+                        else:
+                            st.info(
+                                "WhatsApp draft is ready. No message "
+                                "was sent."
+                            )
+
+            # ---------------------------------------------
             # Contact and career information
             # ---------------------------------------------
             contact_col, career_col = st.columns(2)
@@ -2042,8 +2661,24 @@ elif selected_page == "Applications":
     if raw_applications.empty:
         st.info("No applications found.")
     else:
+        displayed_applications = raw_applications.copy()
+
+        for column in displayed_applications.columns:
+            has_complex_values = displayed_applications[column].apply(
+                lambda value: isinstance(value, (dict, list))
+            ).any()
+
+            if has_complex_values:
+                displayed_applications[column] = (
+                    displayed_applications[column].apply(
+                        lambda value: json.dumps(value)
+                        if isinstance(value, (dict, list))
+                        else value
+                    )
+                )
+
         st.dataframe(
-            raw_applications,
+            displayed_applications,
             width="stretch",
             hide_index=True,
             column_config={
@@ -2088,6 +2723,956 @@ elif selected_page == "Jobs":
             raw_jobs,
             width="stretch",
             hide_index=True,
+        )
+
+
+# =========================================================
+# Interviews page
+# =========================================================
+elif selected_page == "Interviews":
+    st.markdown(
+        '<div class="main-title">'
+        "Interview Management"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="main-subtitle">'
+        "Review scheduled interviews, update outcomes and record feedback."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    interview_action_message = st.session_state.pop(
+        "interview_management_success",
+        None,
+    )
+
+    if interview_action_message:
+        st.success(interview_action_message)
+
+    all_interviews = get_interviews()
+
+    if all_interviews.empty:
+        st.info("No interviews are available.")
+    else:
+        def safe_identifier(value) -> str:
+            """Return a safe identifier string for local joins."""
+
+            if value is None or isinstance(
+                value,
+                (dict, list, tuple, set),
+            ):
+                return ""
+
+            try:
+                if pd.isna(value):
+                    return ""
+            except (TypeError, ValueError):
+                return ""
+
+            return str(value).strip()
+
+        applications_by_id = {}
+
+        if (
+            not raw_applications.empty
+            and "id" in raw_applications.columns
+        ):
+            for _, application_row in raw_applications.iterrows():
+                application_id = safe_identifier(
+                    application_row.get("id")
+                )
+
+                if application_id:
+                    applications_by_id[application_id] = {
+                        "candidate_id": safe_identifier(
+                            application_row.get("candidate_id")
+                        ),
+                        "job_id": safe_identifier(
+                            application_row.get("job_id")
+                        ),
+                    }
+
+        candidate_names_by_id = {}
+
+        if (
+            not raw_candidates.empty
+            and "id" in raw_candidates.columns
+        ):
+            for _, candidate_row in raw_candidates.iterrows():
+                candidate_id = safe_identifier(
+                    candidate_row.get("id")
+                )
+                candidate_name = candidate_row.get("full_name")
+
+                if candidate_id:
+                    candidate_names_by_id[candidate_id] = (
+                        str(candidate_name).strip()
+                        if candidate_name is not None
+                        and str(candidate_name).strip()
+                        else "Unknown Candidate"
+                    )
+
+        job_titles_by_id = {}
+
+        if (
+            not raw_jobs.empty
+            and "id" in raw_jobs.columns
+        ):
+            for _, job_row in raw_jobs.iterrows():
+                job_id = safe_identifier(job_row.get("id"))
+                job_title = job_row.get("title")
+
+                if job_id:
+                    job_titles_by_id[job_id] = (
+                        str(job_title).strip()
+                        if job_title is not None
+                        and str(job_title).strip()
+                        else "Unknown Job"
+                    )
+
+        managed_interviews = all_interviews.copy()
+        managed_interviews["_interview_id"] = (
+            managed_interviews.get(
+                "id",
+                pd.Series("", index=managed_interviews.index),
+            ).apply(safe_identifier)
+        )
+        managed_interviews["_application_id"] = (
+            managed_interviews.get(
+                "application_id",
+                pd.Series("", index=managed_interviews.index),
+            ).apply(safe_identifier)
+        )
+
+        def related_value(
+            application_id: str,
+            relationship: str,
+        ) -> str:
+            """Resolve a candidate or job through an application."""
+
+            application = applications_by_id.get(
+                application_id,
+                {},
+            )
+
+            if relationship == "candidate":
+                return candidate_names_by_id.get(
+                    application.get("candidate_id", ""),
+                    "Unknown Candidate",
+                )
+
+            return job_titles_by_id.get(
+                application.get("job_id", ""),
+                "Unknown Job",
+            )
+
+        managed_interviews["Candidate"] = managed_interviews[
+            "_application_id"
+        ].apply(lambda value: related_value(value, "candidate"))
+        managed_interviews["Job"] = managed_interviews[
+            "_application_id"
+        ].apply(lambda value: related_value(value, "job"))
+        managed_interviews["Interviewer"] = managed_interviews.get(
+            "interviewer",
+            pd.Series("", index=managed_interviews.index),
+        ).fillna("").astype(str).str.strip()
+        managed_interviews["Status"] = managed_interviews.get(
+            "status",
+            pd.Series("", index=managed_interviews.index),
+        ).fillna("").astype(str).str.strip()
+        managed_interviews["_scheduled_for"] = pd.to_datetime(
+            managed_interviews.get(
+                "interview_date",
+                pd.Series(None, index=managed_interviews.index),
+            ),
+            errors="coerce",
+            utc=True,
+        )
+        managed_interviews["_interview_day"] = managed_interviews[
+            "_scheduled_for"
+        ].dt.date
+
+        status_options = sorted(
+            value
+            for value in managed_interviews["Status"].unique()
+            if value
+        )
+        interviewer_options = sorted(
+            value
+            for value in managed_interviews["Interviewer"].unique()
+            if value
+        )
+        job_options = sorted(managed_interviews["Job"].unique())
+        date_options = sorted(
+            value
+            for value in managed_interviews[
+                "_interview_day"
+            ].dropna().unique()
+        )
+
+        filter_col1, filter_col2, filter_col3, filter_col4 = (
+            st.columns(4)
+        )
+
+        with filter_col1:
+            selected_interview_status = st.selectbox(
+                "Interview status",
+                ["All"] + status_options,
+            )
+
+        with filter_col2:
+            selected_interviewer = st.selectbox(
+                "Interviewer",
+                ["All"] + interviewer_options,
+            )
+
+        with filter_col3:
+            selected_interview_date = st.selectbox(
+                "Interview date",
+                [None] + date_options,
+                format_func=lambda value: (
+                    "All dates"
+                    if value is None
+                    else value.strftime("%d %b %Y")
+                ),
+            )
+
+        with filter_col4:
+            selected_interview_job = st.selectbox(
+                "Job",
+                ["All"] + job_options,
+            )
+
+        filtered_interviews = managed_interviews.copy()
+
+        if selected_interview_status != "All":
+            filtered_interviews = filtered_interviews[
+                filtered_interviews["Status"]
+                == selected_interview_status
+            ]
+
+        if selected_interviewer != "All":
+            filtered_interviews = filtered_interviews[
+                filtered_interviews["Interviewer"]
+                == selected_interviewer
+            ]
+
+        if selected_interview_date is not None:
+            filtered_interviews = filtered_interviews[
+                filtered_interviews["_interview_day"]
+                == selected_interview_date
+            ]
+
+        if selected_interview_job != "All":
+            filtered_interviews = filtered_interviews[
+                filtered_interviews["Job"]
+                == selected_interview_job
+            ]
+
+        if filtered_interviews.empty:
+            st.info("No interviews match the selected filters.")
+        else:
+            filtered_interviews = filtered_interviews.sort_values(
+                "_scheduled_for",
+                ascending=True,
+                na_position="last",
+            )
+
+            def save_interview_update(
+                interview_id: str,
+                updates: dict,
+                success_message: str,
+            ) -> None:
+                """Persist one interview update and refresh the page."""
+
+                try:
+                    update_interview(interview_id, updates)
+                except Exception as error:
+                    st.error(
+                        "Could not update the interview: "
+                        f"{error}"
+                    )
+                    return
+
+                get_interviews.clear()
+                st.session_state[
+                    "interview_management_success"
+                ] = success_message
+                st.rerun()
+
+            for _, interview_row in filtered_interviews.iterrows():
+                interview_id = interview_row["_interview_id"]
+                scheduled_for = interview_row["_scheduled_for"]
+                stored_feedback = parse_stored_value(
+                    interview_row.get("feedback")
+                )
+
+                if isinstance(stored_feedback, dict):
+                    feedback_text = stored_feedback.get(
+                        "feedback",
+                        "",
+                    )
+                    interview_type = stored_feedback.get(
+                        "interview_type",
+                    )
+                    meeting_location = stored_feedback.get(
+                        "meeting_link",
+                        stored_feedback.get(
+                            "meeting_location",
+                            stored_feedback.get("location"),
+                        ),
+                    )
+                    interview_notes = stored_feedback.get(
+                        "notes",
+                    )
+                elif stored_feedback is None:
+                    feedback_text = ""
+                    interview_type = None
+                    meeting_location = None
+                    interview_notes = None
+                else:
+                    feedback_text = str(stored_feedback)
+                    interview_type = None
+                    meeting_location = None
+                    interview_notes = None
+
+                rating_value = pd.to_numeric(
+                    interview_row.get("rating"),
+                    errors="coerce",
+                )
+                displayed_rating = (
+                    "Not rated"
+                    if pd.isna(rating_value)
+                    else f"{int(rating_value)}/5"
+                )
+                if pd.isna(scheduled_for):
+                    displayed_date = "Not available"
+                    displayed_time = "Not available"
+                else:
+                    displayed_date = scheduled_for.strftime(
+                        "%d %b %Y"
+                    )
+                    displayed_time = scheduled_for.strftime(
+                        "%I:%M %p UTC"
+                    )
+
+                with st.container(border=True):
+                    st.markdown(
+                        f"#### {interview_row['Candidate']} — "
+                        f"{interview_row['Job']}"
+                    )
+                    details_col1, details_col2 = st.columns(2)
+
+                    with details_col1:
+                        st.write(
+                            "**Interviewer:**",
+                            interview_row["Interviewer"]
+                            or "Not available",
+                        )
+                        st.write(
+                            "**Interview type:**",
+                            interview_type or "Not available",
+                        )
+                        st.write(
+                            "**Interview date:**",
+                            displayed_date,
+                        )
+                        st.write(
+                            "**Interview time:**",
+                            displayed_time,
+                        )
+                        st.write(
+                            "**Status:**",
+                            interview_row["Status"]
+                            or "Not available",
+                        )
+
+                    with details_col2:
+                        st.write(
+                            "**Meeting link or location:**",
+                            meeting_location or "Not available",
+                        )
+                        st.write(
+                            "**Notes:**",
+                            interview_notes or "Not available",
+                        )
+                        st.write(
+                            "**Feedback:**",
+                            feedback_text or "Not available",
+                        )
+                        st.write("**Rating:**", displayed_rating)
+
+                    with st.container(horizontal=True):
+                        if st.button(
+                            "Mark Scheduled",
+                            key=f"scheduled_{interview_id}",
+                        ):
+                            save_interview_update(
+                                interview_id,
+                                {"status": "Scheduled"},
+                                "Interview marked as Scheduled.",
+                            )
+
+                        if st.button(
+                            "Mark Completed",
+                            key=f"completed_{interview_id}",
+                        ):
+                            save_interview_update(
+                                interview_id,
+                                {"status": "Completed"},
+                                "Interview marked as Completed.",
+                            )
+
+                        if st.button(
+                            "Mark Cancelled",
+                            key=f"cancelled_{interview_id}",
+                        ):
+                            save_interview_update(
+                                interview_id,
+                                {"status": "Cancelled"},
+                                "Interview marked as Cancelled.",
+                            )
+
+                    with st.form(f"feedback_{interview_id}"):
+                        edited_feedback = st.text_area(
+                            "Feedback",
+                            value=str(feedback_text or ""),
+                            key=f"feedback_text_{interview_id}",
+                        )
+                        initial_rating = (
+                            int(rating_value)
+                            if not pd.isna(rating_value)
+                            and 1 <= int(rating_value) <= 5
+                            else 1
+                        )
+                        edited_rating = st.number_input(
+                            "Rating",
+                            min_value=1,
+                            max_value=5,
+                            value=initial_rating,
+                            step=1,
+                            key=f"rating_{interview_id}",
+                        )
+                        feedback_submitted = st.form_submit_button(
+                            "Save feedback and rating"
+                        )
+
+                    if feedback_submitted:
+                        validated_rating = int(edited_rating)
+
+                        if validated_rating < 1 or validated_rating > 5:
+                            st.error("Rating must be between 1 and 5.")
+                        else:
+                            if isinstance(stored_feedback, dict):
+                                updated_feedback = dict(stored_feedback)
+                                updated_feedback["feedback"] = (
+                                    edited_feedback.strip()
+                                )
+                            else:
+                                updated_feedback = edited_feedback.strip()
+
+                            save_interview_update(
+                                interview_id,
+                                {
+                                    "feedback": updated_feedback,
+                                    "rating": validated_rating,
+                                },
+                                "Interview feedback and rating saved.",
+                            )
+
+
+# =========================================================
+# Analytics page
+# =========================================================
+elif selected_page == "Analytics":
+    st.markdown(
+        '<div class="main-title">'
+        "Recruitment Analytics"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="main-subtitle">'
+        "Live recruitment metrics from candidates, jobs and applications."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    def normalize_stage_value(value) -> str:
+        """Normalize a stage for analytics comparisons only."""
+
+        if value is None or isinstance(
+            value,
+            (dict, list, tuple, set),
+        ):
+            return ""
+
+        try:
+            if pd.isna(value):
+                return ""
+        except (TypeError, ValueError):
+            return ""
+
+        return " ".join(
+            str(value).strip().casefold().split()
+        )
+
+    stage_groups = {
+        "Pending Review": {
+            "applied",
+            "new",
+            "pending",
+            "pending review",
+        },
+        "Shortlisted": {
+            "shortlist",
+            "shortlisted",
+        },
+        "Interview": {
+            "interview",
+            "interview scheduled",
+            "interviewing",
+        },
+        "Selected": {
+            "hired",
+            "joined",
+            "selected",
+        },
+        "Rejected": {
+            "reject",
+            "rejected",
+        },
+    }
+
+    def stage_label(normalized_stage: str) -> str:
+        """Return a readable label for a normalized stored stage."""
+
+        if not normalized_stage:
+            return "Unspecified"
+
+        for label, values in stage_groups.items():
+            if normalized_stage in values:
+                return label
+
+        return normalized_stage.title()
+
+    def normalize_identifier(value) -> str:
+        """Return a safe string identifier for joins."""
+
+        if value is None or isinstance(
+            value,
+            (dict, list, tuple, set),
+        ):
+            return ""
+
+        try:
+            if pd.isna(value):
+                return ""
+        except (TypeError, ValueError):
+            return ""
+
+        return str(value).strip()
+
+    candidate_status_by_id = {}
+
+    if (
+        not raw_candidates.empty
+        and "id" in raw_candidates.columns
+    ):
+        for _, candidate_row in raw_candidates.iterrows():
+            candidate_id = normalize_identifier(
+                candidate_row.get("id")
+            )
+
+            if candidate_id:
+                candidate_status_by_id[candidate_id] = (
+                    normalize_stage_value(
+                        candidate_row.get("status")
+                    )
+                )
+
+    analytics_applications = raw_applications.copy()
+
+    if analytics_applications.empty:
+        analytics_applications = pd.DataFrame(
+            columns=[
+                "candidate_id",
+                "job_id",
+                "application_stage",
+                "candidate_score",
+                "ats_score",
+            ]
+        )
+
+    if "application_stage" in analytics_applications.columns:
+        analytics_applications["_normalized_stage"] = (
+            analytics_applications["application_stage"].apply(
+                normalize_stage_value
+            )
+        )
+    else:
+        analytics_applications["_normalized_stage"] = ""
+
+    if "candidate_id" in analytics_applications.columns:
+        missing_stage_mask = analytics_applications[
+            "_normalized_stage"
+        ].eq("")
+        fallback_stages = (
+            analytics_applications["candidate_id"]
+            .apply(normalize_identifier)
+            .map(candidate_status_by_id)
+            .fillna("")
+        )
+        analytics_applications.loc[
+            missing_stage_mask,
+            "_normalized_stage",
+        ] = fallback_stages[missing_stage_mask]
+
+    analytics_applications["Stage"] = analytics_applications[
+        "_normalized_stage"
+    ].apply(stage_label)
+
+    candidate_current_stages = pd.DataFrame(
+        {
+            "candidate_id": list(candidate_status_by_id.keys()),
+            "_normalized_stage": list(
+                candidate_status_by_id.values()
+            ),
+        }
+    )
+
+    if (
+        not analytics_applications.empty
+        and "candidate_id" in analytics_applications.columns
+        and not candidate_current_stages.empty
+    ):
+        latest_applications = analytics_applications.copy()
+
+        if "applied_at" in latest_applications.columns:
+            latest_applications["_applied_at"] = pd.to_datetime(
+                latest_applications["applied_at"],
+                errors="coerce",
+            )
+            latest_applications = latest_applications.sort_values(
+                "_applied_at",
+                ascending=False,
+                na_position="last",
+            )
+
+        latest_applications["candidate_id"] = (
+            latest_applications["candidate_id"].apply(
+                normalize_identifier
+            )
+        )
+        latest_applications = latest_applications.drop_duplicates(
+            subset=["candidate_id"],
+            keep="first",
+        )
+        latest_stage_by_candidate = latest_applications.set_index(
+            "candidate_id"
+        )["_normalized_stage"]
+        candidate_current_stages["_application_stage"] = (
+            candidate_current_stages["candidate_id"].map(
+                latest_stage_by_candidate
+            )
+        )
+        has_application_stage = candidate_current_stages[
+            "_application_stage"
+        ].fillna("").ne("")
+        candidate_current_stages.loc[
+            has_application_stage,
+            "_normalized_stage",
+        ] = candidate_current_stages.loc[
+            has_application_stage,
+            "_application_stage",
+        ]
+
+    def count_applications_in(group: str) -> int:
+        """Count applications in one normalized stage group."""
+
+        return int(
+            analytics_applications["_normalized_stage"].isin(
+                stage_groups[group]
+            ).sum()
+        )
+
+    def count_candidates_in(group: str) -> int:
+        """Count candidates by latest application stage with fallback."""
+
+        if candidate_current_stages.empty:
+            return 0
+
+        return int(
+            candidate_current_stages["_normalized_stage"].isin(
+                stage_groups[group]
+            ).sum()
+        )
+
+    analytics_total_candidates = len(raw_candidates)
+    analytics_total_applications = len(raw_applications)
+
+    if raw_jobs.empty or "status" not in raw_jobs.columns:
+        analytics_open_jobs = 0
+    else:
+        analytics_open_jobs = int(
+            raw_jobs["status"].apply(
+                normalize_stage_value
+            ).eq("open").sum()
+        )
+
+    analytics_pending = count_applications_in("Pending Review")
+    analytics_shortlisted = count_candidates_in("Shortlisted")
+    analytics_interview = count_candidates_in("Interview")
+    analytics_selected = count_candidates_in("Selected")
+    analytics_rejected = count_candidates_in("Rejected")
+
+    def average_application_score(column: str):
+        """Average valid numeric application scores."""
+
+        if column not in analytics_applications.columns:
+            return None
+
+        scores = pd.to_numeric(
+            analytics_applications[column],
+            errors="coerce",
+        ).dropna()
+
+        if scores.empty:
+            return None
+
+        return round(float(scores.mean()), 1)
+
+    analytics_candidate_score = average_application_score(
+        "candidate_score"
+    )
+    analytics_ats_score = average_application_score("ats_score")
+
+    analytics_metrics = [
+        (
+            "Total Candidates",
+            analytics_total_candidates,
+            "Live database",
+            "👥",
+        ),
+        (
+            "Open Jobs",
+            analytics_open_jobs,
+            "Jobs marked open",
+            "💼",
+        ),
+        (
+            "Total Applications",
+            analytics_total_applications,
+            "Live database",
+            "📨",
+        ),
+        (
+            "Pending Review",
+            analytics_pending,
+            "Applications",
+            "📋",
+        ),
+        (
+            "Shortlisted",
+            analytics_shortlisted,
+            "Candidates",
+            "⭐",
+        ),
+        (
+            "In Interview",
+            analytics_interview,
+            "Candidates",
+            "📅",
+        ),
+        (
+            "Selected",
+            analytics_selected,
+            "Candidates",
+            "✅",
+        ),
+        (
+            "Rejected",
+            analytics_rejected,
+            "Candidates",
+            "⛔",
+        ),
+        (
+            "Average Candidate Score",
+            (
+                f"{analytics_candidate_score}%"
+                if analytics_candidate_score is not None
+                else "N/A"
+            ),
+            "Applications",
+            "🧠",
+        ),
+        (
+            "Average ATS Score",
+            (
+                f"{analytics_ats_score}%"
+                if analytics_ats_score is not None
+                else "N/A"
+            ),
+            "Applications",
+            "📄",
+        ),
+    ]
+
+    for metric_start in range(0, len(analytics_metrics), 5):
+        metric_columns = st.columns(5)
+
+        for metric_column, metric_values in zip(
+            metric_columns,
+            analytics_metrics[metric_start:metric_start + 5],
+        ):
+            with metric_column:
+                metric_card(*metric_values)
+
+        st.write("")
+
+    funnel_data = pd.DataFrame(
+        {
+            "Stage": [
+                "Applications",
+                "Shortlisted",
+                "Interview",
+                "Selected",
+            ],
+            "Count": [
+                analytics_total_applications,
+                count_applications_in("Shortlisted"),
+                count_applications_in("Interview"),
+                count_applications_in("Selected"),
+            ],
+        }
+    )
+
+    if "job_id" in analytics_applications.columns:
+        application_job_ids = analytics_applications[
+            "job_id"
+        ].apply(normalize_identifier)
+    else:
+        application_job_ids = pd.Series(
+            "",
+            index=analytics_applications.index,
+            dtype="object",
+        )
+
+    job_titles_by_id = {}
+
+    if (
+        not raw_jobs.empty
+        and "id" in raw_jobs.columns
+        and "title" in raw_jobs.columns
+    ):
+        for _, job_row in raw_jobs.iterrows():
+            job_id = normalize_identifier(job_row.get("id"))
+            job_title = job_row.get("title")
+
+            if (
+                job_id
+                and job_title is not None
+                and str(job_title).strip()
+            ):
+                job_titles_by_id[job_id] = str(job_title).strip()
+
+    applications_by_job = (
+        application_job_ids.map(job_titles_by_id)
+        .fillna("Unknown Job")
+        .replace("", "Unknown Job")
+        .value_counts()
+        .rename_axis("Job")
+        .reset_index(name="Applications")
+    )
+
+    stage_distribution = (
+        analytics_applications["Stage"]
+        .value_counts()
+        .rename_axis("Stage")
+        .reset_index(name="Applications")
+    )
+
+    funnel_col, job_col = st.columns([1, 1])
+
+    with funnel_col:
+        st.markdown("### Hiring funnel")
+
+        if analytics_total_applications == 0:
+            st.info("No application data is available for the funnel.")
+        else:
+            funnel_chart = px.funnel(
+                funnel_data,
+                x="Count",
+                y="Stage",
+            )
+            funnel_chart.update_layout(
+                height=390,
+                margin=dict(l=20, r=20, t=20, b=20),
+                paper_bgcolor="white",
+                plot_bgcolor="white",
+                showlegend=False,
+            )
+            st.plotly_chart(
+                funnel_chart,
+                width="stretch",
+                config={"displayModeBar": False},
+            )
+
+    with job_col:
+        st.markdown("### Applications by job")
+
+        if applications_by_job.empty:
+            st.info("No application-to-job data is available.")
+        else:
+            job_chart = px.bar(
+                applications_by_job,
+                x="Applications",
+                y="Job",
+                orientation="h",
+                text="Applications",
+            )
+            job_chart.update_layout(
+                height=390,
+                margin=dict(l=20, r=20, t=20, b=20),
+                paper_bgcolor="white",
+                plot_bgcolor="white",
+                showlegend=False,
+                yaxis={"categoryorder": "total ascending"},
+            )
+            st.plotly_chart(
+                job_chart,
+                width="stretch",
+                config={"displayModeBar": False},
+            )
+
+    st.markdown("### Application-stage distribution")
+
+    if stage_distribution.empty:
+        st.info("No application-stage data is available.")
+    else:
+        stage_chart = px.bar(
+            stage_distribution,
+            x="Stage",
+            y="Applications",
+            text="Applications",
+        )
+        stage_chart.update_layout(
+            height=360,
+            margin=dict(l=20, r=20, t=20, b=20),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
+            showlegend=False,
+            xaxis_title="Application stage",
+            yaxis_title="Applications",
+        )
+        st.plotly_chart(
+            stage_chart,
+            width="stretch",
+            config={"displayModeBar": False},
         )
 
 
