@@ -82,6 +82,21 @@ def get_applications() -> pd.DataFrame:
     return fetch_table("applications", order_column="applied_at")
 
 
+def update_application_stage(
+    application_id: str,
+    application_stage: str,
+) -> None:
+    """Update the stage of one application identified by its id."""
+
+    if not application_id:
+        raise ValueError("An application id is required.")
+
+    supabase = get_supabase_client()
+    supabase.table("applications").update(
+        {"application_stage": application_stage}
+    ).eq("id", application_id).execute()
+
+
 @st.cache_data(ttl=60)
 def get_jobs() -> pd.DataFrame:
     """Load job records."""

@@ -10,6 +10,7 @@ from services.supabase_service import (
     get_applications,
     get_candidates,
     get_jobs,
+    update_application_stage,
 )
 
 
@@ -1474,6 +1475,121 @@ elif selected_page == "Candidates":
                 profile_header_html,
                 unsafe_allow_html=True,
             )
+
+            # ---------------------------------------------
+            # Candidate actions
+            # ---------------------------------------------
+            selected_application_id = safe_value(
+                selected_application,
+                "id",
+                "",
+            )
+
+            action_message = st.session_state.pop(
+                "candidate_action_success",
+                None,
+            )
+
+            if (
+                action_message
+                and action_message["application_id"]
+                == selected_application_id
+            ):
+                st.success(action_message["message"])
+
+            st.markdown("### Candidate actions")
+
+            if not selected_application_id:
+                st.info(
+                    "Candidate actions require an application record."
+                )
+            else:
+                def set_application_stage(
+                    new_stage: str,
+                ) -> None:
+                    try:
+                        update_application_stage(
+                            selected_application_id,
+                            new_stage,
+                        )
+                    except Exception as error:
+                        st.error(
+                            "Could not update the application stage: "
+                            f"{error}"
+                        )
+                        return
+
+                    get_applications.clear()
+                    st.session_state[
+                        "candidate_action_success"
+                    ] = {
+                        "application_id": (
+                            selected_application_id
+                        ),
+                        "message": (
+                            "Application stage updated to "
+                            f"{new_stage}."
+                        ),
+                    }
+                    st.rerun()
+
+                action_col1, action_col2, action_col3, action_col4 = (
+                    st.columns(4)
+                )
+
+                with action_col1:
+                    if st.button(
+                        "Shortlist Candidate",
+                        key=(
+                            "shortlist_candidate_"
+                            f"{selected_application_id}"
+                        ),
+                        width="stretch",
+                    ):
+                        set_application_stage("Shortlisted")
+
+                with action_col2:
+                    if st.button(
+                        "Move to Interview",
+                        key=(
+                            "interview_candidate_"
+                            f"{selected_application_id}"
+                        ),
+                        width="stretch",
+                    ):
+                        set_application_stage("Interview")
+
+                with action_col3:
+                    if st.button(
+                        "Select Candidate",
+                        key=(
+                            "select_candidate_"
+                            f"{selected_application_id}"
+                        ),
+                        width="stretch",
+                    ):
+                        set_application_stage("Selected")
+
+                with action_col4:
+                    with st.popover(
+                        "Reject Candidate",
+                        width="stretch",
+                    ):
+                        st.warning(
+                            "Reject this candidate's selected "
+                            "application?"
+                        )
+
+                        if st.button(
+                            "Confirm rejection",
+                            key=(
+                                "confirm_reject_candidate_"
+                                f"{selected_application_id}"
+                            ),
+                            type="primary",
+                            width="stretch",
+                        ):
+                            set_application_stage("Rejected")
 
             # ---------------------------------------------
             # Contact and career information
