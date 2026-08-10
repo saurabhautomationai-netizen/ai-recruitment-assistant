@@ -1,131 +1,119 @@
 # AI Recruitment Assistant
 
-An AI-powered recruitment management system designed to help recruiters manage candidates, jobs, applications, resume analysis, candidate scoring, and interview workflows from one dashboard.
+**An end-to-end AI-powered recruitment automation platform** — resume parsing, semantic candidate search, AI-driven scoring, and personalized outreach, built entirely on n8n with LLM agents, structured output parsing, and pgvector RAG.
 
-The project combines a Streamlit dashboard, Supabase database, AI resume analysis, and recruitment automation workflows.
-
----
-
-## Project Overview
-
-The AI Recruitment Assistant reduces repetitive recruitment work by automatically collecting candidate information, parsing resumes, managing job openings, evaluating candidate-job fit, and presenting recruitment data through a centralized dashboard.
-
-It is designed as a portfolio-ready, scalable recruitment automation system that can later be converted into a SaaS product.
+Built as a portfolio project demonstrating production-grade AI engineering and workflow automation, with an eye toward productizing as a B2B SaaS offering for recruitment teams.
 
 ---
 
-## Current Features
+## The Problem
 
-### Candidate Management
+Recruitment teams drown in repetitive, high-volume work: manually reading resumes, comparing candidates against job requirements, chasing status updates across email/WhatsApp, and searching past applicants when a new role opens. This system automates that pipeline end-to-end while keeping a human recruiter in control of every decision.
 
-- View all registered candidates
-- Search and filter candidates
-- View detailed candidate profiles
-- Display contact and career information
-- View education and previous companies
-- Show candidate skills as visual skill tags
-- Track candidate recruitment status
+## Architecture
 
-### AI Resume Analysis
+```mermaid
+flowchart TB
+    subgraph Intake["Candidate Intake"]
+        A[Candidate Form] --> B[PDF Text Extraction]
+        B --> C[AI Resume Parser<br/>GPT-4o-mini Agent]
+        C --> D[(Postgres:<br/>candidates)]
+        D --> E[HR Email + WhatsApp<br/>Confirmation]
+    end
 
-- Extract structured information from resumes
-- Generate AI resume summaries
-- Identify technical and soft skills
-- Display candidate experience and background
-- Store parsed resume information in Supabase
+    subgraph JobMgmt["Job Management"]
+        F[HR Job Form] --> G[AI Job Parser<br/>+ Structured Output]
+        G --> H[(Postgres: jobs)]
+    end
 
-### Candidate Evaluation
+    subgraph Scoring["AI Candidate Scoring"]
+        D --> I[AI Scoring Agent<br/>GPT-4o-mini]
+        H --> I
+        I --> J[(Postgres:<br/>applications)]
+        J --> K[HR Score Email]
+    end
 
-- Candidate score
-- ATS score
-- Fit score
-- AI-generated strengths
-- AI-generated concerns
-- Hiring recommendation
-- Suggested interview questions
+    subgraph Status["Status Manager"]
+        L[Webhook: Status Update] --> M[Switch: Stage Router]
+        M --> N[Personalized Email +<br/>WhatsApp per Candidate]
+    end
 
-### Job Management
+    subgraph RAG["Resume Search (RAG)"]
+        D -.new candidate.-> O[OpenAI Embeddings]
+        O --> P[(pgvector:<br/>candidate_resume_embeddings)]
+        Q[Webhook: Search API] --> P
+        P --> R[Ranked JSON Results]
+    end
 
-- Create and manage job openings
-- Store job descriptions
-- Define required skills
-- Track department and location
-- Track salary range
-- Track experience requirements
-- Manage job status
+    subgraph Outreach["AI Outreach"]
+        S[Webhook: Generate Email] --> T[AI Agent + Structured Output<br/>Subject/Body Generation]
+        T --> U[Gmail Send]
+    end
 
-### Application Management
+    subgraph Dashboard["Recruiter Dashboard"]
+        V[Webhook: List Candidates] --> D
+        V --> J
+        V --> H
+    end
+```
 
-- Connect candidates with available jobs
-- Track application stages
-- View candidate-job matching results
-- Track recruitment pipeline progress
+## Key Features
 
-### Recruitment Automation
+| Feature | What it does | AI/Engineering pattern demonstrated |
+|---|---|---|
+| **Resume Parsing** | Extracts structured candidate data (skills, experience, education, CTC) from raw PDF resumes | LLM agent with strict JSON schema enforcement, PDF text extraction pipeline |
+| **AI Candidate Scoring** | Scores candidates 0–100 against job requirements with matched/missing skills and interview questions | Structured output parsing, prompt engineering for consistent JSON, ATS-style evaluation logic |
+| **Semantic Resume Search** | Natural-language search across the candidate database ("DevOps engineer with Kubernetes") | RAG pipeline: OpenAI embeddings → pgvector similarity search → ranked results |
+| **AI Outreach Generator** | Generates personalized candidate outreach emails referencing their actual skills/experience | Structured output agent, hallucination-guarded prompting (never invents candidate facts) |
+| **Status-Driven Notifications** | Routes candidates through Shortlisted → Interview → Selected/Rejected stages with personalized email + WhatsApp at each step | Event-driven workflow branching, per-recipient dynamic templating |
+| **Recruiter Dashboard API** | Queryable JSON endpoint for candidate/application data, filterable by job and stage | RESTful webhook API design over a workflow engine |
 
-- Candidate form submission
-- Resume upload and extraction
-- Candidate data storage
-- HR email notification
-- Candidate WhatsApp confirmation
-- Job creation workflow
+## Tech Stack
+
+- **Orchestration:** n8n (self-hosted workflow automation)
+- **LLMs:** OpenAI GPT-4o-mini / GPT-5-mini via LangChain agent nodes
+- **Vector Search:** pgvector (Postgres extension), OpenAI `text-embedding-3-small`
+- **Database:** Postgres (Supabase)
+- **Integrations:** Gmail API, WhatsApp Business API, Google Drive, Google Calendar
+- **Dashboard:** Streamlit + Supabase client SDK
+
+## API Endpoints
+
+All endpoints require an `x-api-key` header (shared-secret auth).
+
+```bash
+# List/filter candidates
+GET /webhook/recruiter/candidates?status=Shortlisted&job_id=<uuid>
+
+# Semantic resume search
+GET /webhook/{search-path}?q=python+backend+developer&top_k=5
+
+# Generate + send personalized outreach email
+POST /webhook/recruiter/generate-email
+Body: { "candidate_id": "...", "job_id": "...", "purpose": "..." }
+
+# Update application status (triggers stage-specific notifications)
+POST /webhook/{status-path}
+Body: { "application_id": "...", "application_stage": "Shortlisted" }
+```
+
+## Engineering Decisions & Lessons
+
+A few things worth calling out from building this (good interview talking points):
+
+- **Zero-item execution gaps:** n8n silently skips downstream nodes when a node returns zero items — meaning a "no search results" case would return an empty HTTP body instead of a proper `[]`. Fixed by forcing a single always-emitted response item per branch (`{count, results}`) rather than relying on `alwaysOutputData` blindly, which creates its own footguns.
+- **SQL parameter substitution pitfalls:** discovered that empty-string query parameters get silently stripped by n8n's Postgres node before substitution, breaking optional-filter queries. Solved with a non-empty sentinel value (`'__ALL__'`) instead of relying on empty strings.
+- **Security-by-default:** every webhook was originally unauthenticated (fine for local dev, a real data leak in production) — candidate PII and email-sending capability were both publicly reachable. Locked down with a shared-secret guard on all inbound triggers.
+- **Hallucination guardrails:** every AI agent prompt explicitly instructs "never invent information" and the output schema always includes an escape hatch (empty string/0) for missing data, rather than letting the model guess.
+
+## Roadmap
+
+- [ ] Multi-tenant architecture for SaaS productization (per-customer credential/DB isolation)
+- [ ] Wire the Streamlit dashboard's action buttons to the live webhook API (currently draft-only)
+- [ ] Admin UI for job/pipeline configuration instead of editing n8n directly
+- [ ] Interview scheduling calendar sync polish
+- [ ] Usage-based billing hooks for SaaS version
 
 ---
 
-## Technology Stack
-
-### Frontend
-
-- Python
-- Streamlit
-- Custom HTML and CSS
-
-### Backend
-
-- Supabase
-- PostgreSQL
-
-### AI and Automation
-
-- OpenAI
-- n8n
-- AI resume parsing
-- Candidate-job matching
-- Automated candidate scoring
-
-### Integrations
-
-- Gmail
-- WhatsApp
-- Google Drive
-- Supabase API
-
-### Development Tools
-
-- Visual Studio Code
-- Git
-- GitHub
-- OpenAI Codex
-
----
-
-## Project Structure
-
-```text
-ai-recruitment-assistant/
-│
-├── app.py
-├── requirements.txt
-├── README.md
-├── .gitignore
-│
-├── components/
-│   ├── __init__.py
-│   └── metric_cards.py
-│
-├── services/
-│   ├── __init__.py
-│   ├── database.py
-│   └── supabase_service.py
-│
-└── pages/
+*Built by [Your Name] as a demonstration of applied AI engineering: LLM agent orchestration, RAG, structured output parsing, and production workflow automation.*
