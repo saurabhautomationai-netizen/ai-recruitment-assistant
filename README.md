@@ -116,4 +116,4 @@ A few things worth calling out from building this (good interview talking points
 
 ---
 
-*Built by [Your Name] as a demonstration of applied AI engineering: LLM agent orchestration, RAG, structured output parsing, and production workflow automation.*
+*Built by Saurabh Shinde as a demonstration of applied AI engineering: LLM agent orchestration, RAG, structured output parsing, and production workflow automation.*
