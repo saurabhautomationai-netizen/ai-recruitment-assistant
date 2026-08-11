@@ -57,6 +57,12 @@ flowchart TB
     end
 ```
 
+**Full workflow canvas:**
+
+![Workflow canvas part 1](<assets/workflow-canvas_1.png>)
+![Workflow canvas part 2](<assets/workflow-canvas_2.png>)
+![Workflow canvas part 3](<assets/workflow-canvas_3.png>)
+
 ## Key Features
 
 | Feature | What it does | AI/Engineering pattern demonstrated |
@@ -67,6 +73,29 @@ flowchart TB
 | **AI Outreach Generator** | Generates personalized candidate outreach emails referencing their actual skills/experience | Structured output agent, hallucination-guarded prompting (never invents candidate facts) |
 | **Status-Driven Notifications** | Routes candidates through Shortlisted → Interview → Selected/Rejected stages with personalized email + WhatsApp at each step | Event-driven workflow branching, per-recipient dynamic templating |
 | **Recruiter Dashboard API** | Queryable JSON endpoint for candidate/application data, filterable by job and stage | RESTful webhook API design over a workflow engine |
+
+## Screenshots
+
+**Candidate Intake** — resume upload, AI parsing, Drive storage, HR notification
+![Candidate Intake](<assets/Candidate Intake.png>)
+
+**Job Management** — HR job posting form and AI-assisted job data structuring
+![Job Management](<assets/Job Management.png>)
+
+**AI Candidate Scoring** — LLM agent scoring candidates against job requirements
+![AI Candidate Scoring](<assets/AI Candidate Scoring.png>)
+
+**Candidate Status Manager** — event-driven notification routing by application stage
+![Candidate Status Manager](<assets/Candidate Status Manager.png>)
+
+**Resume Search (RAG)** — pgvector semantic search pipeline
+![Resume Search RAG](<assets/Resume Search (RAG).png>)
+
+**Recruiter Dashboard** — queryable candidate/application API
+![Recruiter Dashboard](<assets/Recruiter Dashboard.png>)
+
+**AI Email Generator** — personalized outreach email generation
+![AI Email Generator](<assets/AI Email Generator.png>)
 
 ## Tech Stack
 
@@ -90,12 +119,57 @@ GET /webhook/{search-path}?q=python+backend+developer&top_k=5
 
 # Generate + send personalized outreach email
 POST /webhook/recruiter/generate-email
-Body: { "candidate_id": "...", "job_id": "...", "purpose": "..." }
+Body: { "candidate_id": "...", "job_id": "...", "purpose": "...", "sender_name": "...", "sender_company": "..." }
 
 # Update application status (triggers stage-specific notifications)
 POST /webhook/{status-path}
 Body: { "application_id": "...", "application_stage": "Shortlisted" }
 ```
+
+## Live Output Examples
+
+**Semantic search** — query: `"DevOps Engineer with Kubernetes experience"`
+
+```json
+{
+  "count": 3,
+  "results": [
+    {
+      "full_name": "Arjun Desai",
+      "score": 0.5529,
+      "snippet": "Location: Pune | 5 yrs | Skills: Kubernetes, Analytics, HTML, SQL, MLOps, TypeScript, REST APIs, Power BI"
+    },
+    {
+      "full_name": "Saanvi Patel",
+      "score": 0.5594,
+      "snippet": "Location: Mumbai | 10 yrs | Skills: Kubernetes, AWS, API Testing, Machine Learning, Docker, Statistics, Jira, FastAPI"
+    },
+    {
+      "full_name": "Sneha Malhotra",
+      "score": 0.5618,
+      "snippet": "Location: Delhi | 5 yrs | Skills: Kubernetes, Problem Solving, Jira, CI/CD, Python, ATS, Requirements Gathering, Agile"
+    }
+  ]
+}
+```
+No candidate mentioned "DevOps" by name — the model matched on Kubernetes/infra skill overlap via vector similarity, not keyword search.
+
+**AI-generated outreach email** — sent for candidate Sneha Malhotra, purpose: "Following up on your application":
+
+> **Subject:** Following Up on Your Application, Sneha
+>
+> Hi Sneha,
+>
+> I hope this message finds you well! I wanted to reach out to follow up on your application. With your 5 years of experience in Kubernetes, CI/CD, and Agile practices, I believe you would bring valuable skills to our team. Your proficiency in Python and problem-solving aligns well with our needs.
+>
+> If you have any questions or need further information, please feel free to reach out. We are looking forward to discussing your application further!
+>
+> Best regards,
+> The Recruitment Team
+
+Every specific skill mentioned (Kubernetes, CI/CD, Agile, Python) was pulled from the candidate's actual database record — the agent's system prompt explicitly forbids inventing candidate facts, and this output demonstrates it staying grounded.
+
+**Recruiter Dashboard** — `GET /recruiter/candidates?status=Shortlisted` returns real-time joined data across `candidates`, `applications`, and `jobs` tables (57 candidates in the current dataset, filterable by job/stage).
 
 ## Engineering Decisions & Lessons
 
@@ -105,6 +179,20 @@ A few things worth calling out from building this (good interview talking points
 - **SQL parameter substitution pitfalls:** discovered that empty-string query parameters get silently stripped by n8n's Postgres node before substitution, breaking optional-filter queries. Solved with a non-empty sentinel value (`'__ALL__'`) instead of relying on empty strings.
 - **Security-by-default:** every webhook was originally unauthenticated (fine for local dev, a real data leak in production) — candidate PII and email-sending capability were both publicly reachable. Locked down with a shared-secret guard on all inbound triggers.
 - **Hallucination guardrails:** every AI agent prompt explicitly instructs "never invent information" and the output schema always includes an escape hatch (empty string/0) for missing data, rather than letting the model guess.
+
+## Project Structure
+
+```
+ai-recruitment-assistant/
+├── assets/                              # README screenshots
+├── workflow/
+│   └── ai-recruitment-assistant-workflow.json   # Sanitized n8n workflow export
+├── components/                          # Streamlit dashboard components
+├── services/                            # Supabase/database service layer
+├── app.py                               # Streamlit dashboard entry point
+├── requirements.txt
+└── README.md
+```
 
 ## Roadmap
 
