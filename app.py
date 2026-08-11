@@ -272,7 +272,6 @@ with st.sidebar:
             "Applications",
             "Jobs",
             "Interviews",
-            "AI Recruiter",
             "Analytics",
         ],
         label_visibility="collapsed",
@@ -2482,7 +2481,7 @@ elif selected_page == "Candidates":
 
             st.divider()
 
-                        # ---------------------------------------------
+            # ---------------------------------------------
             # Resume data
             # ---------------------------------------------
             skills_col, education_col = st.columns(2)
