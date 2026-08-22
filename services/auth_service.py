@@ -193,7 +193,12 @@ def render_login() -> None:
                         try:
                             client = get_session_supabase_client()
                             client.auth.reset_password_for_email(reset_email.strip())
-                            st.success(f"Reset link sent to {reset_email.strip()}! Please check your inbox.")
                         except Exception as err:
-                            st.error(f"Could not send reset link: {err}")
+                            err_msg = str(err)
+                            if "rate limit" in err_msg.casefold():
+                                st.warning("⏳ A reset email was already sent recently. Please check your inbox (including Spam/Promotions) or wait a couple of minutes before requesting another link.")
+                            else:
+                                st.error(f"Could not send reset link: {err}")
+                        else:
+                            st.success(f"Reset link sent to {reset_email.strip()}! Please check your inbox.")
             st.markdown("</div>", unsafe_allow_html=True)
