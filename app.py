@@ -3190,7 +3190,7 @@ elif selected_page == "Jobs":
                         "salary_min": new_smin,
                         "salary_max": new_smax,
                         "required_skills": [s.strip() for s in new_skills.split(",") if s.strip()],
-                        "description": new_desc.strip(),
+                        "job_description": new_desc.strip(),
                         "status": "Open",
                     })
                 except Exception as error:

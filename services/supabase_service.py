@@ -178,18 +178,23 @@ def normalize_years_experience(value) -> int | None:
 def update_job(job_id: str, updates: dict) -> None:
     """Edit or transition a job lifecycle without permitting deletion."""
 
+    safe_updates = dict(updates)
+    if "description" in safe_updates and "job_description" not in safe_updates:
+        safe_updates["job_description"] = safe_updates.pop("description")
+    if "min_experience" in safe_updates and "experience_required" not in safe_updates:
+        safe_updates["experience_required"] = safe_updates.pop("min_experience")
+
     _update_record(
         "jobs",
         job_id,
-        updates,
+        safe_updates,
         {
             "title",
             "department",
             "location",
-            "description",
+            "job_description",
             "required_skills",
-            "min_experience",
-            "max_experience",
+            "experience_required",
             "salary_min",
             "salary_max",
             "employment_type",
@@ -202,14 +207,18 @@ def create_job(job_data: dict) -> dict:
     """Insert a new job requisition into Supabase."""
 
     require_permission("job_write")
+    raw_data = dict(job_data)
+    if "description" in raw_data and "job_description" not in raw_data:
+        raw_data["job_description"] = raw_data.pop("description")
+    if "min_experience" in raw_data and "experience_required" not in raw_data:
+        raw_data["experience_required"] = raw_data.pop("min_experience")
+
     allowed_fields = {
         "title",
         "department",
         "location",
-        "description",
+        "job_description",
         "required_skills",
-        "min_experience",
-        "max_experience",
         "experience_required",
         "salary_min",
         "salary_max",
@@ -218,7 +227,7 @@ def create_job(job_data: dict) -> dict:
     }
     safe_data = {
         field: value
-        for field, value in job_data.items()
+        for field, value in raw_data.items()
         if field in allowed_fields and value is not None
     }
     if not safe_data.get("title", "").strip():
