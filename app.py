@@ -3510,7 +3510,13 @@ elif selected_page == "Jobs":
                     sal_max = safe_value(managed_job, "salary_max", "")
                     sal_display = f"₹{sal_min} - ₹{sal_max}" if sal_min and sal_max else ""
                     
-                    theme_map = {"Royal Blue (Corporate)": "blue", "Teal & Gold (Modern)": "teal", "Vibrant Orange (Bold)": "orange"}
+                    theme_map = {
+                        "Royal Blue (Corporate)": "blue",
+                        "Teal & Gold (Modern)": "teal",
+                        "Vibrant Orange (Bold)": "orange",
+                        "Dark Tech (Cyberpunk)": "dark_tech",
+                        "Purple Gradient (Executive)": "purple",
+                    }
                     selected_theme_label = st.session_state.get(f"poster_theme_select_{managed_job_id}", "Royal Blue (Corporate)")
                     chosen_theme = theme_map.get(selected_theme_label, "blue")
                     
@@ -3806,29 +3812,101 @@ elif selected_page == "Jobs":
                             )
 
                     with t6:
-                        st.caption("📸 AI Generated Visual Hiring Poster with Working Scannable QR Code:")
+                        st.markdown("#### 🎨 Live AI Creative Studio & Poster Customizer")
+                        st.caption("Customize any text, badge, or color theme in real-time. The poster and QR code regenerate automatically!")
                         
-                        theme_col1, theme_col2 = st.columns([1, 2])
-                        with theme_col1:
+                        col_editor, col_preview = st.columns([1.2, 1.3])
+                        with col_editor:
+                            st.markdown("##### 🎭 Visual Themes & Styling")
                             selected_theme_label = st.selectbox(
-                                "Poster Color Theme",
+                                "Poster Visual Theme",
                                 options=list(theme_map.keys()),
                                 index=0,
                                 key=f"poster_theme_select_{managed_job_id}",
                             )
                             chosen_theme = theme_map[selected_theme_label]
-                        with theme_col2:
-                            st.info("💡 **Scan with your phone camera**: The QR Code on the bottom-left connects directly to your live candidate intake form!")
 
-                        st.image(poster_bytes, caption=f"Hiring Poster ({selected_theme_label}) - 1080x1080", use_container_width=True)
-                        st.download_button(
-                            "📥 Download High-Res Poster (PNG)",
-                            data=poster_bytes,
-                            file_name=f"Hiring_{job_title.replace(' ', '_')}_{chosen_theme}.png",
-                            mime="image/png",
-                            type="primary",
-                            use_container_width=True,
+                            custom_header_tagline = st.text_input(
+                                "Header Tagline",
+                                value="WE ARE HIRING!",
+                                key=f"poster_hdr_{managed_job_id}",
+                            )
+                            custom_job_title = st.text_input(
+                                "Role Spotlight Title",
+                                value=job_title,
+                                key=f"poster_role_{managed_job_id}",
+                            )
+                            custom_sub_tagline = st.text_input(
+                                "Subtitle Tagline",
+                                value="Join a High-Growth Team • Build Your Career • Fast-Track AI Screening!",
+                                key=f"poster_subtag_{managed_job_id}",
+                            )
+
+                            with st.expander("📍 Highlight Badges (Location & Compensation)", expanded=False):
+                                b1_title = st.text_input("Badge 1 Title", value="LOCATION & TYPE", key=f"b1_t_{managed_job_id}")
+                                b1_val = st.text_input("Badge 1 Value", value=job_loc, key=f"b1_v_{managed_job_id}")
+                                b1_sub = st.text_input("Badge 1 Subtext", value=f"Department: {job_dept}", key=f"b1_s_{managed_job_id}")
+                                
+                                b2_title = st.text_input("Badge 2 Title", value="COMPENSATION", key=f"b2_t_{managed_job_id}")
+                                b2_val = st.text_input("Badge 2 Value", value=sal_display if sal_display else "₹12 - 18 LPA", key=f"b2_v_{managed_job_id}")
+                                b2_sub = st.text_input("Badge 2 Subtext", value="Performance-based growth", key=f"b2_s_{managed_job_id}")
+
+                            with st.expander("💼 Specification Pills (Experience, Availability, Skills)", expanded=False):
+                                p1_title = st.text_input("Pill 1 Title", value="EXPERIENCE", key=f"p1_t_{managed_job_id}")
+                                p1_val = st.text_input("Pill 1 Value", value=exp_text, key=f"p1_v_{managed_job_id}")
+                                
+                                p2_title = st.text_input("Pill 2 Title", value="AVAILABILITY", key=f"p2_t_{managed_job_id}")
+                                p2_val = st.text_input("Pill 2 Value", value="Immediate / 30 Days", key=f"p2_v_{managed_job_id}")
+                                
+                                p3_title = st.text_input("Pill 3 Title", value="KEY TECH STACK", key=f"p3_t_{managed_job_id}")
+                                default_skills_val = ", ".join(skills_list[:3]) if skills_list else "Domain Skills"
+                                p3_val = st.text_input("Pill 3 Value", value=default_skills_val, key=f"p3_v_{managed_job_id}")
+
+                            with st.expander("🌟 Perks, HR Helpline & QR Code Target", expanded=False):
+                                custom_why = st.text_input("Why Join Us Perks", value="• High Career Growth • Meritocracy • Global Impact", key=f"why_join_{managed_job_id}")
+                                custom_hr_contact = st.text_input("HR Helpline Contact", value=f"{recruiter_name} ({recruiter_phone})", key=f"hr_ct_{managed_job_id}")
+                                custom_qr_url = st.text_input("QR Code Application URL", value=app_link, key=f"qr_url_{managed_job_id}")
+
+                        # Generate dynamic poster with all customized fields
+                        live_poster_bytes = ps.generate_job_banner_image(
+                            job_title=custom_job_title,
+                            department=job_dept,
+                            location=b1_val,
+                            experience=p1_val,
+                            skills=skills_list,
+                            salary=b2_val,
+                            app_link=custom_qr_url,
+                            company_name=agency_name,
+                            recruiter_contact=custom_hr_contact,
+                            theme=chosen_theme,
+                            header_tagline=custom_header_tagline,
+                            sub_tagline=custom_sub_tagline,
+                            badge1_title=b1_title,
+                            badge1_value=b1_val,
+                            badge1_sub=b1_sub,
+                            badge2_title=b2_title,
+                            badge2_value=b2_val,
+                            badge2_sub=b2_sub,
+                            pill1_title=p1_title,
+                            pill1_value=p1_val,
+                            pill2_title=p2_title,
+                            pill2_value=p2_val,
+                            pill3_title=p3_title,
+                            pill3_value=p3_val,
+                            why_join_us=custom_why,
                         )
+
+                        with col_preview:
+                            st.image(live_poster_bytes, caption=f"Hiring Poster ({selected_theme_label}) - 1080x1080", use_container_width=True)
+                            st.download_button(
+                                "📥 Download High-Res Custom Poster (PNG)",
+                                data=live_poster_bytes,
+                                file_name=f"Hiring_{custom_job_title.replace(' ', '_')}_{chosen_theme}.png",
+                                mime="image/png",
+                                type="primary",
+                                use_container_width=True,
+                            )
+                            st.info("💡 **Live Scannable QR Code**: Point your phone camera at the QR code to test instant redirection to your candidate intake form!")
 
                 if st.button(
                     "Share & Social posts",
