@@ -7,17 +7,20 @@ import qrcode
 
 def generate_job_banner_image(
     job_title: str,
-    department: str,
-    location: str,
-    experience: str,
-    skills: list[str],
+    department: str = "General",
+    location: str = "Remote",
+    experience: str = "Experienced",
+    skills: list[str] = None,
     salary: str = "",
     app_link: str = "",
     company_name: str = "TALENT ACQUISITION",
     recruiter_contact: str = "",
-    theme: str = "teal",  # 'teal', 'blue', 'orange'
+    theme: str = "teal",
+    **kwargs,
 ) -> bytes:
     """Create a 1080x1080 modern hiring graphic matching professional agency templates."""
+    if skills is None:
+        skills = []
 
     width, height = 1080, 1080
 

@@ -3684,11 +3684,13 @@ elif selected_page == "Jobs":
                             st.info("💡 **Scan with your phone camera**: The QR Code on the bottom-left connects directly to your live candidate intake form!")
 
                         try:
-                            from services.poster_service import generate_job_banner_image
+                            import importlib
+                            import services.poster_service as ps
+                            importlib.reload(ps)
                             sal_min = safe_value(managed_job, "salary_min", "")
                             sal_max = safe_value(managed_job, "salary_max", "")
                             sal_display = f"₹{sal_min} - ₹{sal_max}" if sal_min and sal_max else ""
-                            poster_bytes = generate_job_banner_image(
+                            poster_bytes = ps.generate_job_banner_image(
                                 job_title=job_title,
                                 department=job_dept,
                                 location=job_loc,
