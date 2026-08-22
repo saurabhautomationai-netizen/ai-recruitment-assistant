@@ -3534,12 +3534,31 @@ elif selected_page == "Jobs":
                             key=f"edit_wa_direct_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.link_button(
-                            "💬 Send via WhatsApp Web / App",
-                            f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
-                            type="primary",
-                            use_container_width=True,
-                        )
+                        c_wa1, c_wa2 = st.columns([1, 1])
+                        with c_wa1:
+                            st.link_button(
+                                "💬 Open WhatsApp Web / App",
+                                f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
+                                use_container_width=True,
+                            )
+                        with c_wa2:
+                            if st.button("🚀 1-Click Auto-Broadcast (n8n)", key=f"auto_wa_{managed_job_id}", type="primary", use_container_width=True):
+                                with st.spinner("Dispatching WhatsApp broadcast via n8n automation..."):
+                                    from services.social_service import auto_publish_social_post
+                                    res = auto_publish_social_post(
+                                        channel="whatsapp",
+                                        job_id=managed_job_id,
+                                        job_title=job_title,
+                                        caption=edited_wa_direct,
+                                        app_link=app_link,
+                                        agency_name=agency_name,
+                                        recruiter_name=recruiter_name,
+                                        recruiter_contact=recruiter_phone,
+                                    )
+                                    if res.get("success"):
+                                        st.success(f"✅ {res.get('message')}")
+                                    else:
+                                        st.error(f"❌ {res.get('message')}")
                     with t3:
                         st.caption("Review or copy LinkedIn post:")
                         edited_li_post = st.text_area(
@@ -3549,12 +3568,31 @@ elif selected_page == "Jobs":
                             key=f"edit_li_post_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.link_button(
-                            "💼 Open LinkedIn to Share",
-                            f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
-                            type="primary",
-                            use_container_width=True,
-                        )
+                        c_li1, c_li2 = st.columns([1, 1])
+                        with c_li1:
+                            st.link_button(
+                                "💼 Open LinkedIn Web Share",
+                                f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
+                                use_container_width=True,
+                            )
+                        with c_li2:
+                            if st.button("🚀 1-Click Auto-Publish to LinkedIn", key=f"auto_li_{managed_job_id}", type="primary", use_container_width=True):
+                                with st.spinner("Publishing post + poster to LinkedIn via n8n agent..."):
+                                    from services.social_service import auto_publish_social_post
+                                    res = auto_publish_social_post(
+                                        channel="linkedin",
+                                        job_id=managed_job_id,
+                                        job_title=job_title,
+                                        caption=edited_li_post,
+                                        app_link=app_link,
+                                        agency_name=agency_name,
+                                        recruiter_name=recruiter_name,
+                                        recruiter_contact=recruiter_phone,
+                                    )
+                                    if res.get("success"):
+                                        st.success(f"✅ {res.get('message')}")
+                                    else:
+                                        st.error(f"❌ {res.get('message')}")
                     with t4:
                         st.markdown("##### 👥 Select Candidate(s) from Database")
                         
@@ -3662,12 +3700,31 @@ elif selected_page == "Jobs":
                             key=f"edit_insta_copy_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.link_button(
-                            "📸 Open Instagram",
-                            "https://www.instagram.com/",
-                            type="primary",
-                            use_container_width=True,
-                        )
+                        c_ig1, c_ig2 = st.columns([1, 1])
+                        with c_ig1:
+                            st.link_button(
+                                "📸 Open Instagram Web",
+                                "https://www.instagram.com/",
+                                use_container_width=True,
+                            )
+                        with c_ig2:
+                            if st.button("🚀 1-Click Auto-Publish (Meta)", key=f"auto_ig_{managed_job_id}", type="primary", use_container_width=True):
+                                with st.spinner("Publishing post + poster to Instagram via Meta Graph API..."):
+                                    from services.social_service import auto_publish_social_post
+                                    res = auto_publish_social_post(
+                                        channel="instagram",
+                                        job_id=managed_job_id,
+                                        job_title=job_title,
+                                        caption=edited_insta_copy,
+                                        app_link=app_link,
+                                        agency_name=agency_name,
+                                        recruiter_name=recruiter_name,
+                                        recruiter_contact=recruiter_phone,
+                                    )
+                                    if res.get("success"):
+                                        st.success(f"✅ {res.get('message')}")
+                                    else:
+                                        st.error(f"❌ {res.get('message')}")
                     with t6:
                         st.caption("📸 AI Generated Visual Hiring Poster with Working Scannable QR Code:")
                         
