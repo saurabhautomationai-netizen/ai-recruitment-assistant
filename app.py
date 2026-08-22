@@ -3511,20 +3511,91 @@ elif selected_page == "Jobs":
                             use_container_width=True,
                         )
                     with t4:
-                        st.caption("Copy into your email outreach / candidate newsletter:")
-                        st.code(email_copy, language=None)
+                        st.markdown("##### 👥 Select Candidate(s) from Database")
+                        
+                        cand_df = get_candidates()
+                        cand_options = {}
+                        cand_name_map = {}
+                        if not cand_df.empty and "email" in cand_df.columns:
+                            for _, row in cand_df.iterrows():
+                                c_email = str(row.get("email", "")).strip()
+                                c_name = str(row.get("full_name", "Candidate")).strip()
+                                if c_email and c_email.lower() != "none":
+                                    label = f"{c_name} — {c_email}"
+                                    cand_options[label] = c_email
+                                    cand_name_map[label] = c_name
+
+                        selected_cand_labels = st.multiselect(
+                            "Choose candidate(s) to email this job opening:",
+                            options=list(cand_options.keys()),
+                            default=list(cand_options.keys())[:1] if cand_options else [],
+                            placeholder="Search by candidate name or email...",
+                            key=f"share_email_recipients_{managed_job_id}",
+                        )
+
+                        if len(selected_cand_labels) == 1:
+                            target_label = selected_cand_labels[0]
+                            recipient_email = cand_options[target_label]
+                            cand_first_name = cand_name_map[target_label].split()[0]
+                            greeting = f"Hi {cand_first_name},"
+                            mail_to_param = recipient_email
+                            mail_bcc_param = ""
+                            st.caption(f"🎯 Personalizing email for **{cand_name_map[target_label]}** (`{recipient_email}`)")
+                        elif len(selected_cand_labels) > 1:
+                            target_emails = [cand_options[lbl] for lbl in selected_cand_labels]
+                            recipient_email = ""
+                            greeting = "Hi Candidate,"
+                            mail_to_param = ""
+                            mail_bcc_param = ",".join(target_emails)
+                            st.caption(f"👥 Bulk emailing **{len(selected_cand_labels)} candidates** via BCC privacy guard.")
+                        else:
+                            greeting = "Hi [Candidate Name],"
+                            mail_to_param = ""
+                            mail_bcc_param = ""
+                            st.caption("ℹ️ No specific candidate selected. Showing generic template:")
+
+                        personalized_email_copy = (
+                            f"Subject: We're Hiring: {job_title} Opportunity\n\n"
+                            f"{greeting}\n\n"
+                            f"We came across your background and wanted to reach out regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
+                            f"Role Details:\n"
+                            f"• Position: {job_title}\n"
+                            f"• Location: {job_loc}\n"
+                            f"• Experience: {exp_text}\n"
+                            f"• Key Skills: {skills_str}\n\n"
+                            f"You can review the full requisition and submit your resume directly here:\n"
+                            f"👉 {app_link}\n\n"
+                            f"Best regards,\n"
+                            f"Talent Acquisition Team"
+                        )
+
+                        st.code(personalized_email_copy, language=None)
+
+                        encoded_pers_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
+                        encoded_pers_body = urllib.parse.quote(personalized_email_copy)
+                        
+                        gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&su={encoded_pers_subj}&body={encoded_pers_body}"
+                        if mail_to_param:
+                            gmail_url += f"&to={urllib.parse.quote(mail_to_param)}"
+                        if mail_bcc_param:
+                            gmail_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
+
+                        mailto_url = f"mailto:{mail_to_param}?subject={encoded_pers_subj}&body={encoded_pers_body}"
+                        if mail_bcc_param:
+                            mailto_url += f"&bcc={mail_bcc_param}"
+
                         c_mail1, c_mail2 = st.columns(2)
                         with c_mail1:
                             st.link_button(
                                 "📧 Open in Gmail (Web)",
-                                f"https://mail.google.com/mail/?view=cm&fs=1&su={encoded_email_subj}&body={encoded_email_body}",
+                                gmail_url,
                                 type="primary",
                                 use_container_width=True,
                             )
                         with c_mail2:
                             st.link_button(
                                 "✉️ Default Mail Client (Outlook/Mail)",
-                                f"mailto:?subject={encoded_email_subj}&body={encoded_email_body}",
+                                mailto_url,
                                 use_container_width=True,
                             )
                     with t5:
