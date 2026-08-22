@@ -171,3 +171,29 @@ def render_login() -> None:
                     st.error("Sign in failed. Check your email and password.")
                 else:
                     st.rerun()
+
+            st.markdown("<div style='text-align: center; margin-top: 8px;'>", unsafe_allow_html=True)
+            with st.popover("Forgot password?", icon=":material/lock_reset:", use_container_width=True):
+                st.markdown("##### Reset your password")
+                st.caption("Enter your registered email address to receive a secure reset link.")
+                reset_email = st.text_input(
+                    "Email address",
+                    placeholder="recruiter@example.com",
+                    key="forgot_pwd_email_input",
+                )
+                if st.button(
+                    "Send password reset link",
+                    type="primary",
+                    key="send_pwd_reset_btn",
+                    use_container_width=True,
+                ):
+                    if not reset_email.strip():
+                        st.error("Please enter your email.")
+                    else:
+                        try:
+                            client = get_session_supabase_client()
+                            client.auth.reset_password_for_email(reset_email.strip())
+                            st.success(f"Reset link sent to {reset_email.strip()}! Please check your inbox.")
+                        except Exception as err:
+                            st.error(f"Could not send reset link: {err}")
+            st.markdown("</div>", unsafe_allow_html=True)

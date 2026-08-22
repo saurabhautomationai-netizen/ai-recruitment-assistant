@@ -3513,16 +3513,30 @@ elif selected_page == "Jobs":
                     with t4:
                         st.caption("Copy into your email outreach / candidate newsletter:")
                         st.code(email_copy, language=None)
-                        st.link_button(
-                            "📧 Open in Email Client (Mailto)",
-                            f"mailto:?subject={encoded_email_subj}&body={encoded_email_body}",
-                            type="primary",
-                            use_container_width=True,
-                        )
+                        c_mail1, c_mail2 = st.columns(2)
+                        with c_mail1:
+                            st.link_button(
+                                "📧 Open in Gmail (Web)",
+                                f"https://mail.google.com/mail/?view=cm&fs=1&su={encoded_email_subj}&body={encoded_email_body}",
+                                type="primary",
+                                use_container_width=True,
+                            )
+                        with c_mail2:
+                            st.link_button(
+                                "✉️ Default Mail Client (Outlook/Mail)",
+                                f"mailto:?subject={encoded_email_subj}&body={encoded_email_body}",
+                                use_container_width=True,
+                            )
                     with t5:
                         st.caption("Instagram Story caption / Text banner layout:")
                         st.code(insta_copy, language=None)
-                        st.info("💡 **Instagram Tip**: Copy the text above, open Instagram Story on your phone, paste the text onto your story photo, and add a **Link Sticker** with your application link!")
+                        st.link_button(
+                            "📸 Open Instagram",
+                            "https://www.instagram.com/",
+                            type="primary",
+                            use_container_width=True,
+                        )
+                        st.info("💡 **How to post on Instagram**:\n1. Click **Copy** on the text above.\n2. Open Instagram on your phone and create a **Story**.\n3. Paste the text, tap the **Sticker icon 🔗** → select **LINK** → paste your application link!")
 
                 if st.button(
                     "Share & Social posts",
