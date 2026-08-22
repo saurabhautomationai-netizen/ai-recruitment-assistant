@@ -198,6 +198,40 @@ def update_job(job_id: str, updates: dict) -> None:
     )
 
 
+def create_job(job_data: dict) -> dict:
+    """Insert a new job requisition into Supabase."""
+
+    require_permission("job_write")
+    allowed_fields = {
+        "title",
+        "department",
+        "location",
+        "description",
+        "required_skills",
+        "min_experience",
+        "max_experience",
+        "experience_required",
+        "salary_min",
+        "salary_max",
+        "employment_type",
+        "status",
+    }
+    safe_data = {
+        field: value
+        for field, value in job_data.items()
+        if field in allowed_fields and value is not None
+    }
+    if not safe_data.get("title", "").strip():
+        raise ValueError("Job title is required.")
+    
+    safe_data.setdefault("status", "Open")
+    client = get_supabase_client()
+    response = client.table("jobs").insert(safe_data).execute()
+    if not response.data:
+        raise RuntimeError("Could not create the job.")
+    return response.data[0]
+
+
 @st.cache_data(ttl=60)
 def get_interviews() -> pd.DataFrame:
     """Load scheduled interview records."""

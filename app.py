@@ -19,6 +19,7 @@ from components.semantic_candidate_search import render_semantic_candidate_searc
 from components.bulk_candidate_management import render_bulk_candidate_management
 from components.calendar_integration import render_calendar_integration
 from services.supabase_service import (
+    create_job,
     create_interview,
     build_interview_reschedule_updates,
     create_recruiter_note,
@@ -3137,11 +3138,78 @@ elif selected_page == "Jobs":
                     title_rows.iloc[0].get("title", bookmarked_job_id)
                     if not title_rows.empty else bookmarked_job_id
                 )
-        show_archived_jobs = st.toggle(
-            "Show archived jobs",
-            value=False,
-            key="show_archived_jobs",
-        )
+        @st.dialog("➕ Post a New Job", width="large")
+        def create_new_job_dialog() -> None:
+            with st.form("create_new_job_form"):
+                new_title = st.text_input("Job Title *", placeholder="e.g. Python Backend Developer")
+                c_dept, c_loc = st.columns(2)
+                new_dept = c_dept.text_input("Department *", placeholder="e.g. Engineering")
+                new_loc = c_loc.text_input("Location *", placeholder="e.g. Pune / Remote")
+                
+                c_type, c_exp = st.columns(2)
+                new_emp_type = c_type.selectbox(
+                    "Employment Type",
+                    ["Full Time", "Part Time", "Contract", "Internship", "Remote"]
+                )
+                new_exp = c_exp.number_input("Experience Required (Years)", min_value=0, max_value=30, value=2, step=1)
+                
+                c_smin, c_smax = st.columns(2)
+                new_smin = c_smin.number_input("Minimum Salary (INR)", min_value=0, value=600000, step=50000)
+                new_smax = c_smax.number_input("Maximum Salary (INR)", min_value=0, value=1500000, step=50000)
+                
+                new_skills = st.text_input(
+                    "Required Skills (comma separated)",
+                    placeholder="e.g. Python, FastAPI, PostgreSQL, Docker, Redis"
+                )
+                new_desc = st.text_area(
+                    "Job Description",
+                    placeholder="Provide responsibilities, requirements, and benefits..."
+                )
+                
+                submitted = st.form_submit_button(
+                    "Publish Job",
+                    type="primary",
+                    width="stretch",
+                    disabled=not can_manage_jobs,
+                )
+            if submitted:
+                if not new_title.strip():
+                    st.error("Job title is required.")
+                    return
+                if not new_dept.strip():
+                    st.error("Department is required.")
+                    return
+                try:
+                    create_job({
+                        "title": new_title.strip(),
+                        "department": new_dept.strip(),
+                        "location": new_loc.strip() or "Remote",
+                        "employment_type": new_emp_type,
+                        "experience_required": new_exp,
+                        "min_experience": new_exp,
+                        "salary_min": new_smin,
+                        "salary_max": new_smax,
+                        "required_skills": [s.strip() for s in new_skills.split(",") if s.strip()],
+                        "description": new_desc.strip(),
+                        "status": "Open",
+                    })
+                except Exception as error:
+                    st.error(f"Could not publish job: {error}")
+                else:
+                    get_jobs.clear()
+                    st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published successfully!"
+                    st.rerun()
+
+        col_left, col_right = st.columns([1, 1])
+        with col_left:
+            if st.button("➕ Post new job", type="primary", key="post_new_job_btn", disabled=not can_manage_jobs):
+                create_new_job_dialog()
+        with col_right:
+            show_archived_jobs = st.toggle(
+                "Show archived jobs",
+                value=False,
+                key="show_archived_jobs",
+            )
         jobs_view = raw_jobs.copy()
         if "status" in jobs_view.columns and not show_archived_jobs:
             jobs_view = jobs_view[
@@ -3301,17 +3369,33 @@ elif selected_page == "Jobs":
                     job_dept = safe_value(managed_job, "department", "General")
                     job_loc = safe_value(managed_job, "location", "Remote / Hybrid")
                     job_exp = safe_value(managed_job, "experience_required", "")
-                    exp_text = f"{job_exp} years" if job_exp and str(job_exp).strip() not in {"None", ""} else "Experienced"
+                    try:
+                        exp_num = int(float(job_exp))
+                        exp_text = f"{exp_num} years"
+                    except Exception:
+                        exp_text = f"{job_exp} years" if job_exp and str(job_exp).strip() not in {"None", ""} else "Experienced"
                     
                     skills_raw = safe_value(managed_job, "required_skills", "")
-                    if isinstance(skills_raw, (list, tuple)):
+                    if isinstance(skills_raw, dict):
+                        skills_list = skills_raw.get("skills", [])
+                    elif isinstance(skills_raw, (list, tuple)):
                         skills_list = [str(x).strip() for x in skills_raw if str(x).strip()]
                     elif isinstance(skills_raw, str) and skills_raw.strip():
-                        clean_str = skills_raw.strip("[]'\" ")
-                        skills_list = [s.strip(" '\"") for s in clean_str.split(",") if s.strip(" '\"")]
+                        try:
+                            import ast
+                            parsed = ast.literal_eval(skills_raw)
+                            if isinstance(parsed, dict):
+                                skills_list = parsed.get("skills", [])
+                            elif isinstance(parsed, (list, tuple)):
+                                skills_list = list(parsed)
+                            else:
+                                skills_list = [str(parsed)]
+                        except Exception:
+                            clean_str = skills_raw.strip("[]'\" ")
+                            skills_list = [s.strip(" '\"") for s in clean_str.split(",") if s.strip(" '\"")]
                     else:
                         skills_list = []
-                    skills_str = ", ".join(skills_list[:5]) if skills_list else "Relevant domain expertise"
+                    skills_str = ", ".join([str(s) for s in skills_list[:5]]) if skills_list else "Relevant domain expertise"
                     
                     app_link = st.text_input(
                         "Candidate Application Link (included in all 5 formats below)",
