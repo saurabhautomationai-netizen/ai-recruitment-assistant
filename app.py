@@ -3301,12 +3301,24 @@ elif selected_page == "Jobs":
                     job_dept = safe_value(managed_job, "department", "General")
                     job_loc = safe_value(managed_job, "location", "Remote / Hybrid")
                     job_exp = safe_value(managed_job, "experience_required", "")
-                    exp_text = f"{job_exp} years" if job_exp and str(job_exp).strip() != "None" else "Experienced"
+                    exp_text = f"{job_exp} years" if job_exp and str(job_exp).strip() not in {"None", ""} else "Experienced"
+                    
                     skills_raw = safe_value(managed_job, "required_skills", "")
-                    skills_list = _items(skills_raw)
+                    if isinstance(skills_raw, (list, tuple)):
+                        skills_list = [str(x).strip() for x in skills_raw if str(x).strip()]
+                    elif isinstance(skills_raw, str) and skills_raw.strip():
+                        clean_str = skills_raw.strip("[]'\" ")
+                        skills_list = [s.strip(" '\"") for s in clean_str.split(",") if s.strip(" '\"")]
+                    else:
+                        skills_list = []
                     skills_str = ", ".join(skills_list[:5]) if skills_list else "Relevant domain expertise"
                     
-                    app_link = f"https://your-recruitment-portal.com/apply?job={managed_job_id}"
+                    app_link = st.text_input(
+                        "Candidate Application Link (included in all 5 formats below)",
+                        value="https://saurabhautomation7596.app.n8n.cloud/form/b34bc21c-4b57-4147-9759-994fa51752b0",
+                        key=f"share_app_link_{managed_job_id}",
+                        help="Enter your live n8n candidate intake form link or your company careers link."
+                    )
                     
                     wa_status = (
                         f"🚀 *WE'RE HIRING: {job_title}!*\n"
@@ -3369,7 +3381,8 @@ elif selected_page == "Jobs":
                         f"✨ Role: {job_title}\n"
                         f"📍 {job_loc} · {exp_text}\n"
                         f"⚡ Skills: {skills_str}\n\n"
-                        f"🔗 Tap the link sticker to apply in 60s!"
+                        f"🔗 Tap the link sticker to apply in 60s!\n"
+                        f"{app_link}"
                     )
                     
                     t1, t2, t3, t4, t5 = st.tabs([
