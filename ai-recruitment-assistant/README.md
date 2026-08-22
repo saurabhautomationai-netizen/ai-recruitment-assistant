@@ -106,16 +106,6 @@ flowchart TB
 - **Integrations:** Gmail API, WhatsApp Business API, Google Drive, Google Calendar
 - **Dashboard:** Streamlit + Supabase client SDK
 
-## Setup
-
-```bash
-git clone <repo-url>
-cd ai-recruitment-assistant
-pip install -r requirements.txt
-cp .env.example .env   # fill in SUPABASE_URL and SUPABASE_KEY
-streamlit run app.py
-```
-
 ## API Endpoints
 
 All endpoints require an `x-api-key` header (shared-secret auth).

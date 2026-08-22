@@ -10,8 +10,6 @@ venv/
 # Python cache
 __pycache__/
 *.py[cod]
-*.pycc
-.pytest_cache/
 
 # Logs
 *.log

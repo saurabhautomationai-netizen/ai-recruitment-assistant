@@ -1,16 +1,4 @@
-"""Reusable candidate communication templates and confirmed-send UI."""
-
-from __future__ import annotations
-
-from typing import Any
-
-import streamlit as st
-from services.auth_service import has_permission
-
-from services.communication_service import (
-    communication_webhook_is_configured,
-    send_candidate_message,
-)
+"""Reusable candidate communication draft templates."""
 
 
 MESSAGE_TYPES = [
@@ -18,7 +6,6 @@ MESSAGE_TYPES = [
     "Interview Invite",
     "Selected",
     "Rejected",
-    "Offer Letter",
 ]
 
 
@@ -107,21 +94,6 @@ def build_candidate_messages(
             "progressing with your application at this time. We appreciate "
             "your time and wish you success."
         )
-    elif message_type == "Offer Letter":
-        subject = f"Offer letter – {job}"
-        email_body = (
-            f"Dear {name},\n\n"
-            f"We are pleased to extend an offer for the {job} position. "
-            "Please review the formal offer details shared by our recruitment "
-            "team and contact us with any questions.\n\n"
-            "We look forward to hearing from you.\n\n"
-            "Best regards,\nRecruitment Team"
-        )
-        whatsapp_body = (
-            f"Hello {name}, we are pleased to extend an offer for the {job} "
-            "position. Please review the formal offer details shared by our "
-            "recruitment team and contact us with any questions."
-        )
     else:
         subject = f"Application shortlisted – {job}"
         email_body = (
@@ -143,90 +115,3 @@ def build_candidate_messages(
         "email_body": email_body,
         "whatsapp_body": whatsapp_body,
     }
-
-
-def _append_history(entry: dict[str, Any]) -> None:
-    history = st.session_state.setdefault("candidate_message_history", [])
-    history.append(entry)
-    del history[:-20]
-
-
-def render_confirmed_send_button(
-    *,
-    channel: str,
-    recipient: str,
-    message_type: str,
-    message: str,
-    candidate_name: str,
-    job_title: str,
-    application_stage: str,
-    application_id: str,
-    subject: str = "",
-    key: str,
-) -> None:
-    """Require a visible preview and dialog confirmation before delivery."""
-
-    configured = communication_webhook_is_configured()
-    label = "Send email" if channel == "email" else "Send WhatsApp"
-
-    @st.dialog(f"Confirm {channel} message", icon=":material/send:")
-    def confirm_send() -> None:
-        st.warning("This action will send the message through the configured webhook.")
-        st.write(f"**Recipient:** {recipient}")
-        st.write(f"**Message type:** {message_type}")
-        if channel == "email":
-            st.write(f"**Subject:** {subject}")
-        with st.container(border=True):
-            st.text(message)
-        if st.button(
-            "Confirm and send",
-            type="primary",
-            icon=":material/send:",
-            key=f"confirm_{key}",
-            width="stretch",
-        ):
-            try:
-                with st.spinner("Sending message…"):
-                    result = send_candidate_message(
-                        channel=channel,
-                        recipient=recipient,
-                        message_type=message_type,
-                        message=message,
-                        candidate_name=candidate_name,
-                        job_title=job_title,
-                        application_stage=application_stage,
-                        application_id=application_id,
-                        subject=subject,
-                    )
-            except Exception as error:
-                st.error(f"Message could not be sent: {error}")
-            else:
-                _append_history(
-                    {
-                        "channel": channel,
-                        "recipient": recipient,
-                        "message_type": message_type,
-                        **result,
-                    }
-                )
-                st.session_state["candidate_communication_success"] = (
-                    f"{channel.title()} message sent successfully."
-                )
-                st.rerun()
-
-    if st.button(
-        label,
-        icon=":material/send:",
-        disabled=(
-            not recipient
-            or not configured
-            or not has_permission("communicate")
-        ),
-        help=(
-            None
-            if configured
-            else "Configure a communication webhook environment variable to enable sending."
-        ),
-        key=key,
-    ):
-        confirm_send()

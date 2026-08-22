@@ -1,0 +1,2930 @@
+{
+  "name": "AI Recruitment Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "2aeb7a8b-5bee-48d6-80e6-e14d6ea41678",
+      "name": "OpenAI Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "HR Candidate Application",
+        "formDescription": "Please fill in your details and upload your resume",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "fieldName": "fullName",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email Address",
+              "fieldType": "email",
+              "fieldName": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldName": "phone",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Upload Resume (PDF)",
+              "fieldType": "file",
+              "fieldName": "resume",
+              "multipleFiles": false,
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Thank you! Your application has been received and is being processed."
+            }
+          }
+        }
+      },
+      "id": "39ce9d08-32a6-48ca-9f5a-6a11c79eec0c",
+      "name": "Candidate Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -464,
+        176
+      ],
+      "webhookId": "1020d780-7adf-4879-a5bb-790f956478ca"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "resume",
+        "options": {
+          "joinPages": true
+        }
+      },
+      "id": "592d4d1d-c5ac-4b05-ab45-e1efd5797108",
+      "name": "PDF Text Extractor",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "candidateName",
+              "value": "={{ $(\"Candidate Form\").item.json.fullName }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "email",
+              "value": "={{ $(\"Candidate Form\").item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "phone",
+              "value": "={{ $(\"Candidate Form\").item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "submittedAt",
+              "value": "={{ $(\"Candidate Form\").item.json.submittedAt }}",
+              "type": "string"
+            },
+            {
+              "id": "16dccec7-b4d4-4c81-a919-ed325656bd45",
+              "name": "resumeurl",
+              "value": "={{ $(\"Upload Resume\").item.json.webViewLink }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "yearsOfExperience",
+              "value": "={{ $json.yearsOfExperience }}",
+              "type": "number"
+            },
+            {
+              "id": "7",
+              "name": "skills",
+              "value": "={{ $json.skills }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "education",
+              "value": "={{ $json.education }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "extractedName",
+              "value": "={{ $json.fullName }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "previousCompanies",
+              "value": "={{ $json.previousCompanies }}",
+              "type": "string"
+            },
+            {
+              "id": "10",
+              "name": "summary",
+              "value": "={{ $json.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "f9ae9e50-8adf-43a6-bddd-917ee323a630",
+              "name": "location",
+              "value": "={{ $json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "ed3f315c-cbc0-4385-83d7-b8f75073775d",
+              "name": "currentCompany",
+              "value": "={{ .currentCompany }}",
+              "type": "string"
+            },
+            {
+              "id": "2c4c592b-87f5-48e7-ba90-67fc647a6961",
+              "name": "softSkills",
+              "value": "={{ $json.softSkills }}",
+              "type": "string"
+            },
+            {
+              "id": "6d705841-8802-4e57-aac4-38423612cee5",
+              "name": "languages",
+              "value": "={{ $json.languages }}",
+              "type": "string"
+            },
+            {
+              "id": "a31bcf31-5c3d-4c6e-8820-45d0abea14b5",
+              "name": "certifications",
+              "value": "={{ $json.certifications }}",
+              "type": "string"
+            },
+            {
+              "id": "38908b38-8e2e-4304-b28a-8cbf52a0c560",
+              "name": "projects",
+              "value": "={{ $json.projects }}",
+              "type": "string"
+            },
+            {
+              "id": "d6f22ceb-dacb-403e-8855-401f6f5a4fea",
+              "name": "linkedin",
+              "value": "={{ $json.linkedin }}",
+              "type": "string"
+            },
+            {
+              "id": "9f64883f-0f87-4bee-8819-3a5df739c465",
+              "name": "github",
+              "value": "={{ $json.github }}",
+              "type": "string"
+            },
+            {
+              "id": "709a5823-6f94-4cc8-a1f8-737371f47a95",
+              "name": "portfolio",
+              "value": "={{ $json.portfolio }}",
+              "type": "string"
+            },
+            {
+              "id": "e3e48749-0958-4f36-ad88-2013d0321acb",
+              "name": "candidateLevel",
+              "value": "={{ $json.candidateLevel }}",
+              "type": "string"
+            },
+            {
+              "id": "01771dc8-d969-4253-9a9c-351fe7c5e8ad",
+              "name": "jobRole",
+              "value": "={{ $json.jobRole }}",
+              "type": "string"
+            },
+            {
+              "id": "2d828dd0-4f7e-424c-b673-e3e3c24ef01a",
+              "name": "currentCTC",
+              "value": "={{ $json.currentCTC }}",
+              "type": "string"
+            },
+            {
+              "id": "76ae7400-a7a4-42b6-b2c5-0b28da7f0e97",
+              "name": "expectedCTC",
+              "value": "={{ $json.expectedCTC }}",
+              "type": "string"
+            },
+            {
+              "id": "df1661f4-ccaa-450f-a97a-1015c74a957b",
+              "name": "noticePeriod",
+              "value": "={{ $json.noticePeriod }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6951616e-5434-42e2-8e6e-1f5102c98f6d",
+      "name": "Candidate Data Mapper",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "candidates",
+          "mode": "list",
+          "cachedResultName": "candidates"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "years_experience": "={{ $json.yearsOfExperience }}",
+            "current_ctc": "={{ $json.currentCTC }}",
+            "expected_ctc": "={{ $json.expectedCTC }}",
+            "full_name": "={{ $json.candidateName }}",
+            "phone": "={{ $json.phone }}",
+            "resume_url": "={{ $json.resumeurl }}",
+            "skills": "={{ $json.skills }}",
+            "education": "={{ $json.education }}",
+            "previous_companies": "={{ $json.previousCompanies }}",
+            "summary": "={{ $json.summary }}",
+            "status": "=Pending Review",
+            "created_at": "={{ $now }}",
+            "location": "={{ $json.location }}",
+            "current_company": "={{ $json.currentCompany }}",
+            "notice_period": "={{ $json.noticePeriod }}",
+            "linkedin_url": "={{ $json.linkedin }}",
+            "github_url": "={{ $json.github }}",
+            "portfolio_url": "={{ $json.portfolio }}",
+            "resume_drive_link": "={{ $json.resumeurl }}",
+            "last_updated": "={{ $now }}",
+            "soft_skills": "={{ $json.softSkills }}",
+            "languages": "={{ $json.languages }}",
+            "certifications": "={{ $json.certifications }}",
+            "projects": "={{ $json.projects }}",
+            "linkedin": "={{ $json.linkedin }}",
+            "github": "={{ $json.github }}",
+            "portfolio": "={{ $json.portfolio }}",
+            "candidate_level": "={{ $json.candidateLevel }}",
+            "job_role": "={{ $json.jobRole }}",
+            "email": "={{ $json.email }}"
+          },
+          "matchingColumns": [
+            "email"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1328,
+        -128
+      ],
+      "id": "7b7b7c12-38e3-43d2-b9d5-63d9b6240841",
+      "name": "Save Candidate (PostgreSQL)"
+    },
+    {
+      "parameters": {
+        "sendTo": "hr@yourcompany.com",
+        "subject": "=New Candidate Application - {{ $(\"Candidate Data Mapper\").item.json.candidateName }}",
+        "message": "=<h2> New Candidate Application Received</h2>  <p>A new candidate has applied.</p>  <hr>  <p><strong>Name:</strong> {{ $(\"Candidate Data Mapper\").item.json.candidateName }}</p>  <p><strong>Email:</strong> {{ $(\"Candidate Data Mapper\").item.json.email }}</p>  <p><strong>Phone:</strong> {{ $(\"Candidate Data Mapper\").item.json.phone }}</p>  <p><strong>Years of Experience:</strong> {{ $(\"Candidate Data Mapper\").item.json.yearsOfExperience }}</p>  <p><strong>Skills:</strong> {{ $(\"Candidate Data Mapper\").item.json.skills }}</p>  <p><strong>Education:</strong> {{ $(\"Candidate Data Mapper\").item.json.education }}</p>  <p><strong>Previous Companies:</strong> {{ $(\"Candidate Data Mapper\").item.json.previousCompanies }}</p>  <p><strong>AI Summary:</strong></p>  <p>{{ $(\"Candidate Data Mapper\").item.json.summary }}</p>  <hr>  <p> <strong>Application Date:</strong> {{ $now.toFormat(\"dd LLLL yyyy, HH:mm\") }} </p>  <p>Please review the candidate in the Recruitment Dashboard.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1632,
+        -240
+      ],
+      "id": "79f09d6c-6990-4269-b177-0543ed098ae8",
+      "name": "HR Notification",
+      "webhookId": "cb0d2458-7f6f-42be-8b27-d52938928d89"
+    },
+    {
+      "parameters": {
+        "content": "Candidate Intake",
+        "height": 752
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -832,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "06668b78-279a-4174-8c05-7012d2fa464d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Job Management\n",
+        "height": 784,
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        736
+      ],
+      "typeVersion": 1,
+      "id": "f2389d70-2c69-433e-ac7c-f0a40d0a8203",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "AI Candidate Scoring",
+        "height": 784,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        1808
+      ],
+      "typeVersion": 1,
+      "id": "bdc8cb44-70c9-40c9-875d-d2f6590db694",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Interview Scheduling",
+        "height": 784,
+        "width": 2368
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -768,
+        7184
+      ],
+      "typeVersion": 1,
+      "id": "613bd41d-95d8-44ce-ac44-322713eb4979",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Recruiter Dashboard",
+        "height": 784,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -832,
+        5312
+      ],
+      "typeVersion": 1,
+      "id": "d11f1b1b-56d3-4080-a538-69b385bde561",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "Candidate Status Manager",
+        "height": 784,
+        "width": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -832,
+        2944
+      ],
+      "typeVersion": 1,
+      "id": "b5202931-9910-4527-9317-a8d19ddaa941",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "Resume Search (RAG)",
+        "height": 784,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -832,
+        4128
+      ],
+      "typeVersion": 1,
+      "id": "5d232b2d-c073-4b48-b566-aef3cf79ee70",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "formTitle": "HR Job Posting",
+        "formDescription": "Create a new job opening",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Job Title",
+              "fieldName": "jobTitle",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Department",
+              "fieldName": "department",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Location",
+              "fieldName": "location",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Employment Type",
+              "fieldType": "dropdown",
+              "fieldName": "employmentType",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Full Time"
+                  },
+                  {
+                    "option": "Part Time"
+                  },
+                  {
+                    "option": "Contract"
+                  },
+                  {
+                    "option": "Internship"
+                  },
+                  {
+                    "option": "Remote"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Experience Required (Years)",
+              "fieldType": "number",
+              "fieldName": "experienceRequired"
+            },
+            {
+              "fieldLabel": "Minimum Salary",
+              "fieldType": "number",
+              "fieldName": "salaryMin"
+            },
+            {
+              "fieldLabel": "Maximum Salary",
+              "fieldType": "number",
+              "fieldName": "salaryMax"
+            },
+            {
+              "fieldLabel": "required Skills",
+              "fieldName": "requiredSkills"
+            },
+            {
+              "fieldLabel": "Job Description",
+              "fieldName": "jobDescription"
+            }
+          ]
+        },
+        "options": {
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Thank you! Your application has been received and is being processed."
+            }
+          }
+        }
+      },
+      "id": "a12f909a-7aab-4958-9ca8-6ae4a12ae07b",
+      "name": "HR creates job Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -416,
+        1040
+      ],
+      "webhookId": "2a59fa0a-3b5b-4651-9c03-8d0343957ee2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e927ec63-a38f-4041-b82d-2573ef9aecbb",
+              "name": "title",
+              "value": "={{ $(\"HR creates job Form\").item.json.jobTitle }}",
+              "type": "string"
+            },
+            {
+              "id": "0a814559-dc94-4536-afa4-c54441fe12b9",
+              "name": "department",
+              "value": "={{ $(\"HR creates job Form\").item.json.department }}",
+              "type": "string"
+            },
+            {
+              "id": "8ddde1cd-9070-4e28-a918-f0b994085f12",
+              "name": "location",
+              "value": "={{ $(\"HR creates job Form\").item.json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "4c99b3c9-a1a4-4d54-aa90-3201ede00792",
+              "name": "employment_type",
+              "value": "={{ $(\"HR creates job Form\").item.json.employmentType }}",
+              "type": "string"
+            },
+            {
+              "id": "70c7b5d8-88a7-43f3-ab6b-c99b37d55672",
+              "name": "experience_required",
+              "value": "={{ $(\"HR creates job Form\").item.json.experienceRequired }}",
+              "type": "string"
+            },
+            {
+              "id": "d4d7bd20-9636-4af3-b5f5-a7839bf58dd3",
+              "name": "salary_min",
+              "value": "={{ $(\"HR creates job Form\").item.json.salaryMin }}",
+              "type": "string"
+            },
+            {
+              "id": "d7d9846c-747e-42b5-9938-a27bad076b07",
+              "name": "salary_max",
+              "value": "={{ $(\"HR creates job Form\").item.json.salaryMax }}",
+              "type": "string"
+            },
+            {
+              "id": "148d8c49-875a-4dd5-892e-013437be7614",
+              "name": "required_skills",
+              "value": "={{ $(\"HR creates job Form\").item.json.requiredSkills }}",
+              "type": "string"
+            },
+            {
+              "id": "f65872a4-8709-46c0-a0e2-8154230195eb",
+              "name": "job_description",
+              "value": "={{ $(\"HR creates job Form\").item.json.jobDescription }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        1040
+      ],
+      "id": "aaad8bd0-ed55-4963-a3fc-30a5e0b14851",
+      "name": "Job Data Mapper"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "jobs",
+          "mode": "list",
+          "cachedResultName": "jobs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "experience_required": "={{ Number($(\"Job Data Mapper\").first().json.experience_required) }}",
+            "salary_min": "={{$(\"Job Data Mapper\").item.json.salary_min}}",
+            "salary_max": "={{$(\"Job Data Mapper\").item.json.salary_max}}",
+            "title": "={{$(\"Job Data Mapper\").item.json.title}}",
+            "department": "={{$(\"Job Data Mapper\").item.json.department}}",
+            "location": "={{$(\"Job Data Mapper\").item.json.location}}",
+            "employment_type": "={{$(\"Job Data Mapper\").item.json.employment_type}}",
+            "job_description": "={{$(\"Job Data Mapper\").item.json.job_description}}",
+            "required_skills": "={{ { \"skills\": $json.required_skills } }}",
+            "status": "open"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1008,
+        976
+      ],
+      "id": "9ebc422b-c973-4750-87a6-d9f48151388c",
+      "name": "Save Job"
+    },
+    {
+      "parameters": {
+        "sendTo": "hr@yourcompany.com",
+        "subject": "=New Job Opening Created - {{ $(\"Job Data Mapper\").item.json.title }}",
+        "message": "=<h2>New Job Created</h2>  <p><strong>Job Title:</strong> {{ $(\"Job Data Mapper\").item.json.title }}</p>  <p><strong>Department:</strong> {{ $(\"Job Data Mapper\").item.json.department }}</p>  <p><strong>Location:</strong> {{ $(\"Job Data Mapper\").item.json.location }}</p>  <p><strong>Employment Type:</strong> {{ $(\"Job Data Mapper\").item.json.employment_type }}</p>  <p><strong>Experience Required:</strong> {{ $(\"Job Data Mapper\").item.json.experience_required }} years</p>  <p><strong>Salary:</strong> {{ $(\"Job Data Mapper\").item.json.salary_min }} - {{ $(\"Job Data Mapper\").item.json.salary_max }} </p>  <p><strong>Status:</strong> Open</p>  <hr>  <p>The job has been successfully created and stored in the Recruitment database.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1216,
+        976
+      ],
+      "id": "ce46c9fd-673d-4e70-8374-346003e255d4",
+      "name": "HR Notification1",
+      "webhookId": "bff3ea38-2566-4cc8-8c35-8cfb2e90f003"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        48,
+        1392
+      ],
+      "id": "3db4b7e5-a41f-4a28-bddc-8838b3c50f5d",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following job information.\n\nJob Title:\n{{ $json.title }}\n\nDepartment:\n{{ $json.department }}\n\nLocation:\n{{ $json.location }}\n\nEmployment Type:\n{{ $json.employment_type }}\n\nExperience Required:\n{{ $json.experience_required }}\n\nSalary Minimum:\n{{ $json.salary_min }}\n\nSalary Maximum:\n{{ $json.salary_max }}\n\nRequired Skills:\n{{ $json.required_skills }}\n\nJob Description:\n{{ $json.job_description }}\n\nPreserve all information explicitly provided by HR.\n\nDo not rename fields.\nDo not invent missing information.\n\nUse the provided experience_required value exactly.\nUse all provided required_skills.\n\nGenerate a concise professional summary and extract any additional recruitment information that can be reliably derived from the provided job information.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert HR recruitment assistant.\n\nAnalyze job information provided by HR and produce structured recruitment information according to the connected output parser.\n\nRules:\n- Preserve HR-provided values.\n- Never rename fields.\n- Never invent factual requirements.\n- Do not change salary values.\n- Do not change experience requirements.\n- Preserve all required skills.\n- Generate additional information only when it can reasonably be derived from the provided job information."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        32,
+        1168
+      ],
+      "id": "e2bed177-8b75-4a3b-95ec-012f048d0cbc",
+      "name": "AI Job Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = JSON.parse($json.output);\n\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -144
+      ],
+      "id": "9d6d64ce-a77f-4dd9-89ea-13f798367fc2",
+      "name": "Parse Resume JSON"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "resume",
+        "name": "={{ $(\"Candidate Form\").item.json.fullName }}_Resume.pdf",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "list",
+          "cachedResultName": "Candidate Resume",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/YOUR_GOOGLE_DRIVE_FOLDER_ID"
+        },
+        "options": {
+          "simplifyOutput": false
+        }
+      },
+      "id": "33f89e64-314c-4955-bc56-8e17414b3417",
+      "name": "Upload Resume",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        496,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        880,
+        -128
+      ],
+      "id": "2db4a815-e90b-4d84-8942-fb1eb169a1f4",
+      "name": "Merge Candidate Data"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ \"91\" + $(\"Candidate Form\").item.json.phone.replace(/^0/, \"\") }}",
+        "textBody": "=Hi {{ $(\"Candidate Form\").item.json.fullName }},\n\nThank you for applying.\n\nYour application has been successfully received.\n\nOur recruitment team is reviewing your profile.\n\nIf shortlisted, we'll contact you regarding the next steps.\n\nBest regards,\nHR Team",
+        "additionalFields": {}
+      },
+      "id": "55c9e087-8413-4d4d-8f90-75b9ea0a8004",
+      "name": "Candidate WhatsApp Confirmation",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1648,
+        32
+      ],
+      "webhookId": "cd779b38-011d-4282-83f9-a52d0a1f4412"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following resume carefully.\n\nResume:\n\n{{ $json.text }}\n\nExtract the candidate information and return ONLY valid JSON.\n\nUse EXACTLY these property names.\n\nDo not change the property names.\n\nIf information is missing, return:\n- \"\" for text fields\n- 0 for numeric fields\n\nIf total years of experience are not explicitly written, calculate them from the employment history.\n\nDetermine the candidateLevel based on experience:\n0-2 years = Junior\n3-5 years = Mid-Level\n6+ years = Senior\n\nDetermine the most appropriate jobRole from the resume.\n\nReturn ONLY this JSON:\n\n{\n  \"fullName\":\"\",\n  \"email\":\"\",\n  \"phone\":\"\",\n  \"location\":\"\",\n  \"yearsOfExperience\":0,\n  \"currentCompany\":\"\",\n  \"previousCompanies\":\"\",\n  \"education\":\"\",\n  \"skills\":\"\",\n  \"softSkills\":\"\",\n  \"languages\":\"\",\n  \"certifications\":\"\",\n  \"projects\":\"\",\n  \"linkedin\":\"\",\n  \"github\":\"\",\n  \"portfolio\":\"\",\n  \"summary\":\"\",\n  \"candidateLevel\":\"\",\n  \"jobRole\":\"\",\n  \"currentCTC\":\"\",\n  \"expectedCTC\":\"\",\n  \"noticePeriod\":\"\"\n}",
+        "options": {
+          "systemMessage": "=You are ZERO Recruitment AI.\n\nYou are an expert resume parser used by recruiters.\n\nYour job is to convert resumes into structured recruitment data.\n\nRules:\n\n1. Return ONLY valid JSON.\n2. Never return Markdown.\n3. Never wrap JSON inside ``` blocks.\n4. Never explain your answer.\n5. Never invent information.\n6. Preserve names, companies, education, certifications and contact details exactly.\n7. If a field does not exist, return:\n   - \"\" for text\n   - 0 for numbers\n8. Calculate total professional experience from employment dates if necessary.\n9. Extract only technical skills into \"skills\".\n10. Extract interpersonal skills into \"softSkills\".\n11. Create a professional summary of 2-4 sentences.\n12. Infer candidateLevel:\n   - 0-2 years -> Junior\n   - 3-5 years -> Mid-Level\n   - 6+ years -> Senior\n13. Infer the best matching jobRole from the resume.\n14. Do not guess salary, notice period, LinkedIn, GitHub, portfolio or certifications if they are not present.\n15. Always return every property in the requested JSON, even if empty."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -16,
+        -144
+      ],
+      "id": "c9c12777-c057-41d4-a1f1-3c8b6969842f",
+      "name": "AI Resume Parser"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "candidates",
+          "mode": "list",
+          "cachedResultName": "candidates"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "email",
+              "value": "hr@yourcompany.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -208,
+        2016
+      ],
+      "id": "92867ef8-7823-4c32-8ae1-022459e50d51",
+      "name": "Get Candidate (PostgreSQL)"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "jobs",
+          "mode": "list",
+          "cachedResultName": "jobs"
+        },
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -208,
+        2224
+      ],
+      "id": "e8be6c36-0ec1-4282-a1bd-d1222efa8517",
+      "name": "Get Job (PostgreSQL)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Compare this candidate with the job requirement.\n\nCandidate Profile:\n{{ JSON.stringify($json) }}\n\nJob Description:\nTitle: {{ $json.title }}\nDescription: {{ $json.job_description }}\nRequired Skills: {{ $json.required_skills }}\n\nReturn ONLY valid JSON with this structure:\n\n{\n  \"overallScore\": 0,\n  \"technicalScore\": 0,\n  \"experienceScore\": 0,\n  \"educationScore\": 0,\n  \"communicationScore\": 0,\n  \"skillMatchPercentage\": 0,\n  \"matchedSkills\": \"\",\n  \"missingSkills\": \"\",\n  \"strengths\": \"\",\n  \"weaknesses\": \"\",\n  \"recommendation\": \"\",\n  \"interviewQuestions\": \"\"\n}",
+        "options": {
+          "systemMessage": "You are ZERO Recruitment AI.\n\nYou are an expert recruiter and ATS evaluator.\n\nScore the candidate against the job requirement.\n\nRules:\n- Score from 0 to 100.\n- Be strict but fair.\n- Do not invent candidate skills.\n- Compare candidate skills, experience, education, and role fit against the job.\n- Recommendation must be one of: Strong Match, Shortlist, Maybe, Reject.\n- Interview questions should be relevant to the missing skills and job requirements.\n- Return ONLY valid JSON.\n- Do not use markdown."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        496,
+        2112
+      ],
+      "id": "c1335dcc-c52e-4c77-9bff-311ae7e28b99",
+      "name": "AI Candidate Scoring"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = JSON.parse(items[0].json.output);\nconst scoringInput = $(\"Merge\").first().json;\n\nreturn [\n  {\n    json: {\n      ...scoringInput,\n      ...parsed,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        2112
+      ],
+      "id": "97ff3a2b-8bbd-4b67-ab71-aea9925092e5",
+      "name": "Parse Scoring JSON"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "applications",
+          "mode": "list",
+          "cachedResultName": "applications"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "candidate_score": "={{ $json.overallScore }}",
+            "ats_score": "={{ $json.skillMatchPercentage }}",
+            "job_id": "={{ $json.job_id }}",
+            "candidate_id": "={{ $json.candidate_id }}",
+            "recommendation": "={{ $json.recommendation }}",
+            "interview_questions": "={{ { questions: $json.interviewQuestions } }}",
+            "application_stage": "Pending Review",
+            "applied_at": "={{ $now }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1040,
+        2112
+      ],
+      "id": "de4b3831-25a3-4c2e-8296-1aef8ce8e18c",
+      "name": "Save Application Score (PostgreSQL)"
+    },
+    {
+      "parameters": {
+        "sendTo": "hr@yourcompany.com",
+        "subject": "=New Candidate Application - {{ $json.full_name }}",
+        "message": "=Candidate: {{ $json.full_name }}\n\nJob:\n{{ $json.title }}\n\nOverall Score:\n{{ $json.overallScore }}/100\n\nRecommendation:\n{{ $json.recommendation }}\n\nMatched Skills:\n{{ $json.matchedSkills }}\n\nMissing Skills:\n{{ $json.missingSkills }}\n\nStrengths:\n{{ $json.strengths }}\n\nWeaknesses:\n{{ $json.weaknesses }}\n\nInterview Questions:\n\n{{ $json.interviewQuestions }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        2112
+      ],
+      "id": "98686dee-ec41-4a43-b313-ec1eb858b7bf",
+      "name": "HR Score Email",
+      "webhookId": "cb0d2458-7f6f-42be-8b27-d52938928d89"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        272,
+        2112
+      ],
+      "id": "de0ffb7f-c66a-4159-b5d9-38462dfbe1b0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        2336
+      ],
+      "id": "439754db-a380-472f-a0fa-8a1c42aa6709",
+      "name": "OpenAI Chat Model1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        2032
+      ],
+      "id": "b9f71a5e-c29e-456c-a8e9-095ddf8fce57",
+      "name": "Run Candidate Scoring (Manual Test)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eedcea5c-5e7d-401b-9f8e-a55e9fbe0a99",
+              "name": "candidate_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        2016
+      ],
+      "id": "c5426165-159d-43ef-94f5-52d624455dc3",
+      "name": "Prepare Candidate Data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eedcea5c-5e7d-401b-9f8e-a55e9fbe0a99",
+              "name": "job_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        2224
+      ],
+      "id": "f5c911ea-0f01-4164-9e44-083723e40a13",
+      "name": "Prepare Job Data"
+    },
+    {
+      "parameters": {
+        "content": "AI Email Generator",
+        "height": 784,
+        "width": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        6272
+      ],
+      "typeVersion": 1,
+      "id": "11a12cb3-c5b4-4d26-97e5-3a873f3c829d",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {
+          "onlyRunIf": "={{ $json.headers['x-api-key'] === 'YOUR_API_KEY_HERE' }}"
+        },
+        "path": "YOUR_STATUS_WEBHOOK_PATH"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        3264
+      ],
+      "id": "08a93cfa-65bb-418e-b68b-efbee236d3b5",
+      "name": "Webhook - Update Application Status",
+      "webhookId": "08a93cfa-65bb-418e-b68b-efbee236d3b5"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "{{ $json.application_stage }}",
+                    "rightValue": "Shortlisted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "42c10b6a-84bd-4ec9-a10b-f16b0510e602"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Shortlisted"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "28323cb5-206a-494a-9835-ebf32c7f19e7",
+                    "leftValue": "{{ $json.application_stage }}",
+                    "rightValue": "Interview Scheduled",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Interview Scheduled"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "73098c4e-faf6-41d7-9e8d-78693da34d1d",
+                    "leftValue": "{{ $json.application_stage }}",
+                    "rightValue": "Rejected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Rejected"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "58662ffa-16c1-493f-be0d-048472989f73",
+                    "leftValue": "{{ $json.application_stage }}",
+                    "rightValue": "Selected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Selected"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6206e9a0-3a7b-4cb2-b313-747398e40dc4",
+                    "leftValue": "{{ $json.application_stage }}",
+                    "rightValue": "Joined",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Joined"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        3216
+      ],
+      "id": "cef3b80f-e98b-4f9f-86eb-007831440486",
+      "name": "Switch",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ \"91\" + $('Prepare Status Update').item.json.candidate_phone.replace(/^0/, \"\") }}",
+        "textBody": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nCongratulations! Your application has been shortlisted. Our recruitment team will contact you with the next steps.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        2880
+      ],
+      "id": "99341544-5ef2-4c6d-9cee-f44eaa59727e",
+      "name": "Send message",
+      "webhookId": "f6826e5b-85e2-489f-b07f-9d6c45bd7ca1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "tableName": {
+          "__rl": true,
+          "value": "candidates",
+          "mode": "list",
+          "cachedResultName": "candidates"
+        },
+        "additionalFields": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTrigger",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        4176
+      ],
+      "id": "7720d1e3-668c-4c9f-a460-d2451d167156",
+      "name": "Postgres Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "candidates",
+          "mode": "list",
+          "cachedResultName": "candidates"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -112,
+        4176
+      ],
+      "id": "ea063696-e79f-410b-8c4b-d3224fc6c34a",
+      "name": "Select rows from a table1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "candidate_id",
+              "type": "string",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "id": "r2",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "id": "r3",
+              "name": "full_name",
+              "type": "string",
+              "value": "={{ $json.full_name }}"
+            },
+            {
+              "id": "r4",
+              "name": "resume_text",
+              "type": "string",
+              "value": "=Name: {{ $json.full_name }}\nRole: {{ $json.job_role }} ({{ $json.candidate_level }})\nLocation: {{ $json.location }}\nYears Experience: {{ $json.years_experience }}\nSkills: {{ $json.skills }}\nSoft Skills: {{ $json.soft_skills }}\nEducation: {{ $json.education }}\nPrevious Companies: {{ $json.previous_companies }}\nCertifications: {{ $json.certifications }}\nProjects: {{ $json.projects }}\nLanguages: {{ $json.languages }}\nSummary: {{ $json.summary }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        4176
+      ],
+      "id": "2cf6b8fb-35e9-49d9-ab54-a0d4679d135d",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "options": {
+          "onlyRunIf": "={{ $json.headers['x-api-key'] === 'YOUR_API_KEY_HERE' }}"
+        },
+        "path": "YOUR_RESUME_SEARCH_WEBHOOK_PATH",
+        "responseMode": "responseNode"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        4640
+      ],
+      "id": "5383b39d-9594-48b4-b2d9-f0cdcdd75f98",
+      "name": "Webhook - Resume Search",
+      "webhookId": "5383b39d-9594-48b4-b2d9-f0cdcdd75f98"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "applications",
+          "mode": "list",
+          "cachedResultName": "applications"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.application_id }}",
+            "application_stage": "={{ $json.new_status }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        368,
+        3264
+      ],
+      "id": "52ed1f05-b9c0-4959-96f4-25bd962b33aa",
+      "name": "Update Application Status"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "applications",
+          "mode": "list",
+          "cachedResultName": "applications"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $json.body.application_id }}"
+            }
+          ]
+        },
+        "sort": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -256,
+        3264
+      ],
+      "id": "621f9297-46bf-4906-a8d0-9d6cb44cfec1",
+      "name": "Get Application"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "662262b2-5242-424c-87da-20dfe146ca3d",
+              "name": "application_id",
+              "type": "string",
+              "value": "={{ $('Webhook - Update Application Status').item.json.body.application_id }}"
+            },
+            {
+              "id": "e6b90ad8-fef0-468e-b8ce-c00b81d11db1",
+              "name": "new_status",
+              "type": "string",
+              "value": "={{ $('Webhook - Update Application Status').item.json.body.application_stage }}"
+            },
+            {
+              "id": "30600b64-9ebb-436e-bc59-e510e599a4e1",
+              "name": "interview_start",
+              "type": "string",
+              "value": "={{ $('Webhook - Update Application Status').item.json.body.interview_start || \"\" }}"
+            },
+            {
+              "id": "e1965a69-dd86-4974-8592-181191bde16d",
+              "name": "interview_end",
+              "type": "string",
+              "value": "={{ $('Webhook - Update Application Status').item.json.body.interview_end || \"\" }}"
+            },
+            {
+              "id": "c1a1a1a1-0001-4a3d-9b9e-000000000001",
+              "name": "candidate_email",
+              "type": "string",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "id": "c1a1a1a1-0002-4a3d-9b9e-000000000002",
+              "name": "candidate_phone",
+              "type": "string",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "id": "c1a1a1a1-0003-4a3d-9b9e-000000000003",
+              "name": "candidate_name",
+              "type": "string",
+              "value": "={{ $json.full_name }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        3264
+      ],
+      "id": "efc7d507-a68f-4a8c-aa46-5d265ba122f4",
+      "name": "Prepare Status Update"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Status Update').item.json.candidate_email }}",
+        "subject": "Your application has been shortlisted",
+        "message": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nCongratulations! Your application has been shortlisted. Our recruitment team will contact you with the next steps.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        2880
+      ],
+      "id": "2b304004-19c5-43a0-9cb0-1a99b0cad156",
+      "name": "Shortlist Email",
+      "webhookId": "b625231b-d5f7-47ba-86d1-26f6246823e4"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Status Update').item.json.candidate_email }}",
+        "subject": "Your interview has been scheduled",
+        "message": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nYour interview has been scheduled successfully. Our recruitment team will contact you with the interview details and next steps.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        3120
+      ],
+      "id": "6e0d6345-c6f6-4fc0-aaf6-aee2856275fa",
+      "name": "Interview Scheduled",
+      "webhookId": "496bc29b-40dd-4406-84a9-792cc8e18911"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Status Update').item.json.candidate_email }}",
+        "subject": "Application Status Update",
+        "message": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nThank you for your application. After careful consideration, we will not be moving forward with your application at this time. We appreciate your interest and wish you the best in your job search.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1008,
+        3312
+      ],
+      "id": "caaca1ae-4307-417d-a798-ea3b4bdcafec",
+      "name": "Rejection Email Send a message",
+      "webhookId": "1ea255fb-1dc1-4db5-8140-6b5bc85f0bbc"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Status Update').item.json.candidate_email }}",
+        "subject": "Congratulations on your Selection",
+        "message": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nCongratulations! You have been selected. Our recruitment team will contact you with the next steps.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        3552
+      ],
+      "id": "506d23ad-066b-4d18-b23f-22d09f38f22a",
+      "name": "Selection Send a message",
+      "webhookId": "385e9a72-8bb7-4de2-8d36-b8e7e6a0fb42"
+    },
+    {
+      "parameters": {
+        "sendTo": "hr@yourcompany.com",
+        "subject": "Candidate Application Status Updated",
+        "message": "A candidate application status has been updated in the recruitment system.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        3776
+      ],
+      "id": "894fdf2e-8031-4a01-b492-aae928182b9d",
+      "name": "Internal HR Notification Send a message",
+      "webhookId": "85734489-76fa-46d0-ad46-d9547badcb23"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "calendar@yourcompany.com",
+          "mode": "list",
+          "cachedResultName": "calendar@yourcompany.com"
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        976,
+        3120
+      ],
+      "id": "c92ba3d0-b905-4351-b02f-f07a703a446c",
+      "name": "Create an event"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"title\": \"Example Job\",\n  \"department\": \"Example Department\",\n  \"location\": \"Example Location\",\n  \"employment_type\": \"Full Time\",\n  \"experience_required\": 1,\n  \"salary_min\": 50000,\n  \"salary_max\": 100000,\n  \"required_skills\": [\n    \"Python\",\n    \"n8n\"\n  ],\n  \"job_description\": \"Example job description\",\n  \"summary\": \"Example summary\",\n  \"preferred_skills\": [],\n  \"education\": \"Not specified\",\n  \"key_responsibilities\": []\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        1424
+      ],
+      "id": "6c8b34a3-2d15-42dc-a580-8f32c7c08dbe",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5138e108-6491-4eb3-82ff-2a2048f89427",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "e4a382c7-7652-42a5-a102-ed938eedb6a8",
+              "name": "department",
+              "value": "={{ $json.department }}",
+              "type": "string"
+            },
+            {
+              "id": "a639dc44-6a32-490c-a261-0969b8dcf6da",
+              "name": "location",
+              "value": "={{ $json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "cb7ccd8b-e314-4de9-9b31-a0e113ddda09",
+              "name": "employment_type",
+              "value": "={{ $json.employment_type }}",
+              "type": "string"
+            },
+            {
+              "id": "4bb78559-d58d-4090-8e42-d89c7b33f683",
+              "name": "experience_required",
+              "value": "={{ $json.experience_required }}",
+              "type": "number"
+            },
+            {
+              "id": "fe4898e9-fc06-41be-b2a1-dadefe57ee79",
+              "name": "salary_min",
+              "value": "={{ Number($json.salary_min) }}",
+              "type": "number"
+            },
+            {
+              "id": "9396352d-b1ef-494d-8be1-4ad733f020ea",
+              "name": "salary_max",
+              "value": "={{ Number($json.salary_max) }}",
+              "type": "number"
+            },
+            {
+              "id": "bb32e2a0-f76a-492d-b4bd-063c159b7c23",
+              "name": "job_desciption",
+              "value": "={{ $json.job_description }}",
+              "type": "string"
+            },
+            {
+              "id": "7bd531e1-27a5-45bb-ab60-91f26dfe52d5",
+              "name": "required_skills",
+              "value": "={{ $json.required_skills\n  .split(\",\")\n  .map(skill => skill.trim())\n  .filter(Boolean) }}",
+              "type": "array"
+            },
+            {
+              "id": "314585e9-230f-4c52-8829-4958ac64230f",
+              "name": "summary",
+              "value": "={{ $json.output.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "b5a8d3ee-8af6-45ec-b55e-801ee4978ca6",
+              "name": "preferred_skills",
+              "value": "={{ $json.output.preferred_skills }}",
+              "type": "string"
+            },
+            {
+              "id": "2cdd59e4-df53-4245-ba48-0fa11abb0046",
+              "name": "education",
+              "value": "={{ $json.output.education }}",
+              "type": "string"
+            },
+            {
+              "id": "9ccad5d7-53a3-404c-8f75-845ffe48b6d6",
+              "name": "key_responsibilities",
+              "value": "={{ $json.output.key_responsibilities }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        784,
+        976
+      ],
+      "id": "816f3ff8-fd70-4b3c-ac0a-6f266dcd1d09",
+      "name": "Merge Final Job Data"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        432,
+        1024
+      ],
+      "id": "1f69dc44-ff8c-4e77-be45-9e6cadf3b89b",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        1616
+      ],
+      "id": "958090ec-d236-4596-afca-e2e36e8ed283",
+      "name": "OpenAI Chat Model2"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ \"91\" + $('Prepare Status Update').item.json.candidate_phone.replace(/^0/, \"\") }}",
+        "textBody": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nYour interview has been scheduled. Our recruitment team will contact you with the interview details and next steps.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1424,
+        3104
+      ],
+      "id": "414e38be-b010-4ecf-a8d5-db19ea2a0943",
+      "name": "Send message1",
+      "webhookId": "f6826e5b-85e2-489f-b07f-9d6c45bd7ca1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ \"91\" + $('Prepare Status Update').item.json.candidate_phone.replace(/^0/, \"\") }}",
+        "textBody": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nThank you for your application. After careful consideration, we will not be moving forward at this time. We appreciate your interest and wish you the best.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        3328
+      ],
+      "id": "0414e392-ae17-4fa6-98cf-804017a14dfd",
+      "name": "Send message2",
+      "webhookId": "f6826e5b-85e2-489f-b07f-9d6c45bd7ca1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ \"91\" + $('Prepare Status Update').item.json.candidate_phone.replace(/^0/, \"\") }}",
+        "textBody": "=Hi {{ $('Prepare Status Update').item.json.candidate_name }},\n\nCongratulations! You have been selected. Our recruitment team will contact you with the next steps.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        3568
+      ],
+      "id": "02be979a-5345-4eb5-a189-510fe90c11e4",
+      "name": "Send message3",
+      "webhookId": "f6826e5b-85e2-489f-b07f-9d6c45bd7ca1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "+91XXXXXXXXXX",
+        "textBody": "=A candidate application status has been updated to Joined. Candidate: {{ $('Prepare Status Update').item.json.candidate_name }}.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        3792
+      ],
+      "id": "5cc6687f-4369-49b5-8cb1-026b08ef460f",
+      "name": "Send message4",
+      "webhookId": "f6826e5b-85e2-489f-b07f-9d6c45bd7ca1"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "cachedResultName": "candidates",
+          "mode": "list",
+          "value": "candidates"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $json.candidate_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "49d79d57-ba48-4e63-855f-0f40dab1da60",
+      "name": "Get Candidate Contact",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -64,
+        3264
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ad276970-ffe9-4dc7-a2d7-82cfee150a05",
+      "name": "Embeddings OpenAI (Index)",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        4320
+      ]
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.resume_text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "candidate_id",
+                "value": "={{ $json.candidate_id }}"
+              },
+              {
+                "name": "email",
+                "value": "={{ $json.email }}"
+              },
+              {
+                "name": "full_name",
+                "value": "={{ $json.full_name }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "8e266749-eb4c-4a16-8326-cbd5093eb4b1",
+      "name": "Resume Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        4336
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "candidate_resume_embeddings",
+        "options": {}
+      },
+      "id": "6a73d268-0a8a-4d35-9515-611d37cd0fe1",
+      "name": "Index Candidate Resume",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        4144
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e959490b-26d3-4eb5-a33e-83a5aeb3913e",
+      "name": "Embeddings OpenAI (Search)",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -64,
+        4832
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": "candidate_resume_embeddings",
+        "prompt": "={{ $json.query.q }}",
+        "topK": "={{ Number($json.query.top_k) || 5 }}",
+        "options": {}
+      },
+      "id": "c0b7deec-7bb9-454e-8f97-a9e4f340257f",
+      "name": "Search Candidate Resumes",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        4640
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const realResults = items\n  .filter(item => item.json && (item.json.document || item.json.pageContent || (item.json.metadata && item.json.metadata.candidate_id)))\n  .map(item => {\n    const doc = item.json.document || item.json;\n    const metadata = doc.metadata || item.json.metadata || {};\n    return {\n      candidate_id: metadata.candidate_id || null,\n      full_name: metadata.full_name || null,\n      email: metadata.email || null,\n      score: item.json.score !== undefined ? item.json.score : null,\n      snippet: (doc.pageContent || '').slice(0, 300)\n    };\n  })\n  .filter(r => r.candidate_id !== null);\n\nreturn [{ json: { count: realResults.length, results: realResults } }];"
+      },
+      "id": "0fdaf3ec-c570-44a0-98a9-8c818064d29c",
+      "name": "Format Resume Search Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        4640
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "1b93ec3c-5c09-4ea8-9c2b-b4ddfda7e06f",
+      "name": "Respond Resume Search",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        560,
+        4640
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "options": {
+          "onlyRunIf": "={{ $json.headers['x-api-key'] === 'YOUR_API_KEY_HERE' }}"
+        },
+        "path": "recruiter/candidates",
+        "responseMode": "responseNode"
+      },
+      "id": "a66a0a1f-f045-4e7d-9205-19d7e114e82c",
+      "name": "Recruiter Dashboard Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -416,
+        5440
+      ],
+      "webhookId": "a66a0a1f-f045-4e7d-9205-19d7e114e82c"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {
+          "queryReplacement": "={{ ($json.query.job_id || '__ALL__') + ',' + ($json.query.status || '__ALL__') }}"
+        },
+        "query": "SELECT c.id AS candidate_id, c.full_name, c.email, c.phone, c.job_role, c.candidate_level, c.years_experience, a.application_stage, a.candidate_score, a.recommendation, j.title AS job_title, j.department FROM candidates c LEFT JOIN applications a ON a.candidate_id = c.id LEFT JOIN jobs j ON j.id = a.job_id WHERE ($1 = '__ALL__' OR j.id::text = $1) AND ($2 = '__ALL__' OR a.application_stage = $2) ORDER BY c.created_at DESC"
+      },
+      "id": "81505676-6910-43d8-bc6b-e234225bedd0",
+      "name": "Query Candidates",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -176,
+        5440
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "9b0ca8ab-7e2f-4e49-8d54-16734f6f3f89",
+      "name": "Respond Recruiter Dashboard",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        336,
+        5440
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {
+          "onlyRunIf": "={{ $json.headers['x-api-key'] === 'YOUR_API_KEY_HERE' }}"
+        },
+        "path": "recruiter/generate-email",
+        "responseMode": "responseNode"
+      },
+      "id": "f0f081a1-cec8-40f4-95c0-ba158ee882f7",
+      "name": "Generate Outreach Email Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -368,
+        6480
+      ],
+      "webhookId": "f0f081a1-cec8-40f4-95c0-ba158ee882f7"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "cachedResultName": "candidates",
+          "mode": "list",
+          "value": "candidates"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $json.body.candidate_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ada3100f-8064-48b8-b9ac-8969f178e5c1",
+      "name": "Get Candidate For Outreach",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -144,
+        6368
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "cachedResultName": "jobs",
+          "mode": "list",
+          "value": "jobs"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $json.body.job_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5910a8ef-1706-447b-9044-0f33270f14cf",
+      "name": "Get Job For Outreach",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -144,
+        6576
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "id": "74c6f50f-22c2-4060-b233-873a8cb45ee7",
+      "name": "Merge Outreach Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        96,
+        6480
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "4a6920db-bf33-45a1-8bcd-40ae5531d920",
+      "name": "OpenAI Chat Model (Outreach)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        6784
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"subject\": \"Example subject line\",\n  \"body\": \"Example email body\"\n}",
+        "autoFix": true
+      },
+      "id": "91bc7f5e-582b-463f-8a0f-c2092d260676",
+      "name": "Structured Output Parser (Outreach)",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        6672
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a personalized candidate outreach email.\n\nPurpose: {{ $('Generate Outreach Email Webhook').item.json.body.purpose || 'General outreach regarding an open role' }}\n\nCandidate Name: {{ $json.full_name }}\nCandidate Skills: {{ $json.skills }}\nCandidate Experience: {{ $json.years_experience }} years\nCandidate Current Role: {{ $json.job_role }}\n\nJob Title: {{ $json.title }}\nJob Department: {{ $json.department }}\nJob Description: {{ $json.job_description }}\n\nGenerate a subject line and email body.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert technical recruiter writing personalized candidate outreach emails.\n\nRules:\n- Personalize using the candidate's actual skills, experience, and background provided below.\n- Keep the tone professional, warm, and concise (body under 150 words).\n- Never invent facts about the candidate or job that weren't provided.\n- Return ONLY the structured JSON per the output schema (subject, body)."
+        }
+      },
+      "id": "566b30b1-e312-491a-af8f-a6a1840fadaf",
+      "name": "AI Outreach Email Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        336,
+        6480
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get Candidate For Outreach').item.json.email }}",
+        "subject": "={{ $json.output.subject }}",
+        "message": "={{ $json.output.body }}",
+        "options": {}
+      },
+      "id": "63938662-e474-4928-97b9-34140bed021e",
+      "name": "Send Outreach Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        6480
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'sent', to: $('Get Candidate For Outreach').item.json.email, subject: $('AI Outreach Email Generator').item.json.output.subject, body: $('AI Outreach Email Generator').item.json.output.body } }}",
+        "options": {}
+      },
+      "id": "32b8ed59-b034-4189-b86f-5b2bc99afdda",
+      "name": "Respond Outreach Email",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        960,
+        6480
+      ]
+    },
+    {
+      "id": "b9fbab50-ea75-4cb3-a1c1-3dacb467c759",
+      "name": "Format Dashboard Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        5580
+      ],
+      "parameters": {
+        "jsCode": "const rows = items.filter(item => item.json && item.json.candidate_id).map(item => item.json);\nreturn [{ json: { count: rows.length, candidates: rows } }];"
+      }
+    }
+  ],
+  "connections": {
+    "OpenAI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Resume Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidate Form": {
+      "main": [
+        [
+          {
+            "node": "PDF Text Extractor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF Text Extractor": {
+      "main": [
+        [
+          {
+            "node": "AI Resume Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidate Data Mapper": {
+      "main": [
+        [
+          {
+            "node": "Save Candidate (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Candidate (PostgreSQL)": {
+      "main": [
+        [
+          {
+            "node": "HR Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Candidate WhatsApp Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HR creates job Form": {
+      "main": [
+        [
+          {
+            "node": "Job Data Mapper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Data Mapper": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Job Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Job": {
+      "main": [
+        [
+          {
+            "node": "HR Notification1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Job Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Job Parser": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Parse Resume JSON": {
+      "main": [
+        [
+          {
+            "node": "Merge Candidate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Resume": {
+      "main": [
+        [
+          {
+            "node": "Merge Candidate Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Candidate Data": {
+      "main": [
+        [
+          {
+            "node": "Candidate Data Mapper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Resume Parser": {
+      "main": [
+        [
+          {
+            "node": "Parse Resume JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidate (PostgreSQL)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Candidate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job (PostgreSQL)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Job Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Candidate Scoring": {
+      "main": [
+        [
+          {
+            "node": "Parse Scoring JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Scoring JSON": {
+      "main": [
+        [
+          {
+            "node": "Save Application Score (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Application Score (PostgreSQL)": {
+      "main": [
+        [
+          {
+            "node": "HR Score Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Candidate Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Candidate Scoring",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Candidate Scoring (Manual Test)": {
+      "main": [
+        [
+          {
+            "node": "Get Candidate (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Job (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Candidate Data": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Job Data": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Webhook - Update Application Status": {
+      "main": [
+        [
+          {
+            "node": "Get Application",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Shortlist Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejection Email Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Selection Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Internal HR Notification Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message": {
+      "main": [
+        []
+      ]
+    },
+    "Postgres Trigger": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Application Status": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Application": {
+      "main": [
+        [
+          {
+            "node": "Get Candidate Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidate Contact": {
+      "main": [
+        [
+          {
+            "node": "Prepare Status Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Status Update": {
+      "main": [
+        [
+          {
+            "node": "Update Application Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shortlist Email": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interview Scheduled": {
+      "main": [
+        [
+          {
+            "node": "Send message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        [
+          {
+            "node": "Interview Scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Job Parser",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Final Job Data": {
+      "main": [
+        [
+          {
+            "node": "Save Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Job Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Selection Send a message": {
+      "main": [
+        [
+          {
+            "node": "Send message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rejection Email Send a message": {
+      "main": [
+        [
+          {
+            "node": "Send message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Internal HR Notification Send a message": {
+      "main": [
+        [
+          {
+            "node": "Send message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Index Candidate Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI (Index)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Index Candidate Resume",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Index Candidate Resume",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Resume Search": {
+      "main": [
+        [
+          {
+            "node": "Search Candidate Resumes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI (Search)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Search Candidate Resumes",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Candidate Resumes": {
+      "main": [
+        [
+          {
+            "node": "Format Resume Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Resume Search Results": {
+      "main": [
+        [
+          {
+            "node": "Respond Resume Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recruiter Dashboard Webhook": {
+      "main": [
+        [
+          {
+            "node": "Query Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Outreach Email Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Candidate For Outreach",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Job For Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidate For Outreach": {
+      "main": [
+        [
+          {
+            "node": "Merge Outreach Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job For Outreach": {
+      "main": [
+        [
+          {
+            "node": "Merge Outreach Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Outreach Data": {
+      "main": [
+        [
+          {
+            "node": "AI Outreach Email Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model (Outreach)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Outreach Email Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser (Outreach)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser (Outreach)": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Outreach Email Generator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Outreach Email Generator": {
+      "main": [
+        [
+          {
+            "node": "Send Outreach Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Outreach Email": {
+      "main": [
+        [
+          {
+            "node": "Respond Outreach Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Candidates": {
+      "main": [
+        [
+          {
+            "node": "Format Dashboard Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Dashboard Results": {
+      "main": [
+        [
+          {
+            "node": "Respond Recruiter Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

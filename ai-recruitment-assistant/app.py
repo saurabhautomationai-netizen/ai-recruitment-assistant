@@ -1,4 +1,3 @@
-import requests
 import html
 import json
 from datetime import date, datetime, timedelta
@@ -10,17 +9,10 @@ import streamlit as st
 from components.candidate_communications import (
     MESSAGE_TYPES,
     build_candidate_messages,
-    render_confirmed_send_button,
 )
-from components.ai_recruiter_chat import render_ai_recruiter_chat
 from components.metric_cards import metric_card
-from components.interview_copilot import render_interview_copilot
-from components.semantic_candidate_search import render_semantic_candidate_search
-from components.bulk_candidate_management import render_bulk_candidate_management
-from components.calendar_integration import render_calendar_integration
 from services.supabase_service import (
     create_interview,
-    build_interview_reschedule_updates,
     create_recruiter_note,
     get_applications,
     get_candidates,
@@ -28,21 +20,8 @@ from services.supabase_service import (
     get_jobs,
     get_recruiter_notes,
     update_application_stage,
-    update_candidate,
     update_interview,
-    update_job,
-    normalize_years_experience,
-    parse_interview_datetime_series,
 )
-from services.auth_service import (
-    get_current_role,
-    has_permission,
-    is_authenticated,
-    render_login,
-    sign_out,
-)
-from services.communication_service import get_communication_history
-from services.ai_persistence_service import list_bookmarks, toggle_bookmark
 
 
 st.set_page_config(
@@ -279,43 +258,22 @@ st.markdown(
 
 
 # =========================================================
-# Authentication boundary
-# =========================================================
-if not is_authenticated():
-    render_login()
-    st.stop()
-
-
-# =========================================================
 # Sidebar
 # =========================================================
-navigation_pages = [
-    "Overview",
-    "Candidates",
-    "Applications",
-    "Jobs",
-    "Interviews",
-    "Bulk Import / Export",
-    "Analytics",
-]
-if has_permission("ai"):
-    navigation_pages[5:5] = [
-        "AI Interview Copilot",
-        "Resume Semantic Search",
-        "AI Recruiter",
-    ]
-if has_permission("communicate"):
-    navigation_pages.insert(-1, "Communication History")
-
 with st.sidebar:
     st.markdown("## 🧠 ZERO Recruit")
     st.caption("AI Recruitment Assistant")
-    st.caption(st.session_state["auth_user"].get("email", "Authenticated recruiter"))
-    st.badge(get_current_role(), color="blue")
 
     selected_page = st.radio(
         "Navigation",
-        navigation_pages,
+        [
+            "Overview",
+            "Candidates",
+            "Applications",
+            "Jobs",
+            "Interviews",
+            "Analytics",
+        ],
         label_visibility="collapsed",
     )
 
@@ -323,10 +281,6 @@ with st.sidebar:
 
     if st.button("Refresh database"):
         st.cache_data.clear()
-        st.rerun()
-
-    if st.button("Log out", icon=":material/logout:"):
-        sign_out()
         st.rerun()
 
     st.caption("Portfolio Version 1.0")
@@ -338,10 +292,6 @@ with st.sidebar:
 raw_candidates = get_candidates()
 raw_applications = get_applications()
 raw_jobs = get_jobs()
-can_manage_candidates = has_permission("candidate_write")
-can_manage_jobs = has_permission("job_write")
-can_manage_interviews = has_permission("interview_write")
-can_add_notes = has_permission("notes_write")
 
 
 # =========================================================
@@ -1306,42 +1256,7 @@ elif selected_page == "Candidates":
         unsafe_allow_html=True,
     )
 
-    include_archived_candidates = st.toggle(
-        "Show archived candidates",
-        value=False,
-        key="show_archived_candidates",
-    )
-    archived_candidate_ids: set[str] = set()
-    if not raw_candidates.empty and "status" in raw_candidates.columns:
-        archived_candidate_ids = set(
-            raw_candidates.loc[
-                raw_candidates["status"]
-                .fillna("")
-                .astype(str)
-                .str.casefold()
-                .eq("archived"),
-                "id",
-            ].astype(str)
-        )
-    visible_candidates = candidates.copy()
-    if (
-        not include_archived_candidates
-        and archived_candidate_ids
-        and "candidate_id" in raw_candidates.columns
-    ):
-        visible_candidates = candidates
-    elif not include_archived_candidates and archived_candidate_ids:
-        visible_names = set(
-            raw_candidates.loc[
-                ~raw_candidates["id"].astype(str).isin(archived_candidate_ids),
-                "full_name",
-            ].astype(str)
-        )
-        visible_candidates = candidates[
-            candidates["Candidate"].astype(str).isin(visible_names)
-        ]
-
-    if visible_candidates.empty or raw_candidates.empty:
+    if candidates.empty or raw_candidates.empty:
         st.info("No candidates found.")
 
     else:
@@ -1389,7 +1304,7 @@ elif selected_page == "Candidates":
                 ["All"] + available_roles,
             )
 
-        filtered_candidates = visible_candidates.copy()
+        filtered_candidates = candidates.copy()
 
         if search_text:
             normalized_search = search_text.strip().lower()
@@ -1429,13 +1344,7 @@ elif selected_page == "Candidates":
 
         candidate_options = {}
 
-        selectable_candidates = raw_candidates
-        if not include_archived_candidates and archived_candidate_ids:
-            selectable_candidates = raw_candidates[
-                ~raw_candidates["id"].astype(str).isin(archived_candidate_ids)
-            ]
-
-        for _, candidate_row in selectable_candidates.iterrows():
+        for _, candidate_row in raw_candidates.iterrows():
             candidate_id = str(
                 candidate_row.get("id", "")
             )
@@ -1755,337 +1664,98 @@ elif selected_page == "Candidates":
 
             st.markdown("### Candidate actions")
 
-            candidate_is_archived = (
-                safe_value(selected_raw_candidate, "status", "")
-                .strip()
-                .casefold()
-                == "archived"
-            )
-
-            @st.dialog("Edit candidate", icon=":material/edit:")
-            def edit_candidate_dialog() -> None:
-                with st.form(f"edit_candidate_{selected_candidate_id}"):
-                    edited_name = st.text_input(
-                        "Full name",
-                        value=safe_value(selected_raw_candidate, "full_name", ""),
-                    )
-                    edited_email = st.text_input(
-                        "Email",
-                        value=safe_value(selected_raw_candidate, "email", ""),
-                    )
-                    edited_phone = st.text_input(
-                        "Phone",
-                        value=safe_value(selected_raw_candidate, "phone", ""),
-                    )
-                    edited_location = st.text_input(
-                        "Location",
-                        value=safe_value(selected_raw_candidate, "location", ""),
-                    )
-                    edited_experience = st.number_input(
-                        "Years of experience",
-                        min_value=0,
-                        value=normalize_years_experience(
-                            selected_raw_candidate.get("years_experience")
-                        ),
-                        step=1,
-                        format="%d",
-                    )
-                    candidate_edit_submitted = st.form_submit_button(
-                        "Save candidate", type="primary", width="stretch",
-                        disabled=not can_manage_candidates,
-                    )
-                if candidate_edit_submitted:
-                    if not edited_name.strip():
-                        st.error("Full name is required.")
-                        return
+            if not selected_application_id:
+                st.info(
+                    "Candidate actions require an application record."
+                )
+            else:
+                def set_application_stage(
+                    new_stage: str,
+                ) -> None:
                     try:
-                        candidate_updates = {
-                            "full_name": edited_name.strip(),
-                        }
-                        optional_candidate_updates = {
-                            "email": edited_email.strip(),
-                            "phone": edited_phone.strip(),
-                            "location": edited_location.strip(),
-                            "years_experience": edited_experience,
-                        }
-                        candidate_updates.update(
-                            {
-                                field: value
-                                for field, value in optional_candidate_updates.items()
-                                if field in selected_raw_candidate.index
-                            }
-                        )
-                        update_candidate(
-                            selected_candidate_id,
-                            candidate_updates,
+                        update_application_stage(
+                            selected_application_id,
+                            new_stage,
                         )
                     except Exception as error:
-                        st.error(f"Could not update the candidate: {error}")
-                    else:
-                        get_candidates.clear()
-                        st.session_state["candidate_profile_success"] = (
-                            "Candidate profile updated."
+                        st.error(
+                            "Could not update the application stage: "
+                            f"{error}"
                         )
-                        st.rerun()
+                        return
 
-            candidate_profile_success = st.session_state.pop(
-                "candidate_profile_success", None
-            )
-            if candidate_profile_success:
-                st.success(candidate_profile_success)
-
-            with st.container(horizontal=True):
-                if st.button(
-                    "Edit candidate",
-                    icon=":material/edit:",
-                    key=f"edit_candidate_button_{selected_candidate_id}",
-                    disabled=not can_manage_candidates,
-                ):
-                    edit_candidate_dialog()
-                lifecycle_label = (
-                    "Restore candidate" if candidate_is_archived else "Archive candidate"
-                )
-                lifecycle_icon = (
-                    ":material/restore:" if candidate_is_archived else ":material/archive:"
-                )
-                with st.popover(
-                    lifecycle_label,
-                    icon=lifecycle_icon,
-                ):
-                    st.warning(
-                        "Restore this candidate to Pending Review?"
-                        if candidate_is_archived
-                        else "Archive this candidate? No data will be deleted."
-                    )
-                    if st.button(
-                        "Confirm",
-                        type="primary",
-                        key=f"candidate_lifecycle_{selected_candidate_id}",
-                        disabled=not can_manage_candidates,
-                    ):
-                        try:
-                            update_candidate(
-                                selected_candidate_id,
-                                {
-                                    "status": (
-                                        "Pending Review"
-                                        if candidate_is_archived
-                                        else "Archived"
-                                    )
-                                },
-                            )
-                        except Exception as error:
-                            st.error(f"Could not update the candidate: {error}")
-
-                        else:
-                            get_candidates.clear()
-                            st.session_state["candidate_profile_success"] = (
-                                "Candidate restored."
-                                if candidate_is_archived
-                                else "Candidate archived."
-                            )
-                            st.rerun()
-
-        # Candidate actions
-        if not selected_application_id:
-            def set_direct_candidate_status(new_status: str) -> None:
-                try:
-                    update_candidate(selected_candidate_id, {"status": new_status})
-                    get_candidates.clear()
-                    st.session_state["candidate_profile_success"] = (
-                        f"Candidate status updated to {new_status}."
-                    )
+                    get_applications.clear()
+                    st.session_state[
+                        "candidate_action_success"
+                    ] = {
+                        "application_id": (
+                            selected_application_id
+                        ),
+                        "message": (
+                            "Application stage updated to "
+                            f"{new_stage}."
+                        ),
+                        "stage": new_stage,
+                    }
                     st.rerun()
-                except Exception as error:
-                    st.error(f"Could not update candidate status: {error}")
 
-            action_col1, action_col2, action_col3, action_col4 = st.columns(4)
-            with action_col1:
-                if st.button(
-                    "Shortlist Candidate",
-                    key=f"shortlist_cand_dir_{selected_candidate_id}",
-                    width="stretch",
-                    disabled=not can_manage_candidates,
-                ):
-                    set_direct_candidate_status("Shortlisted")
-            with action_col2:
-                if st.button(
-                    "Move to Interview",
-                    key=f"interview_cand_dir_{selected_candidate_id}",
-                    width="stretch",
-                    disabled=not can_manage_candidates,
-                ):
-                    set_direct_candidate_status("Interview")
-            with action_col3:
-                if st.button(
-                    "Select Candidate",
-                    key=f"select_cand_dir_{selected_candidate_id}",
-                    width="stretch",
-                    disabled=not can_manage_candidates,
-                ):
-                    set_direct_candidate_status("Selected")
-            with action_col4:
-                with st.popover("Reject Candidate", width="stretch"):
-                    st.warning("Reject this candidate?")
+                action_col1, action_col2, action_col3, action_col4 = (
+                    st.columns(4)
+                )
+
+                with action_col1:
                     if st.button(
-                        "Confirm rejection",
-                        key=f"confirm_reject_cand_dir_{selected_candidate_id}",
-                        type="primary",
-                        width="stretch",
-                        disabled=not can_manage_candidates,
-                    ):
-                        set_direct_candidate_status("Rejected")
-        else:
-
-            def set_application_stage(
-                new_stage: str,
-            ) -> None:
-
-                # ---------------------------------------------
-                # 1. Update application stage in Supabase
-                # ---------------------------------------------
-                try:
-                    update_application_stage(
-                        selected_application_id,
-                        new_stage,
-                    )
-
-                except Exception as error:
-                    st.error(
-                        "Could not update the application stage: "
-                        f"{error}"
-                    )
-                    return
-
-                # ---------------------------------------------
-                # 2. Trigger n8n notification workflow
-                # ---------------------------------------------
-                try:
-                    n8n_webhook_url = (
-                        "https://saurabhautomation7596.app.n8n.cloud/"
-                        "webhook/b8eb741d-cbf0-4cfc-8940-0e16fcaf5981"
-                    )
-
-                    response = requests.post(
-                        n8n_webhook_url,
-                        json={
-                            "application_id": selected_application_id,
-                            "application_stage": new_stage,
-                        },
-                        timeout=10,
-                    )
-
-                    response.raise_for_status()
-
-                except Exception as error:
-                    st.warning(
-                        "Application stage was updated, "
-                        "but the n8n notification workflow "
-                        "could not be triggered: "
-                        f"{error}"
-                    )
-
-                # ---------------------------------------------
-                # 3. Refresh application data
-                # ---------------------------------------------
-                get_applications.clear()
-
-                # ---------------------------------------------
-                # 4. Store success message
-                # ---------------------------------------------
-                st.session_state[
-                    "candidate_action_success"
-                ] = {
-                    "application_id": selected_application_id,
-                    "message": (
-                        "Application stage updated to "
-                        f"{new_stage}."
-                    ),
-                    "stage": new_stage,
-                }
-
-                # ---------------------------------------------
-                # 5. Refresh dashboard
-                # ---------------------------------------------
-                st.rerun()
-
-            # =================================================
-            # Candidate action buttons
-            # =================================================
-
-            action_col1, action_col2, action_col3, action_col4 = (
-                st.columns(4)
-            )
-
-            # ---------------------------------------------
-            # Shortlist Candidate
-            # ---------------------------------------------
-            with action_col1:
-                if st.button(
-                    "Shortlist Candidate",
-                    key=(
-                        "shortlist_candidate_"
-                        f"{selected_application_id}"
-                    ),
-                    width="stretch",
-                    disabled=not can_manage_candidates,
-                ):
-                    set_application_stage("Shortlisted")
-
-            # ---------------------------------------------
-            # Move to Interview
-            # ---------------------------------------------
-            with action_col2:
-                if st.button(
-                    "Move to Interview",
-                    key=(
-                        "interview_candidate_"
-                        f"{selected_application_id}"
-                    ),
-                    width="stretch",
-                    disabled=not can_manage_candidates,
-                ):
-                    set_application_stage("Interview")
-
-            # ---------------------------------------------
-            # Select Candidate
-            # ---------------------------------------------
-            with action_col3:
-                if st.button(
-                    "Select Candidate",
-                    key=(
-                        "select_candidate_"
-                        f"{selected_application_id}"
-                    ),
-                    width="stretch",
-                    disabled=not can_manage_candidates,
-                ):
-                    set_application_stage("Selected")
-
-            # ---------------------------------------------
-            # Reject Candidate
-            # ---------------------------------------------
-            with action_col4:
-                with st.popover(
-                    "Reject Candidate",
-                    width="stretch",
-                ):
-                    st.warning(
-                        "Reject this candidate's selected "
-                        "application?"
-                    )
-
-                    if st.button(
-                        "Confirm rejection",
+                        "Shortlist Candidate",
                         key=(
-                            "confirm_reject_candidate_"
+                            "shortlist_candidate_"
                             f"{selected_application_id}"
                         ),
-                        type="primary",
                         width="stretch",
-                        disabled=not can_manage_candidates,
                     ):
-                        set_application_stage("Rejected")
+                        set_application_stage("Shortlisted")
+
+                with action_col2:
+                    if st.button(
+                        "Move to Interview",
+                        key=(
+                            "interview_candidate_"
+                            f"{selected_application_id}"
+                        ),
+                        width="stretch",
+                    ):
+                        set_application_stage("Interview")
+
+                with action_col3:
+                    if st.button(
+                        "Select Candidate",
+                        key=(
+                            "select_candidate_"
+                            f"{selected_application_id}"
+                        ),
+                        width="stretch",
+                    ):
+                        set_application_stage("Selected")
+
+                with action_col4:
+                    with st.popover(
+                        "Reject Candidate",
+                        width="stretch",
+                    ):
+                        st.warning(
+                            "Reject this candidate's selected "
+                            "application?"
+                        )
+
+                        if st.button(
+                            "Confirm rejection",
+                            key=(
+                                "confirm_reject_candidate_"
+                                f"{selected_application_id}"
+                            ),
+                            type="primary",
+                            width="stretch",
+                        ):
+                            set_application_stage("Rejected")
 
             # ---------------------------------------------
             # Interview scheduler
@@ -2168,7 +1838,6 @@ elif selected_page == "Candidates":
                             "Save interview",
                             type="primary",
                             width="stretch",
-                            disabled=not can_manage_interviews,
                         )
 
                     if schedule_submitted:
@@ -2358,33 +2027,6 @@ elif selected_page == "Candidates":
                                 ),
                             )
 
-                if not candidate_interviews.empty:
-                    calendar_interview = candidate_interviews.iloc[0]
-                    calendar_metadata = parse_stored_value(
-                        calendar_interview.get("feedback")
-                    )
-                    if not isinstance(calendar_metadata, dict):
-                        calendar_metadata = {}
-                    render_calendar_integration(
-                        candidate=candidate_name,
-                        candidate_email=safe_value(
-                            selected_raw_candidate, "email", ""
-                        ),
-                        interviewer=safe_value(
-                            calendar_interview, "interviewer", ""
-                        ),
-                        job=role,
-                        start=safe_value(
-                            calendar_interview, "interview_date", ""
-                        ),
-                        location=(
-                            calendar_metadata.get("meeting_link")
-                            or calendar_metadata.get("meeting_location")
-                            or calendar_metadata.get("location")
-                            or ""
-                        ),
-                    )
-
             # ---------------------------------------------
             # Recruiter notes
             # ---------------------------------------------
@@ -2423,7 +2065,6 @@ elif selected_page == "Candidates":
                             st.form_submit_button(
                                 "Save note",
                                 type="primary",
-                                disabled=not can_add_notes,
                             )
                         )
 
@@ -2525,13 +2166,6 @@ elif selected_page == "Candidates":
             # Candidate communication drafts
             # ---------------------------------------------
             st.markdown("### Candidate Communication Actions")
-
-            communication_success = st.session_state.pop(
-                "candidate_communication_success",
-                None,
-            )
-            if communication_success:
-                st.success(communication_success)
 
             candidate_email = safe_value(
                 selected_raw_candidate,
@@ -2680,23 +2314,21 @@ elif selected_page == "Candidates":
                         st.write("**Subject:**", email_subject)
                         st.text(email_body)
 
-                    if not candidate_email:
-                        st.error("Candidate email is not available.")
-                    render_confirmed_send_button(
-                        channel="email",
-                        recipient=candidate_email,
-                        message_type=selected_message_type,
-                        message=email_body,
-                        candidate_name=candidate_name,
-                        job_title=role,
-                        application_stage=application_stage,
-                        application_id=selected_application_id,
-                        subject=email_subject,
+                    if st.button(
+                        "Email Candidate",
                         key=(
                             "email_candidate_"
                             f"{selected_candidate_id}"
                         ),
-                    )
+                    ):
+                        if not candidate_email:
+                            st.error(
+                                "Candidate email is not available."
+                            )
+                        else:
+                            st.info(
+                                "Email draft is ready. No email was sent."
+                            )
 
                 with whatsapp_draft_col:
                     st.markdown("#### WhatsApp preview")
@@ -2717,46 +2349,22 @@ elif selected_page == "Candidates":
                     with st.container(border=True):
                         st.text(whatsapp_body)
 
-                    if not candidate_phone:
-                        st.error(
-                            "Candidate phone number is not available."
-                        )
-                    render_confirmed_send_button(
-                        channel="whatsapp",
-                        recipient=candidate_phone,
-                        message_type=selected_message_type,
-                        message=whatsapp_body,
-                        candidate_name=candidate_name,
-                        job_title=role,
-                        application_stage=application_stage,
-                        application_id=selected_application_id,
+                    if st.button(
+                        "WhatsApp Candidate",
                         key=(
                             "whatsapp_candidate_"
                             f"{selected_candidate_id}"
                         ),
-                    )
-
-                message_history = st.session_state.get(
-                    "candidate_message_history",
-                    [],
-                )
-                if message_history:
-                    with st.expander("Message history"):
-                        history_rows = [
-                            {
-                                "Sent at": item.get("sent_at", ""),
-                                "Channel": item.get("channel", "").title(),
-                                "Recipient": item.get("recipient", ""),
-                                "Message type": item.get("message_type", ""),
-                                "Attempts": item.get("attempts", ""),
-                            }
-                            for item in reversed(message_history)
-                        ]
-                        st.dataframe(
-                            pd.DataFrame(history_rows),
-                            hide_index=True,
-                            width="stretch",
-                        )
+                    ):
+                        if not candidate_phone:
+                            st.error(
+                                "Candidate phone number is not available."
+                            )
+                        else:
+                            st.info(
+                                "WhatsApp draft is ready. No message "
+                                "was sent."
+                            )
 
             # ---------------------------------------------
             # Contact and career information
@@ -2873,7 +2481,7 @@ elif selected_page == "Candidates":
 
             st.divider()
 
-                        # ---------------------------------------------
+            # ---------------------------------------------
             # Resume data
             # ---------------------------------------------
             skills_col, education_col = st.columns(2)
@@ -3107,237 +2715,14 @@ elif selected_page == "Jobs":
         unsafe_allow_html=True,
     )
 
-    job_success = st.session_state.pop("job_management_success", None)
-    if job_success:
-        st.success(job_success)
-
     if raw_jobs.empty:
         st.info("No jobs found.")
     else:
-        with st.popover("Saved job bookmarks", icon=":material/bookmarks:"):
-            if st.button(
-                "Load job bookmarks", key="load_job_bookmarks",
-                disabled=not has_permission("ai"),
-            ):
-                loaded_job_bookmarks, bookmark_storage = list_bookmarks("job")
-                st.session_state["ai_job_bookmarks"] = {
-                    str(bookmark.get("job_id", "")): bookmark
-                    for bookmark in loaded_job_bookmarks
-                    if bookmark.get("job_id")
-                }
-                st.session_state["job_bookmark_storage"] = bookmark_storage
-            bookmarks_to_show = st.session_state.get("ai_job_bookmarks", {})
-            if not bookmarks_to_show:
-                st.caption("No job bookmarks loaded.")
-            for bookmarked_job_id in bookmarks_to_show:
-                title_rows = raw_jobs[
-                    raw_jobs["id"].astype(str).eq(bookmarked_job_id)
-                ]
-                st.write(
-                    title_rows.iloc[0].get("title", bookmarked_job_id)
-                    if not title_rows.empty else bookmarked_job_id
-                )
-        show_archived_jobs = st.toggle(
-            "Show archived jobs",
-            value=False,
-            key="show_archived_jobs",
-        )
-        jobs_view = raw_jobs.copy()
-        if "status" in jobs_view.columns and not show_archived_jobs:
-            jobs_view = jobs_view[
-                ~jobs_view["status"]
-                .fillna("")
-                .astype(str)
-                .str.casefold()
-                .eq("archived")
-            ]
-
-        search_job = st.text_input(
-            "Search jobs",
-            placeholder="Search by title, department, location or status",
-        )
-        if search_job:
-            jobs_view = jobs_view[
-                jobs_view.astype(str).apply(
-                    lambda row: row.str.contains(
-                        search_job.strip(), case=False, regex=False
-                    ).any(),
-                    axis=1,
-                )
-            ]
-        if jobs_view.empty:
-            st.info("No jobs match the current filters.")
-            st.stop()
-
         st.dataframe(
-            jobs_view,
+            raw_jobs,
             width="stretch",
             hide_index=True,
         )
-
-        job_options = {
-            (
-                f"{safe_value(row, 'title', 'Untitled job')} — "
-                f"{safe_value(row, 'status', 'Unknown')}"
-            ): str(row.get("id", ""))
-            for _, row in jobs_view.iterrows()
-        }
-        selected_job_label = st.selectbox(
-            "Manage job",
-            list(job_options),
-        )
-        managed_job_id = job_options[selected_job_label]
-        managed_job = jobs_view[
-            jobs_view["id"].astype(str).eq(managed_job_id)
-        ].iloc[0]
-        managed_job_status = safe_value(
-            managed_job, "status", "Open"
-        ).strip()
-
-        with st.container(border=True):
-            st.markdown(
-                f"#### {safe_value(managed_job, 'title', 'Untitled job')}"
-            )
-            st.caption(
-                f"{safe_value(managed_job, 'department')} · "
-                f"{safe_value(managed_job, 'location')} · "
-                f"{managed_job_status}"
-            )
-
-            @st.dialog("Edit job", icon=":material/edit:")
-            def edit_job_dialog() -> None:
-                with st.form(f"edit_job_{managed_job_id}"):
-                    job_title = st.text_input(
-                        "Title", value=safe_value(managed_job, "title", "")
-                    )
-                    job_department = st.text_input(
-                        "Department",
-                        value=safe_value(managed_job, "department", ""),
-                    )
-                    job_location = st.text_input(
-                        "Location",
-                        value=safe_value(managed_job, "location", ""),
-                    )
-                    job_description = st.text_area(
-                        "Description",
-                        value=safe_value(managed_job, "description", ""),
-                    )
-                    job_edit_submitted = st.form_submit_button(
-                        "Save job", type="primary", width="stretch",
-                        disabled=not can_manage_jobs,
-                    )
-                if job_edit_submitted:
-                    if not job_title.strip():
-                        st.error("Job title is required.")
-                        return
-                    try:
-                        job_updates = {"title": job_title.strip()}
-                        optional_job_updates = {
-                            "department": job_department.strip(),
-                            "location": job_location.strip(),
-                            "description": job_description.strip(),
-                        }
-                        job_updates.update(
-                            {
-                                field: value
-                                for field, value in optional_job_updates.items()
-                                if field in managed_job.index
-                            }
-                        )
-                        update_job(
-                            managed_job_id,
-                            job_updates,
-                        )
-                    except Exception as error:
-                        st.error(f"Could not update the job: {error}")
-                    else:
-                        get_jobs.clear()
-                        st.session_state["job_management_success"] = (
-                            "Job updated."
-                        )
-                        st.rerun()
-
-            def change_job_status(status: str, message: str) -> None:
-                try:
-                    update_job(managed_job_id, {"status": status})
-                except Exception as error:
-                    st.error(f"Could not update the job: {error}")
-                    return
-                get_jobs.clear()
-                st.session_state["job_management_success"] = message
-                st.rerun()
-
-            with st.container(horizontal=True):
-                job_bookmarks = st.session_state.setdefault(
-                    "ai_job_bookmarks", {}
-                )
-                job_is_bookmarked = managed_job_id in job_bookmarks
-                if st.button(
-                    "Remove bookmark" if job_is_bookmarked else "Bookmark job",
-                    icon=(
-                        ":material/bookmark_remove:"
-                        if job_is_bookmarked
-                        else ":material/bookmark_add:"
-                    ),
-                    key=f"bookmark_job_{managed_job_id}",
-                    disabled=not has_permission("ai"),
-                ):
-                    saved, storage = toggle_bookmark(
-                        "job",
-                        managed_job_id,
-                        {"Job": safe_value(managed_job, "title", "Untitled job")},
-                    )
-                    if storage == "database":
-                        if saved:
-                            job_bookmarks[managed_job_id] = {
-                                "Job": safe_value(managed_job, "title", "Untitled job")
-                            }
-                        else:
-                            job_bookmarks.pop(managed_job_id, None)
-                    st.rerun()
-                if st.button(
-                    "Edit job",
-                    icon=":material/edit:",
-                    key=f"edit_job_button_{managed_job_id}",
-                    disabled=not can_manage_jobs,
-                ):
-                    edit_job_dialog()
-                normalized_job_status = managed_job_status.casefold()
-                if normalized_job_status == "archived":
-                    if st.button(
-                        "Reopen job",
-                        icon=":material/replay:",
-                        key=f"reopen_archived_job_{managed_job_id}",
-                        disabled=not can_manage_jobs,
-                    ):
-                        change_job_status("Open", "Job reopened.")
-                else:
-                    if normalized_job_status != "closed" and st.button(
-                        "Close job",
-                        icon=":material/event_busy:",
-                        key=f"close_job_{managed_job_id}",
-                        disabled=not can_manage_jobs,
-                    ):
-                        change_job_status("Closed", "Job closed.")
-                    if normalized_job_status == "closed" and st.button(
-                        "Reopen job",
-                        icon=":material/replay:",
-                        key=f"reopen_job_{managed_job_id}",
-                        disabled=not can_manage_jobs,
-                    ):
-                        change_job_status("Open", "Job reopened.")
-                    with st.popover(
-                        "Archive job",
-                        icon=":material/archive:",
-                    ):
-                        st.warning("Archive this job? No data will be deleted.")
-                        if st.button(
-                            "Confirm archive",
-                            type="primary",
-                            key=f"archive_job_{managed_job_id}",
-                            disabled=not can_manage_jobs,
-                        ):
-                            change_job_status("Archived", "Job archived.")
 
 
 # =========================================================
@@ -3497,11 +2882,13 @@ elif selected_page == "Interviews":
             "status",
             pd.Series("", index=managed_interviews.index),
         ).fillna("").astype(str).str.strip()
-        managed_interviews["_scheduled_for"] = parse_interview_datetime_series(
+        managed_interviews["_scheduled_for"] = pd.to_datetime(
             managed_interviews.get(
                 "interview_date",
                 pd.Series(None, index=managed_interviews.index),
-            )
+            ),
+            errors="coerce",
+            utc=True,
         )
         managed_interviews["_interview_day"] = managed_interviews[
             "_scheduled_for"
@@ -3668,7 +3055,7 @@ elif selected_page == "Interviews":
                         "%d %b %Y"
                     )
                     displayed_time = scheduled_for.strftime(
-                        "%I:%M %p IST"
+                        "%I:%M %p UTC"
                     )
 
                 with st.container(border=True):
@@ -3721,7 +3108,6 @@ elif selected_page == "Interviews":
                         if st.button(
                             "Mark Scheduled",
                             key=f"scheduled_{interview_id}",
-                            disabled=not can_manage_interviews,
                         ):
                             save_interview_update(
                                 interview_id,
@@ -3732,7 +3118,6 @@ elif selected_page == "Interviews":
                         if st.button(
                             "Mark Completed",
                             key=f"completed_{interview_id}",
-                            disabled=not can_manage_interviews,
                         ):
                             save_interview_update(
                                 interview_id,
@@ -3743,99 +3128,11 @@ elif selected_page == "Interviews":
                         if st.button(
                             "Mark Cancelled",
                             key=f"cancelled_{interview_id}",
-                            disabled=not can_manage_interviews,
                         ):
                             save_interview_update(
                                 interview_id,
                                 {"status": "Cancelled"},
                                 "Interview marked as Cancelled.",
-                            )
-
-                    with st.expander(
-                        "Change schedule or meeting details",
-                        icon=":material/edit_calendar:",
-                    ):
-                        default_schedule = (
-                            scheduled_for.to_pydatetime().replace(tzinfo=None)
-                            if not pd.isna(scheduled_for)
-                            else datetime.now() + timedelta(minutes=30)
-                        )
-                        with st.form(f"reschedule_{interview_id}"):
-                            reschedule_col1, reschedule_col2 = st.columns(2)
-                            with reschedule_col1:
-                                revised_date = st.date_input(
-                                    "New interview date",
-                                    value=default_schedule.date(),
-                                    key=f"reschedule_date_{interview_id}",
-                                )
-                                revised_interviewer = st.text_input(
-                                    "Interviewer",
-                                    value=interview_row["Interviewer"],
-                                    key=f"reschedule_interviewer_{interview_id}",
-                                )
-                            with reschedule_col2:
-                                revised_time = st.time_input(
-                                    "New interview time",
-                                    value=default_schedule.time(),
-                                    key=f"reschedule_time_{interview_id}",
-                                )
-                                revised_meeting_link = st.text_input(
-                                    "Meeting link or location",
-                                    value=str(meeting_location or ""),
-                                    key=f"reschedule_link_{interview_id}",
-                                )
-                            reschedule_submitted = st.form_submit_button(
-                                "Save interview changes",
-                                type="primary",
-                                disabled=not can_manage_interviews,
-                            )
-                        if reschedule_submitted:
-                            revised_datetime = datetime.combine(
-                                revised_date, revised_time
-                            )
-                            if revised_datetime < datetime.now():
-                                st.error(
-                                    "Interview date and time cannot be in the past."
-                                )
-                            elif not revised_interviewer.strip():
-                                st.error("Interviewer name is required.")
-                            elif not revised_meeting_link.strip():
-                                st.error("Meeting link or location is required.")
-                            else:
-                                reschedule_updates = (
-                                    build_interview_reschedule_updates(
-                                        current_interview_date=(
-                                            interview_row.get("interview_date")
-                                        ),
-                                        revised_date=revised_date,
-                                        revised_time=revised_time,
-                                        interviewer=(
-                                            revised_interviewer.strip()
-                                        ),
-                                        feedback=stored_feedback,
-                                        meeting_location=(
-                                            revised_meeting_link.strip()
-                                        ),
-                                    )
-                                )
-                                save_interview_update(
-                                    interview_id,
-                                    reschedule_updates,
-                                    "Interview details updated.",
-                                )
-
-                    if (
-                        isinstance(stored_feedback, dict)
-                        and stored_feedback.get("_history")
-                    ):
-                        with st.expander(
-                            "Change history",
-                            icon=":material/history:",
-                        ):
-                            st.dataframe(
-                                pd.DataFrame(stored_feedback["_history"]),
-                                hide_index=True,
-                                width="stretch",
                             )
 
                     with st.form(f"feedback_{interview_id}"):
@@ -3859,8 +3156,7 @@ elif selected_page == "Interviews":
                             key=f"rating_{interview_id}",
                         )
                         feedback_submitted = st.form_submit_button(
-                            "Save feedback and rating",
-                            disabled=not can_manage_interviews,
+                            "Save feedback and rating"
                         )
 
                     if feedback_submitted:
@@ -3885,181 +3181,6 @@ elif selected_page == "Interviews":
                                 },
                                 "Interview feedback and rating saved.",
                             )
-
-
-# =========================================================
-# AI Interview Copilot page
-# =========================================================
-elif selected_page == "AI Interview Copilot":
-    render_interview_copilot(
-        raw_candidates,
-        raw_applications,
-        raw_jobs,
-        get_recruiter_notes(),
-        get_interviews(),
-    )
-
-
-# =========================================================
-# Resume Semantic Search page
-# =========================================================
-elif selected_page == "Resume Semantic Search":
-    render_semantic_candidate_search(raw_candidates, raw_jobs)
-
-
-# =========================================================
-# Bulk Import / Export page
-# =========================================================
-elif selected_page == "Bulk Import / Export":
-    render_bulk_candidate_management(
-        raw_candidates,
-        raw_applications,
-        raw_jobs,
-    )
-
-
-# =========================================================
-# Communication History page
-# =========================================================
-elif selected_page == "Communication History":
-    st.markdown(
-        '<div class="main-title">Communication history</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div class="main-subtitle">'
-        "Review audited email and WhatsApp delivery attempts."
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    communication_entries = get_communication_history()
-    if not communication_entries:
-        st.info(
-            "No structured communication audit entries are available yet. "
-            "New delivery attempts will appear here."
-        )
-    else:
-        communication_frame = pd.DataFrame(communication_entries)
-        application_context: dict[str, dict[str, str]] = {}
-        candidate_names = {
-            str(row.get("id", "")): str(row.get("full_name", "Unknown candidate"))
-            for _, row in raw_candidates.iterrows()
-        }
-        job_titles = {
-            str(row.get("id", "")): str(row.get("title", "Unknown job"))
-            for _, row in raw_jobs.iterrows()
-        }
-        for _, row in raw_applications.iterrows():
-            application_context[str(row.get("id", ""))] = {
-                "Candidate": candidate_names.get(
-                    str(row.get("candidate_id", "")), "Unknown candidate"
-                ),
-                "Job": job_titles.get(
-                    str(row.get("job_id", "")), "Unknown job"
-                ),
-            }
-
-        communication_frame["Candidate"] = communication_frame.get(
-            "application_id", pd.Series("", index=communication_frame.index)
-        ).astype(str).map(
-            lambda value: application_context.get(value, {}).get(
-                "Candidate", "Unknown candidate"
-            )
-        )
-        communication_frame["Job"] = communication_frame.get(
-            "application_id", pd.Series("", index=communication_frame.index)
-        ).astype(str).map(
-            lambda value: application_context.get(value, {}).get(
-                "Job", "Unknown job"
-            )
-        )
-        communication_frame = communication_frame.rename(
-            columns={
-                "channel": "Channel",
-                "status": "Delivery status",
-                "attempts": "Retry count",
-                "timestamp": "Time sent",
-                "recruiter": "Recruiter",
-                "message_type": "Message type",
-                "recipient": "Recipient",
-                "status_code": "HTTP status",
-            }
-        )
-        if "Retry count" in communication_frame.columns:
-            communication_frame["Retry count"] = (
-                pd.to_numeric(
-                    communication_frame["Retry count"], errors="coerce"
-                )
-                .fillna(1)
-                .astype(int)
-                .sub(1)
-                .clip(lower=0)
-            )
-        channel_filter, status_filter = st.columns(2)
-        channels = sorted(
-            communication_frame.get(
-                "Channel", pd.Series(dtype="object")
-            ).dropna().astype(str).unique()
-        )
-        statuses = sorted(
-            communication_frame.get(
-                "Delivery status", pd.Series(dtype="object")
-            ).dropna().astype(str).unique()
-        )
-        selected_channel = channel_filter.selectbox(
-            "Channel", ["All"] + channels
-        )
-        selected_delivery_status = status_filter.selectbox(
-            "Delivery status", ["All"] + statuses
-        )
-        if selected_channel != "All":
-            communication_frame = communication_frame[
-                communication_frame["Channel"].eq(selected_channel)
-            ]
-        if selected_delivery_status != "All":
-            communication_frame = communication_frame[
-                communication_frame["Delivery status"].eq(
-                    selected_delivery_status
-                )
-            ]
-        display_columns = [
-            "Channel",
-            "Delivery status",
-            "Retry count",
-            "Time sent",
-            "Recruiter",
-            "Candidate",
-            "Job",
-            "Message type",
-            "Recipient",
-            "HTTP status",
-        ]
-        display_columns = [
-            column
-            for column in display_columns
-            if column in communication_frame.columns
-        ]
-        if communication_frame.empty:
-            st.info("No communications match the selected filters.")
-        else:
-            st.dataframe(
-                communication_frame[display_columns],
-                hide_index=True,
-                width="stretch",
-            )
-
-
-# =========================================================
-# AI Recruiter page
-# =========================================================
-elif selected_page == "AI Recruiter":
-    render_ai_recruiter_chat(
-        raw_candidates,
-        raw_applications,
-        raw_jobs,
-        get_interviews(),
-    )
 
 
 # =========================================================

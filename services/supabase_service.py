@@ -1,34 +1,21 @@
-import os
-
 import pandas as pd
 import streamlit as st
-from dotenv import load_dotenv
-from supabase import Client, create_client
+from supabase import Client
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from datetime import date, time
+from zoneinfo import ZoneInfo
 
-
-load_dotenv()
+from services.auth_service import (
+    get_session_supabase_client,
+    require_permission,
+)
 
 
 def get_supabase_client() -> Client:
     """Create and return the Supabase client."""
 
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-
-    if not supabase_url:
-        raise ValueError(
-            "SUPABASE_URL is missing from the .env file."
-        )
-
-    if not supabase_key:
-        raise ValueError(
-            "SUPABASE_KEY is missing from the .env file."
-        )
-
-    return create_client(
-        supabase_url,
-        supabase_key,
-    )
+    return get_session_supabase_client()
 
 
 def fetch_table(
@@ -88,6 +75,8 @@ def update_application_stage(
 ) -> None:
     """Update the stage of one application identified by its id."""
 
+    require_permission("candidate_write")
+
     if not application_id:
         raise ValueError("An application id is required.")
 
@@ -97,11 +86,194 @@ def update_application_stage(
     ).eq("id", application_id).execute()
 
 
+def _update_record(
+    table_name: str,
+    record_id: str,
+    updates: dict,
+    allowed_fields: set[str],
+) -> None:
+    """Update one authenticated record using an explicit field allowlist."""
+
+    permission_by_table = {
+        "candidates": "candidate_write",
+        "jobs": "job_write",
+    }
+    require_permission(permission_by_table[table_name])
+    if not record_id:
+        raise ValueError(f"A {table_name.rstrip('s')} id is required.")
+    safe_updates = {
+        field: value
+        for field, value in updates.items()
+        if field in allowed_fields
+    }
+    if not safe_updates:
+        raise ValueError("No supported updates were provided.")
+    response = (
+        get_supabase_client()
+        .table(table_name)
+        .update(safe_updates)
+        .eq("id", record_id)
+        .execute()
+    )
+    if not response.data:
+        raise RuntimeError(
+            f"The {table_name.rstrip('s')} could not be found or updated."
+        )
+
+
+def update_candidate(candidate_id: str, updates: dict) -> None:
+    """Edit or archive a candidate without permitting deletion."""
+
+    safe_updates = dict(updates)
+    if "years_experience" in safe_updates:
+        safe_updates["years_experience"] = normalize_years_experience(
+            safe_updates["years_experience"]
+        )
+
+    _update_record(
+        "candidates",
+        candidate_id,
+        safe_updates,
+        {
+            "full_name",
+            "email",
+            "phone",
+            "location",
+            "years_experience",
+            "current_company",
+            "current_role",
+            "linkedin_url",
+            "github_url",
+            "portfolio_url",
+            "status",
+        },
+    )
+
+
+def normalize_years_experience(value) -> int | None:
+    """Normalize nullable whole-year values for the integer database column."""
+
+    if value is None:
+        return None
+    if not isinstance(value, (dict, list, tuple, set)):
+        try:
+            if pd.isna(value):
+                return None
+        except (TypeError, ValueError):
+            pass
+    if isinstance(value, bool):
+        raise ValueError("Years of experience must be a whole number.")
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        number = Decimal(text)
+    except (InvalidOperation, ValueError):
+        raise ValueError("Years of experience must be a whole number.") from None
+    if not number.is_finite() or number != number.to_integral_value() or number < 0:
+        raise ValueError("Years of experience must be a non-negative whole number.")
+    return int(number)
+
+
+def update_job(job_id: str, updates: dict) -> None:
+    """Edit or transition a job lifecycle without permitting deletion."""
+
+    _update_record(
+        "jobs",
+        job_id,
+        updates,
+        {
+            "title",
+            "department",
+            "location",
+            "description",
+            "required_skills",
+            "min_experience",
+            "max_experience",
+            "salary_min",
+            "salary_max",
+            "employment_type",
+            "status",
+        },
+    )
+
+
 @st.cache_data(ttl=60)
 def get_interviews() -> pd.DataFrame:
     """Load scheduled interview records."""
 
     return fetch_table("interviews", order_column="interview_date")
+
+
+INTERVIEW_LOCAL_TIMEZONE = ZoneInfo("Asia/Kolkata")
+
+
+def normalize_interview_datetime(value) -> str:
+    """Return one canonical UTC ISO value for the timestamptz column."""
+
+    timestamp = pd.Timestamp(value)
+    if pd.isna(timestamp):
+        raise ValueError("Interview date and time are required.")
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.tz_localize(INTERVIEW_LOCAL_TIMEZONE)
+    return timestamp.tz_convert("UTC").isoformat(timespec="seconds")
+
+
+def parse_interview_datetime_series(values: pd.Series) -> pd.Series:
+    """Parse mixed Supabase ISO timestamps and display them in recruiter time."""
+
+    return pd.to_datetime(
+        values,
+        errors="coerce",
+        format="mixed",
+        utc=True,
+    ).dt.tz_convert(INTERVIEW_LOCAL_TIMEZONE)
+
+
+def build_interview_reschedule_updates(
+    *,
+    current_interview_date,
+    revised_date: date | None = None,
+    revised_time: time | None = None,
+    interviewer: str | None = None,
+    feedback=None,
+    meeting_location: str | None = None,
+) -> dict:
+    """Build a partial reschedule payload without discarding metadata."""
+
+    updates: dict = {}
+    if revised_date is not None or revised_time is not None:
+        current = pd.to_datetime(
+            current_interview_date,
+            errors="coerce",
+            format="mixed",
+            utc=True,
+        )
+        if pd.isna(current):
+            raise ValueError("The existing interview date and time are invalid.")
+        current_local = current.tz_convert(INTERVIEW_LOCAL_TIMEZONE)
+        target_date = revised_date or current_local.date()
+        target_time = revised_time or current_local.time().replace(tzinfo=None)
+        updates["interview_date"] = normalize_interview_datetime(
+            datetime.combine(target_date, target_time)
+        )
+    if interviewer is not None:
+        updates["interviewer"] = interviewer.strip()
+    if meeting_location is not None:
+        metadata = dict(feedback) if isinstance(feedback, dict) else {
+            "feedback": feedback or ""
+        }
+        location_key = next(
+            (
+                key
+                for key in ("meeting_link", "meeting_location", "location")
+                if key in metadata
+            ),
+            "location",
+        )
+        metadata[location_key] = meeting_location.strip()
+        updates["feedback"] = metadata
+    return updates
 
 
 def create_interview(
@@ -111,6 +283,8 @@ def create_interview(
     feedback: dict,
 ) -> None:
     """Insert one interview unless the application slot already exists."""
+
+    require_permission("interview_write")
 
     if not application_id:
         raise ValueError("An application id is required.")
@@ -147,10 +321,18 @@ def update_interview(
 ) -> None:
     """Update allowed fields on one interview identified by its id."""
 
+    require_permission("interview_write")
+
     if not interview_id:
         raise ValueError("An interview id is required.")
 
-    allowed_fields = {"status", "feedback", "rating"}
+    allowed_fields = {
+        "status",
+        "feedback",
+        "rating",
+        "interview_date",
+        "interviewer",
+    }
     safe_updates = {
         field: value
         for field, value in updates.items()
@@ -178,9 +360,59 @@ def update_interview(
         ):
             raise ValueError("Rating must be between 1 and 5.")
 
+    if "interview_date" in safe_updates:
+        safe_updates["interview_date"] = normalize_interview_datetime(
+            safe_updates["interview_date"]
+        )
+
+    client = get_supabase_client()
+    current_response = (
+        client.table("interviews")
+        .select("interview_date,interviewer,status,feedback,rating")
+        .eq("id", interview_id)
+        .limit(1)
+        .execute()
+    )
+    if not current_response.data:
+        raise RuntimeError("The interview could not be found or updated.")
+
+    current = current_response.data[0]
+    feedback = current.get("feedback")
+    if not isinstance(feedback, dict):
+        feedback = {"feedback": feedback or ""}
+    else:
+        feedback = dict(feedback)
+    history = feedback.get("_history", [])
+    if not isinstance(history, list):
+        history = []
+    changed_fields = {
+        field: {"from": current.get(field), "to": value}
+        for field, value in safe_updates.items()
+        if field != "feedback" and current.get(field) != value
+    }
+    if changed_fields:
+        history.append(
+            {
+                "changed_at": datetime.now(timezone.utc).isoformat(),
+                "changes": changed_fields,
+            }
+        )
+        history = history[-50:]
+    if "feedback" in safe_updates:
+        incoming_feedback = safe_updates["feedback"]
+        if isinstance(incoming_feedback, dict):
+            incoming_feedback = dict(incoming_feedback)
+            incoming_feedback["_history"] = history
+            safe_updates["feedback"] = incoming_feedback
+        else:
+            feedback["feedback"] = incoming_feedback
+            safe_updates["feedback"] = feedback
+    elif changed_fields:
+        feedback["_history"] = history
+        safe_updates["feedback"] = feedback
+
     response = (
-        get_supabase_client()
-        .table("interviews")
+        client.table("interviews")
         .update(safe_updates)
         .eq("id", interview_id)
         .execute()
@@ -205,6 +437,8 @@ def create_recruiter_note(
     recruiter_name: str,
 ) -> None:
     """Persist a recruiter note for one application."""
+
+    require_permission("notes_write")
 
     if not application_id:
         raise ValueError("An application id is required.")
