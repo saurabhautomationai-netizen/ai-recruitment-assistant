@@ -3476,22 +3476,24 @@ elif selected_page == "Jobs":
                     encoded_email_body = urllib.parse.quote(email_copy)
                     encoded_li_url = urllib.parse.quote(app_link)
 
-                    t1, t2, t3, t4, t5 = st.tabs([
+                    t1, t2, t3, t4, t5, t6 = st.tabs([
                         "📱 WhatsApp Status",
                         "💬 WhatsApp Message",
                         "💼 LinkedIn Post",
                         "📧 Candidate Email",
-                        "📸 Instagram Story"
+                        "📸 Instagram Post",
+                        "🎨 Image / Story Banner"
                     ])
                     with t1:
-                        st.caption("Customize and send to WhatsApp Status / Stories:")
+                        st.caption("Customize text below (or use the copy button on the top-right of the code box):")
                         edited_wa_status = st.text_area(
                             "WhatsApp Status Text",
                             value=wa_status,
-                            height=180,
+                            height=160,
                             key=f"edit_wa_status_{managed_job_id}",
                             label_visibility="collapsed",
                         )
+                        st.code(edited_wa_status, language=None)
                         st.link_button(
                             "📲 Open WhatsApp Web / App",
                             f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_status)}",
@@ -3499,14 +3501,15 @@ elif selected_page == "Jobs":
                             use_container_width=True,
                         )
                     with t2:
-                        st.caption("Customize and send directly to candidate contacts or WhatsApp groups:")
+                        st.caption("Customize message for candidate contacts / WhatsApp groups:")
                         edited_wa_direct = st.text_area(
                             "WhatsApp Message Text",
                             value=wa_direct,
-                            height=180,
+                            height=160,
                             key=f"edit_wa_direct_{managed_job_id}",
                             label_visibility="collapsed",
                         )
+                        st.code(edited_wa_direct, language=None)
                         st.link_button(
                             "💬 Send via WhatsApp Web / App",
                             f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
@@ -3518,10 +3521,11 @@ elif selected_page == "Jobs":
                         edited_li_post = st.text_area(
                             "LinkedIn Post Text",
                             value=linkedin_post,
-                            height=220,
+                            height=200,
                             key=f"edit_li_post_{managed_job_id}",
                             label_visibility="collapsed",
                         )
+                        st.code(edited_li_post, language="markdown")
                         st.link_button(
                             "💼 Open LinkedIn to Share",
                             f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
@@ -3590,10 +3594,11 @@ elif selected_page == "Jobs":
                         edited_email_copy = st.text_area(
                             "Email Body",
                             value=personalized_email_copy,
-                            height=220,
+                            height=200,
                             key=f"edit_email_copy_{managed_job_id}",
                             label_visibility="collapsed",
                         )
+                        st.code(edited_email_copy, language=None)
 
                         encoded_pers_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
                         encoded_pers_body = urllib.parse.quote(edited_email_copy)
@@ -3604,9 +3609,11 @@ elif selected_page == "Jobs":
                         if mail_bcc_param:
                             gmail_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
 
-                        mailto_url = f"mailto:{mail_to_param}?subject={encoded_pers_subj}&body={encoded_pers_body}"
+                        outlook_url = f"https://outlook.live.com/mail/0/deeplink/compose?subject={encoded_pers_subj}&body={encoded_pers_body}"
+                        if mail_to_param:
+                            outlook_url += f"&to={urllib.parse.quote(mail_to_param)}"
                         if mail_bcc_param:
-                            mailto_url += f"&bcc={mail_bcc_param}"
+                            outlook_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
 
                         c_mail1, c_mail2 = st.columns(2)
                         with c_mail1:
@@ -3618,25 +3625,53 @@ elif selected_page == "Jobs":
                             )
                         with c_mail2:
                             st.link_button(
-                                "✉️ Default Mail Client (Outlook/Mail)",
-                                mailto_url,
+                                "✉️ Open in Outlook (Web)",
+                                outlook_url,
                                 use_container_width=True,
                             )
                     with t5:
-                        st.caption("Customize and copy for Instagram Post / Story caption:")
+                        st.caption("Customize Instagram caption:")
                         edited_insta_copy = st.text_area(
                             "Instagram Post / Story Caption",
                             value=insta_copy,
-                            height=180,
+                            height=160,
                             key=f"edit_insta_copy_{managed_job_id}",
                             label_visibility="collapsed",
                         )
+                        st.code(edited_insta_copy, language=None)
                         st.link_button(
                             "📸 Open Instagram",
                             "https://www.instagram.com/",
                             type="primary",
                             use_container_width=True,
                         )
+                    with t6:
+                        st.caption("📸 AI Generated 1080x1080 Hiring Poster (Ready for Instagram, LinkedIn & WhatsApp Status):")
+                        try:
+                            from services.poster_service import generate_job_banner_image
+                            sal_min = safe_value(managed_job, "salary_min", "")
+                            sal_max = safe_value(managed_job, "salary_max", "")
+                            sal_display = f"₹{sal_min} - ₹{sal_max}" if sal_min and sal_max else ""
+                            poster_bytes = generate_job_banner_image(
+                                job_title=job_title,
+                                department=job_dept,
+                                location=job_loc,
+                                experience=exp_text,
+                                skills=skills_list,
+                                salary=sal_display,
+                                app_link=app_link,
+                            )
+                            st.image(poster_bytes, caption="Hiring Poster (1080x1080)", use_container_width=True)
+                            st.download_button(
+                                "📥 Download High-Res Image (PNG)",
+                                data=poster_bytes,
+                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                mime="image/png",
+                                type="primary",
+                                use_container_width=True,
+                            )
+                        except Exception as p_err:
+                            st.error(f"Could not render image poster: {p_err}")
 
                 if st.button(
                     "Share & Social posts",
