@@ -3397,6 +3397,27 @@ elif selected_page == "Jobs":
                         skills_list = []
                     skills_str = ", ".join([str(s) for s in skills_list[:5]]) if skills_list else "Relevant domain expertise"
                     
+                    with st.expander("🏢 Agency & Recruiter Custom Branding", expanded=False):
+                        st.caption("Customize your agency or individual recruiter details across all posts & generated posters:")
+                        col_b1, col_b2, col_b3 = st.columns(3)
+                        current_user_email = str(st.session_state.get("auth_user", {}).get("email", ""))
+                        default_hr = current_user_email.split("@")[0].replace(".", " ").title() if current_user_email else "HR Team"
+                        agency_name = col_b1.text_input(
+                            "Agency / Company Name",
+                            value="Netizen Recruitment",
+                            key=f"share_agency_{managed_job_id}",
+                        )
+                        recruiter_name = col_b2.text_input(
+                            "Recruiter Name",
+                            value=default_hr,
+                            key=f"share_hr_name_{managed_job_id}",
+                        )
+                        recruiter_phone = col_b3.text_input(
+                            "HR Phone / WhatsApp Contact",
+                            value="+91 98765 43210",
+                            key=f"share_hr_phone_{managed_job_id}",
+                        )
+
                     app_link = st.text_input(
                         "Candidate Application Link (included in all 5 formats below)",
                         value="https://saurabhautomation7596.app.n8n.cloud/form/b34bc21c-4b57-4147-9759-994fa51752b0",
@@ -3406,17 +3427,17 @@ elif selected_page == "Jobs":
                     
                     wa_status = (
                         f"🚀 *WE'RE HIRING: {job_title}!*\n"
-                        f"📍 Location: {job_loc} | 💼 Experience: {exp_text}\n"
+                        f"🏢 {agency_name} | 📍 {job_loc} | 💼 {exp_text}\n"
                         f"🛠️ Tech Stack: {skills_str}\n\n"
-                        f"✨ Fast-track AI screening · Great culture & compensation\n"
+                        f"✨ Fast-track AI screening · Great compensation\n"
                         f"📲 *Apply directly here:*\n"
                         f"👉 {app_link}\n\n"
-                        f"*(Share with anyone looking!)*"
+                        f"*(Or contact {recruiter_name}: {recruiter_phone})*"
                     )
                     
                     wa_direct = (
                         f"Hey! 👋\n"
-                        f"Our team is actively looking for a talented *{job_title}* ({job_dept}) to join us.\n\n"
+                        f"Our team at *{agency_name}* is actively looking for a talented *{job_title}* ({job_dept}) to join us.\n\n"
                         f"*Key Highlights:*\n"
                         f"• Role: {job_title}\n"
                         f"• Location: {job_loc}\n"
@@ -3424,12 +3445,14 @@ elif selected_page == "Jobs":
                         f"• Core Stack: {skills_str}\n\n"
                         f"If you or someone in your network might be a great fit, review the role and upload a resume here:\n"
                         f"🔗 {app_link}\n\n"
-                        f"Feel free to reach out if you have any questions!"
+                        f"Best regards,\n"
+                        f"*{recruiter_name}* ({agency_name})\n"
+                        f"📞 {recruiter_phone}"
                     )
                     
                     linkedin_post = (
                         f"Are you ready to make a high-impact contribution? 🚀\n\n"
-                        f"We are officially hiring a **{job_title}** to join our {job_dept} team!\n\n"
+                        f"We at **{agency_name}** are officially hiring a **{job_title}** to join our {job_dept} team!\n\n"
                         f"🔍 **What We're Looking For:**\n"
                         f"• {exp_text} of proven hands-on experience\n"
                         f"• Expertise in: {skills_str}\n"
@@ -3441,14 +3464,14 @@ elif selected_page == "Jobs":
                         f"📥 **How to Apply:**\n"
                         f"Skip traditional lengthy application processes — upload your resume directly through our fast-track portal:\n"
                         f"🔗 {app_link}\n\n"
-                        f"Feel free to repost ♻️ to connect someone in your network with this opportunity!\n\n"
+                        f"Feel free to repost ♻️ or reach out directly to {recruiter_name} ({recruiter_phone})!\n\n"
                         f"#Hiring #{''.join(job_title.split())} #Careers #JobOpening #{''.join(job_dept.split())} #Jobs"
                     )
                     
                     email_copy = (
                         f"Subject: We're Hiring: {job_title} Opportunity\n\n"
                         f"Hi [Candidate Name],\n\n"
-                        f"We came across your background and wanted to reach out regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
+                        f"We came across your background and wanted to reach out from {agency_name} regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
                         f"Role Details:\n"
                         f"• Position: {job_title}\n"
                         f"• Location: {job_loc}\n"
@@ -3457,15 +3480,18 @@ elif selected_page == "Jobs":
                         f"You can review the full requisition and submit your resume directly here:\n"
                         f"👉 {app_link}\n\n"
                         f"Best regards,\n"
-                        f"Talent Acquisition Team"
+                        f"{recruiter_name}\n"
+                        f"Talent Acquisition Team | {agency_name}\n"
+                        f"📞 {recruiter_phone}"
                     )
                     
                     insta_copy = (
                         f"🔥 WE'RE HIRING 🔥\n"
                         f"✨ Role: {job_title}\n"
+                        f"🏢 {agency_name}\n"
                         f"📍 {job_loc} · {exp_text}\n"
                         f"⚡ Skills: {skills_str}\n\n"
-                        f"🔗 Tap the link sticker to apply in 60s!\n"
+                        f"🔗 Tap link in bio / QR sticker to apply in 60s!\n"
                         f"{app_link}"
                     )
                     
@@ -3482,18 +3508,17 @@ elif selected_page == "Jobs":
                         "💼 LinkedIn Post",
                         "📧 Candidate Email",
                         "📸 Instagram Post",
-                        "🎨 Image / Story Banner"
+                        "🎨 Visual Hiring Poster"
                     ])
                     with t1:
-                        st.caption("Customize text below (or use the copy button on the top-right of the code box):")
+                        st.caption("Review or copy text (use the Copy icon on the top-right of the box):")
                         edited_wa_status = st.text_area(
                             "WhatsApp Status Text",
                             value=wa_status,
-                            height=160,
+                            height=180,
                             key=f"edit_wa_status_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.code(edited_wa_status, language=None)
                         st.link_button(
                             "📲 Open WhatsApp Web / App",
                             f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_status)}",
@@ -3501,15 +3526,14 @@ elif selected_page == "Jobs":
                             use_container_width=True,
                         )
                     with t2:
-                        st.caption("Customize message for candidate contacts / WhatsApp groups:")
+                        st.caption("Review or copy message for contacts / groups:")
                         edited_wa_direct = st.text_area(
                             "WhatsApp Message Text",
                             value=wa_direct,
-                            height=160,
+                            height=180,
                             key=f"edit_wa_direct_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.code(edited_wa_direct, language=None)
                         st.link_button(
                             "💬 Send via WhatsApp Web / App",
                             f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
@@ -3517,15 +3541,14 @@ elif selected_page == "Jobs":
                             use_container_width=True,
                         )
                     with t3:
-                        st.caption("Customize and publish on LinkedIn:")
+                        st.caption("Review or copy LinkedIn post:")
                         edited_li_post = st.text_area(
                             "LinkedIn Post Text",
                             value=linkedin_post,
-                            height=200,
+                            height=220,
                             key=f"edit_li_post_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.code(edited_li_post, language="markdown")
                         st.link_button(
                             "💼 Open LinkedIn to Share",
                             f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
@@ -3579,7 +3602,7 @@ elif selected_page == "Jobs":
                         personalized_email_copy = (
                             f"Subject: We're Hiring: {job_title} Opportunity\n\n"
                             f"{greeting}\n\n"
-                            f"We came across your background and wanted to reach out regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
+                            f"We came across your background and wanted to reach out from {agency_name} regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
                             f"Role Details:\n"
                             f"• Position: {job_title}\n"
                             f"• Location: {job_loc}\n"
@@ -3588,17 +3611,18 @@ elif selected_page == "Jobs":
                             f"You can review the full requisition and submit your resume directly here:\n"
                             f"👉 {app_link}\n\n"
                             f"Best regards,\n"
-                            f"Talent Acquisition Team"
+                            f"{recruiter_name}\n"
+                            f"Talent Acquisition Team | {agency_name}\n"
+                            f"📞 {recruiter_phone}"
                         )
 
                         edited_email_copy = st.text_area(
                             "Email Body",
                             value=personalized_email_copy,
-                            height=200,
+                            height=220,
                             key=f"edit_email_copy_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.code(edited_email_copy, language=None)
 
                         encoded_pers_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
                         encoded_pers_body = urllib.parse.quote(edited_email_copy)
@@ -3615,30 +3639,29 @@ elif selected_page == "Jobs":
                         if mail_bcc_param:
                             outlook_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
 
-                        c_mail1, c_mail2 = st.columns(2)
+                        c_mail1, c_mail2 = st.columns([1.5, 1])
                         with c_mail1:
                             st.link_button(
-                                "📧 Open in Gmail (Web)",
+                                "📧 Open in Gmail (Default)",
                                 gmail_url,
                                 type="primary",
                                 use_container_width=True,
                             )
                         with c_mail2:
                             st.link_button(
-                                "✉️ Open in Outlook (Web)",
+                                "✉️ Open in Outlook",
                                 outlook_url,
                                 use_container_width=True,
                             )
                     with t5:
-                        st.caption("Customize Instagram caption:")
+                        st.caption("Review or copy Instagram caption:")
                         edited_insta_copy = st.text_area(
                             "Instagram Post / Story Caption",
                             value=insta_copy,
-                            height=160,
+                            height=180,
                             key=f"edit_insta_copy_{managed_job_id}",
                             label_visibility="collapsed",
                         )
-                        st.code(edited_insta_copy, language=None)
                         st.link_button(
                             "📸 Open Instagram",
                             "https://www.instagram.com/",
@@ -3646,7 +3669,20 @@ elif selected_page == "Jobs":
                             use_container_width=True,
                         )
                     with t6:
-                        st.caption("📸 AI Generated 1080x1080 Hiring Poster (Ready for Instagram, LinkedIn & WhatsApp Status):")
+                        st.caption("📸 AI Generated Visual Hiring Poster with Working Scannable QR Code:")
+                        
+                        theme_col1, theme_col2 = st.columns([1, 2])
+                        with theme_col1:
+                            theme_map = {"Teal & Gold (Modern)": "teal", "Royal Blue (Corporate)": "blue", "Vibrant Orange (Bold)": "orange"}
+                            selected_theme_label = st.selectbox(
+                                "Poster Color Theme",
+                                options=list(theme_map.keys()),
+                                key=f"poster_theme_select_{managed_job_id}",
+                            )
+                            chosen_theme = theme_map[selected_theme_label]
+                        with theme_col2:
+                            st.info("💡 **Scan with your phone camera**: The QR Code on the bottom-left connects directly to your live candidate intake form!")
+
                         try:
                             from services.poster_service import generate_job_banner_image
                             sal_min = safe_value(managed_job, "salary_min", "")
@@ -3660,12 +3696,15 @@ elif selected_page == "Jobs":
                                 skills=skills_list,
                                 salary=sal_display,
                                 app_link=app_link,
+                                company_name=agency_name,
+                                recruiter_contact=f"{recruiter_name} ({recruiter_phone})",
+                                theme=chosen_theme,
                             )
-                            st.image(poster_bytes, caption="Hiring Poster (1080x1080)", use_container_width=True)
+                            st.image(poster_bytes, caption=f"Hiring Poster ({selected_theme_label}) - 1080x1080", use_container_width=True)
                             st.download_button(
-                                "📥 Download High-Res Image (PNG)",
+                                "📥 Download High-Res Poster (PNG)",
                                 data=poster_bytes,
-                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                file_name=f"Hiring_{job_title.replace(' ', '_')}_{chosen_theme}.png",
                                 mime="image/png",
                                 type="primary",
                                 use_container_width=True,
