@@ -3469,6 +3469,13 @@ elif selected_page == "Jobs":
                         f"{app_link}"
                     )
                     
+                    import urllib.parse
+                    encoded_wa_status = urllib.parse.quote(wa_status)
+                    encoded_wa_direct = urllib.parse.quote(wa_direct)
+                    encoded_email_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
+                    encoded_email_body = urllib.parse.quote(email_copy)
+                    encoded_li_url = urllib.parse.quote(app_link)
+
                     t1, t2, t3, t4, t5 = st.tabs([
                         "📱 WhatsApp Status",
                         "💬 WhatsApp Message",
@@ -3479,18 +3486,43 @@ elif selected_page == "Jobs":
                     with t1:
                         st.caption("Copy and paste to WhatsApp Status / Stories:")
                         st.code(wa_status, language=None)
+                        st.link_button(
+                            "📲 Open WhatsApp Web / App",
+                            f"https://api.whatsapp.com/send?text={encoded_wa_status}",
+                            type="primary",
+                            use_container_width=True,
+                        )
                     with t2:
                         st.caption("Copy and send directly to candidate contacts or WhatsApp groups:")
                         st.code(wa_direct, language=None)
+                        st.link_button(
+                            "💬 Send via WhatsApp Web / App",
+                            f"https://api.whatsapp.com/send?text={encoded_wa_direct}",
+                            type="primary",
+                            use_container_width=True,
+                        )
                     with t3:
                         st.caption("Copy and publish on LinkedIn:")
                         st.code(linkedin_post, language="markdown")
+                        st.link_button(
+                            "💼 Open LinkedIn to Share",
+                            f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
+                            type="primary",
+                            use_container_width=True,
+                        )
                     with t4:
                         st.caption("Copy into your email outreach / candidate newsletter:")
                         st.code(email_copy, language=None)
+                        st.link_button(
+                            "📧 Open in Email Client (Mailto)",
+                            f"mailto:?subject={encoded_email_subj}&body={encoded_email_body}",
+                            type="primary",
+                            use_container_width=True,
+                        )
                     with t5:
                         st.caption("Instagram Story caption / Text banner layout:")
                         st.code(insta_copy, language=None)
+                        st.info("💡 **Instagram Tip**: Copy the text above, open Instagram Story on your phone, paste the text onto your story photo, and add a **Link Sticker** with your application link!")
 
                 if st.button(
                     "Share & Social posts",
