@@ -1,8 +1,118 @@
 """Generate high-impact visual hiring graphics and posters with scannable QR codes and AI Customizer Studio."""
 
+import hashlib
 import io
 from PIL import Image, ImageDraw, ImageFont
 import qrcode
+
+
+def generate_ai_palette(prompt: str) -> dict:
+    """Analyze a natural language prompt (e.g. 'Funky 90s', 'Luxury Gold', 'Cyberpunk Neon', 'Minimalist Clean')
+
+    and dynamically generate a harmonious 6-color palette for the hiring poster.
+    """
+    p = prompt.lower().strip()
+
+    if any(k in p for k in ("funky", "synth", "retro", "disco", "vibrant", "pop", "party")):
+        return {
+            "name": "Funky Synthwave & Neon Pop",
+            "bg_top": "#C026D3",
+            "bg_bottom": "#4A044E",
+            "accent": "#06B6D4",
+            "card_bg": "#701A75",
+            "highlight": "#FACC15",
+            "white": "#FFFFFF",
+        }
+    elif any(k in p for k in ("luxury", "gold", "premium", "rich", "royal", "black", "charcoal", "vip")):
+        return {
+            "name": "Luxury Gold & Obsidian",
+            "bg_top": "#18181B",
+            "bg_bottom": "#09090B",
+            "accent": "#D4AF37",
+            "card_bg": "#27272A",
+            "highlight": "#F59E0B",
+            "white": "#FFFFFF",
+        }
+    elif any(k in p for k in ("cyberpunk", "hacker", "matrix", "neon green", "gaming", "terminal")):
+        return {
+            "name": "Cyberpunk Neon Terminal",
+            "bg_top": "#064E3B",
+            "bg_bottom": "#022C22",
+            "accent": "#10B981",
+            "card_bg": "#064E3B",
+            "highlight": "#34D399",
+            "white": "#FFFFFF",
+        }
+    elif any(k in p for k in ("minimal", "clean", "apple", "slate", "modern", "simple", "sleek")):
+        return {
+            "name": "Modern Slate Minimalist",
+            "bg_top": "#334155",
+            "bg_bottom": "#0F172A",
+            "accent": "#64748B",
+            "card_bg": "#1E293B",
+            "highlight": "#38BDF8",
+            "white": "#FFFFFF",
+        }
+    elif any(k in p for k in ("stylish", "creative", "violet", "lavender", "purple", "aesthetic")):
+        return {
+            "name": "Stylish Violet Elegance",
+            "bg_top": "#6D28D9",
+            "bg_bottom": "#2E1065",
+            "accent": "#A855F7",
+            "card_bg": "#3B0764",
+            "highlight": "#F472B6",
+            "white": "#FFFFFF",
+        }
+    elif any(k in p for k in ("red", "crimson", "bold", "fire", "energetic", "passion", "ruby")):
+        return {
+            "name": "Bold Ruby Energy",
+            "bg_top": "#991B1B",
+            "bg_bottom": "#450A0A",
+            "accent": "#EF4444",
+            "card_bg": "#7F1D1D",
+            "highlight": "#FBBF24",
+            "white": "#FFFFFF",
+        }
+    elif any(k in p for k in ("sunset", "peach", "autumn", "orange", "warm", "coral")):
+        return {
+            "name": "Sunset Warmth & Coral",
+            "bg_top": "#C2410C",
+            "bg_bottom": "#7C2D12",
+            "accent": "#FB923C",
+            "card_bg": "#431407",
+            "highlight": "#FEF08A",
+            "white": "#FFFFFF",
+        }
+    elif any(k in p for k in ("ocean", "aqua", "marine", "blue", "teal", "deep sea")):
+        return {
+            "name": "Deep Ocean & Aqua",
+            "bg_top": "#0E7490",
+            "bg_bottom": "#083344",
+            "accent": "#06B6D4",
+            "card_bg": "#155E75",
+            "highlight": "#67E8F9",
+            "white": "#FFFFFF",
+        }
+    else:
+        # Dynamic AI hash palette generator for unique custom vibes
+        h = int(hashlib.md5(p.encode("utf-8")).hexdigest(), 16)
+        hues = [
+            ("#1E3A8A", "#0F172A", "#3B82F6", "#1E293B", "#FACC15"),
+            ("#044E42", "#064E3B", "#0D9488", "#0F2922", "#F59E0B"),
+            ("#4C1D95", "#1E1B4B", "#7C3AED", "#2E1065", "#F472B6"),
+            ("#831843", "#500724", "#DB2777", "#4C0519", "#FDE047"),
+            ("#14532D", "#052E16", "#22C55E", "#14532D", "#FBBF24"),
+        ]
+        choice = hues[h % len(hues)]
+        return {
+            "name": f"AI Customized: {prompt.title()}",
+            "bg_top": choice[0],
+            "bg_bottom": choice[1],
+            "accent": choice[2],
+            "card_bg": choice[3],
+            "highlight": choice[4],
+            "white": "#FFFFFF",
+        }
 
 
 def generate_job_banner_image(
@@ -16,6 +126,7 @@ def generate_job_banner_image(
     company_name: str = "NETIZEN RECRUITMENT",
     recruiter_contact: str = "+91 98765 43210 (HR Team)",
     theme: str = "blue",
+    custom_palette: dict = None,
     header_tagline: str = "WE ARE HIRING!",
     sub_tagline: str = "Join a High-Growth Team • Build Your Career • Fast-Track AI Screening!",
     badge1_title: str = "LOCATION & TYPE",
@@ -49,7 +160,14 @@ def generate_job_banner_image(
     p3_val = pill3_value if pill3_value else (", ".join(skills[:3]) if skills else "Domain Stack")
 
     # Color Palettes & Themes
-    if theme == "teal":
+    if custom_palette and isinstance(custom_palette, dict):
+        bg_top = custom_palette.get("bg_top", "#1D4ED8")
+        bg_bottom = custom_palette.get("bg_bottom", "#0F172A")
+        accent_blue = custom_palette.get("accent", "#3B82F6")
+        card_bg = custom_palette.get("card_bg", "#1E293B")
+        gold_highlight = custom_palette.get("highlight", "#FACC15")
+        white = custom_palette.get("white", "#FFFFFF")
+    elif theme == "teal":
         bg_top = "#044E42"
         bg_bottom = "#064E3B"
         accent_blue = "#0D9488"

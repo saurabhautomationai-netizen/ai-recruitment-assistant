@@ -3813,95 +3813,169 @@ elif selected_page == "Jobs":
 
                     with t6:
                         st.markdown("#### 🎨 Live AI Creative Studio & Poster Customizer")
-                        st.caption("Customize any text, badge, or color theme in real-time. The poster and QR code regenerate automatically!")
+                        st.caption("Customize your visual theme with AI prompts or fine-tune any section. The poster & QR code update live!")
                         
                         col_editor, col_preview = st.columns([1.2, 1.3])
                         with col_editor:
-                            st.markdown("##### 🎭 Visual Themes & Styling")
-                            selected_theme_label = st.selectbox(
-                                "Poster Visual Theme",
-                                options=list(theme_map.keys()),
-                                index=0,
-                                key=f"poster_theme_select_{managed_job_id}",
-                            )
-                            chosen_theme = theme_map[selected_theme_label]
-
-                            custom_header_tagline = st.text_input(
-                                "Header Tagline",
-                                value="WE ARE HIRING!",
-                                key=f"poster_hdr_{managed_job_id}",
-                            )
-                            custom_job_title = st.text_input(
-                                "Role Spotlight Title",
-                                value=job_title,
-                                key=f"poster_role_{managed_job_id}",
-                            )
-                            custom_sub_tagline = st.text_input(
-                                "Subtitle Tagline",
-                                value="Join a High-Growth Team • Build Your Career • Fast-Track AI Screening!",
-                                key=f"poster_subtag_{managed_job_id}",
+                            # 1. Section Switcher (Only one section open at a time)
+                            active_section = st.radio(
+                                "Customizer Section:",
+                                options=[
+                                    "🎭 AI Theme & Styling",
+                                    "✍️ Header & Role Title",
+                                    "📍 Location & Compensation",
+                                    "💼 Specification Pills",
+                                    "🌟 Perks, Helpline & QR",
+                                ],
+                                horizontal=True,
+                                key=f"active_customizer_section_{managed_job_id}",
+                                label_visibility="collapsed",
                             )
 
-                            with st.expander("📍 Highlight Badges (Location & Compensation)", expanded=False):
-                                b1_title = st.text_input("Badge 1 Title", value="LOCATION & TYPE", key=f"b1_t_{managed_job_id}")
-                                b1_val = st.text_input("Badge 1 Value", value=job_loc, key=f"b1_v_{managed_job_id}")
-                                b1_sub = st.text_input("Badge 1 Subtext", value=f"Department: {job_dept}", key=f"b1_s_{managed_job_id}")
-                                
-                                b2_title = st.text_input("Badge 2 Title", value="COMPENSATION", key=f"b2_t_{managed_job_id}")
-                                b2_val = st.text_input("Badge 2 Value", value=sal_display if sal_display else "₹12 - 18 LPA", key=f"b2_v_{managed_job_id}")
-                                b2_sub = st.text_input("Badge 2 Subtext", value="Performance-based growth", key=f"b2_s_{managed_job_id}")
+                            # Default values initialization
+                            if f"poster_hdr_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"poster_hdr_{managed_job_id}"] = "WE ARE HIRING!"
+                            if f"poster_role_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"poster_role_{managed_job_id}"] = job_title
+                            if f"poster_subtag_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"poster_subtag_{managed_job_id}"] = "Join a High-Growth Team • Build Your Career • Fast-Track AI Screening!"
 
-                            with st.expander("💼 Specification Pills (Experience, Availability, Skills)", expanded=False):
-                                p1_title = st.text_input("Pill 1 Title", value="EXPERIENCE", key=f"p1_t_{managed_job_id}")
-                                p1_val = st.text_input("Pill 1 Value", value=exp_text, key=f"p1_v_{managed_job_id}")
-                                
-                                p2_title = st.text_input("Pill 2 Title", value="AVAILABILITY", key=f"p2_t_{managed_job_id}")
-                                p2_val = st.text_input("Pill 2 Value", value="Immediate / 30 Days", key=f"p2_v_{managed_job_id}")
-                                
-                                p3_title = st.text_input("Pill 3 Title", value="KEY TECH STACK", key=f"p3_t_{managed_job_id}")
-                                default_skills_val = ", ".join(skills_list[:3]) if skills_list else "Domain Skills"
-                                p3_val = st.text_input("Pill 3 Value", value=default_skills_val, key=f"p3_v_{managed_job_id}")
+                            if f"b1_t_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"b1_t_{managed_job_id}"] = "LOCATION & TYPE"
+                            if f"b1_v_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"b1_v_{managed_job_id}"] = job_loc
+                            if f"b1_s_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"b1_s_{managed_job_id}"] = f"Department: {job_dept}"
 
-                            with st.expander("🌟 Perks, HR Helpline & QR Code Target", expanded=False):
-                                custom_why = st.text_input("Why Join Us Perks", value="• High Career Growth • Meritocracy • Global Impact", key=f"why_join_{managed_job_id}")
-                                custom_hr_contact = st.text_input("HR Helpline Contact", value=f"{recruiter_name} ({recruiter_phone})", key=f"hr_ct_{managed_job_id}")
-                                custom_qr_url = st.text_input("QR Code Application URL", value=app_link, key=f"qr_url_{managed_job_id}")
+                            if f"b2_t_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"b2_t_{managed_job_id}"] = "COMPENSATION"
+                            if f"b2_v_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"b2_v_{managed_job_id}"] = sal_display if sal_display else "₹12 - 18 LPA"
+                            if f"b2_s_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"b2_s_{managed_job_id}"] = "Performance-based growth"
+
+                            if f"p1_t_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"p1_t_{managed_job_id}"] = "EXPERIENCE"
+                            if f"p1_v_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"p1_v_{managed_job_id}"] = exp_text
+
+                            if f"p2_t_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"p2_t_{managed_job_id}"] = "AVAILABILITY"
+                            if f"p2_v_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"p2_v_{managed_job_id}"] = "Immediate / 30 Days"
+
+                            if f"p3_t_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"p3_t_{managed_job_id}"] = "KEY TECH STACK"
+                            if f"p3_v_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"p3_v_{managed_job_id}"] = ", ".join(skills_list[:3]) if skills_list else "Domain Skills"
+
+                            if f"why_join_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"why_join_{managed_job_id}"] = "• High Career Growth • Meritocracy • Global Impact"
+                            if f"hr_ct_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"hr_ct_{managed_job_id}"] = f"{recruiter_name} ({recruiter_phone})"
+                            if f"qr_url_{managed_job_id}" not in st.session_state:
+                                st.session_state[f"qr_url_{managed_job_id}"] = app_link
+
+                            # Display ONLY the single selected section
+                            if active_section == "🎭 AI Theme & Styling":
+                                st.markdown("##### 🎭 AI Theme & Style Generator")
+                                ai_prompt_input = st.text_input(
+                                    "Describe your theme vibe or aesthetic:",
+                                    placeholder="e.g. Funky Synthwave, Luxury Gold & Black, Cyberpunk Neon, Modern Slate, Warm Sunset",
+                                    key=f"ai_theme_prompt_box_{managed_job_id}",
+                                )
+                                c_ai_btn1, c_ai_btn2 = st.columns([1, 1])
+                                with c_ai_btn1:
+                                    if st.button("✨ Apply AI Theme", key=f"btn_apply_ai_theme_{managed_job_id}", type="primary", use_container_width=True):
+                                        if ai_prompt_input.strip():
+                                            new_pal = ps.generate_ai_palette(ai_prompt_input.strip())
+                                            st.session_state[f"custom_ai_palette_{managed_job_id}"] = new_pal
+                                            st.success(f"Applied: {new_pal.get('name')}")
+                                with c_ai_btn2:
+                                    if st.button("↺ Reset to Standard Theme", key=f"btn_reset_theme_{managed_job_id}", use_container_width=True):
+                                        st.session_state.pop(f"custom_ai_palette_{managed_job_id}", None)
+
+                                st.markdown("---")
+                                st.caption("Or choose from preset corporate themes:")
+                                selected_theme_label = st.selectbox(
+                                    "Preset Themes",
+                                    options=list(theme_map.keys()),
+                                    index=0,
+                                    key=f"poster_theme_select_{managed_job_id}",
+                                )
+                                chosen_theme = theme_map[selected_theme_label]
+
+                            elif active_section == "✍️ Header & Role Title":
+                                st.markdown("##### ✍️ Header & Role Spotlight")
+                                st.text_input("Header Tagline", key=f"poster_hdr_{managed_job_id}")
+                                st.text_input("Role Spotlight Title", key=f"poster_role_{managed_job_id}")
+                                st.text_input("Subtitle Tagline", key=f"poster_subtag_{managed_job_id}")
+
+                            elif active_section == "📍 Location & Compensation":
+                                st.markdown("##### 📍 Highlight Badges")
+                                st.text_input("Badge 1 Title", key=f"b1_t_{managed_job_id}")
+                                st.text_input("Badge 1 Value (Location)", key=f"b1_v_{managed_job_id}")
+                                st.text_input("Badge 1 Subtext", key=f"b1_s_{managed_job_id}")
+                                st.text_input("Badge 2 Title", key=f"b2_t_{managed_job_id}")
+                                st.text_input("Badge 2 Value (Package)", key=f"b2_v_{managed_job_id}")
+                                st.text_input("Badge 2 Subtext", key=f"b2_s_{managed_job_id}")
+
+                            elif active_section == "💼 Specification Pills":
+                                st.markdown("##### 💼 Role Specification Pills")
+                                st.text_input("Pill 1 Title", key=f"p1_t_{managed_job_id}")
+                                st.text_input("Pill 1 Value (Experience)", key=f"p1_v_{managed_job_id}")
+                                st.text_input("Pill 2 Title", key=f"p2_t_{managed_job_id}")
+                                st.text_input("Pill 2 Value (Notice Period)", key=f"p2_v_{managed_job_id}")
+                                st.text_input("Pill 3 Title", key=f"p3_t_{managed_job_id}")
+                                st.text_input("Pill 3 Value (Key Skills)", key=f"p3_v_{managed_job_id}")
+
+                            elif active_section == "🌟 Perks, Helpline & QR":
+                                st.markdown("##### 🌟 Perks, Helpline & QR Target")
+                                st.text_input("Why Join Us Perks", key=f"why_join_{managed_job_id}")
+                                st.text_input("HR Helpline Contact", key=f"hr_ct_{managed_job_id}")
+                                st.text_input("QR Code Application URL", key=f"qr_url_{managed_job_id}")
+
+                        # Check for AI custom palette
+                        active_palette = st.session_state.get(f"custom_ai_palette_{managed_job_id}", None)
+                        current_theme = chosen_theme if 'chosen_theme' in locals() else "blue"
 
                         # Generate dynamic poster with all customized fields
                         live_poster_bytes = ps.generate_job_banner_image(
-                            job_title=custom_job_title,
+                            job_title=st.session_state[f"poster_role_{managed_job_id}"],
                             department=job_dept,
-                            location=b1_val,
-                            experience=p1_val,
+                            location=st.session_state[f"b1_v_{managed_job_id}"],
+                            experience=st.session_state[f"p1_v_{managed_job_id}"],
                             skills=skills_list,
-                            salary=b2_val,
-                            app_link=custom_qr_url,
+                            salary=st.session_state[f"b2_v_{managed_job_id}"],
+                            app_link=st.session_state[f"qr_url_{managed_job_id}"],
                             company_name=agency_name,
-                            recruiter_contact=custom_hr_contact,
-                            theme=chosen_theme,
-                            header_tagline=custom_header_tagline,
-                            sub_tagline=custom_sub_tagline,
-                            badge1_title=b1_title,
-                            badge1_value=b1_val,
-                            badge1_sub=b1_sub,
-                            badge2_title=b2_title,
-                            badge2_value=b2_val,
-                            badge2_sub=b2_sub,
-                            pill1_title=p1_title,
-                            pill1_value=p1_val,
-                            pill2_title=p2_title,
-                            pill2_value=p2_val,
-                            pill3_title=p3_title,
-                            pill3_value=p3_val,
-                            why_join_us=custom_why,
+                            recruiter_contact=st.session_state[f"hr_ct_{managed_job_id}"],
+                            theme=current_theme,
+                            custom_palette=active_palette,
+                            header_tagline=st.session_state[f"poster_hdr_{managed_job_id}"],
+                            sub_tagline=st.session_state[f"poster_subtag_{managed_job_id}"],
+                            badge1_title=st.session_state[f"b1_t_{managed_job_id}"],
+                            badge1_value=st.session_state[f"b1_v_{managed_job_id}"],
+                            badge1_sub=st.session_state[f"b1_s_{managed_job_id}"],
+                            badge2_title=st.session_state[f"b2_t_{managed_job_id}"],
+                            badge2_value=st.session_state[f"b2_v_{managed_job_id}"],
+                            badge2_sub=st.session_state[f"b2_s_{managed_job_id}"],
+                            pill1_title=st.session_state[f"p1_t_{managed_job_id}"],
+                            pill1_value=st.session_state[f"p1_v_{managed_job_id}"],
+                            pill2_title=st.session_state[f"p2_t_{managed_job_id}"],
+                            pill2_value=st.session_state[f"p2_v_{managed_job_id}"],
+                            pill3_title=st.session_state[f"p3_t_{managed_job_id}"],
+                            pill3_value=st.session_state[f"p3_v_{managed_job_id}"],
+                            why_join_us=st.session_state[f"why_join_{managed_job_id}"],
                         )
 
                         with col_preview:
-                            st.image(live_poster_bytes, caption=f"Hiring Poster ({selected_theme_label}) - 1080x1080", use_container_width=True)
+                            theme_name_display = active_palette.get("name") if active_palette else "Custom Studio Theme"
+                            st.image(live_poster_bytes, caption=f"Hiring Poster ({theme_name_display}) - 1080x1080", use_container_width=True)
                             st.download_button(
                                 "📥 Download High-Res Custom Poster (PNG)",
                                 data=live_poster_bytes,
-                                file_name=f"Hiring_{custom_job_title.replace(' ', '_')}_{chosen_theme}.png",
+                                file_name=f"Hiring_{st.session_state[f'poster_role_{managed_job_id}'].replace(' ', '_')}.png",
                                 mime="image/png",
                                 type="primary",
                                 use_container_width=True,
