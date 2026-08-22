@@ -3295,6 +3295,112 @@ elif selected_page == "Jobs":
                         else:
                             job_bookmarks.pop(managed_job_id, None)
                     st.rerun()
+                @st.dialog("📢 Share & Social Media Posts", width="large")
+                def share_job_dialog() -> None:
+                    job_title = safe_value(managed_job, "title", "Open Role")
+                    job_dept = safe_value(managed_job, "department", "General")
+                    job_loc = safe_value(managed_job, "location", "Remote / Hybrid")
+                    job_exp = safe_value(managed_job, "experience_required", "")
+                    exp_text = f"{job_exp} years" if job_exp and str(job_exp).strip() != "None" else "Experienced"
+                    skills_raw = safe_value(managed_job, "required_skills", "")
+                    skills_list = _items(skills_raw)
+                    skills_str = ", ".join(skills_list[:5]) if skills_list else "Relevant domain expertise"
+                    
+                    app_link = f"https://your-recruitment-portal.com/apply?job={managed_job_id}"
+                    
+                    wa_status = (
+                        f"🚀 *WE'RE HIRING: {job_title}!*\n"
+                        f"📍 Location: {job_loc} | 💼 Experience: {exp_text}\n"
+                        f"🛠️ Tech Stack: {skills_str}\n\n"
+                        f"✨ Fast-track AI screening · Great culture & compensation\n"
+                        f"📲 *Apply directly here:*\n"
+                        f"👉 {app_link}\n\n"
+                        f"*(Share with anyone looking!)*"
+                    )
+                    
+                    wa_direct = (
+                        f"Hey! 👋\n"
+                        f"Our team is actively looking for a talented *{job_title}* ({job_dept}) to join us.\n\n"
+                        f"*Key Highlights:*\n"
+                        f"• Role: {job_title}\n"
+                        f"• Location: {job_loc}\n"
+                        f"• Experience: {exp_text}\n"
+                        f"• Core Stack: {skills_str}\n\n"
+                        f"If you or someone in your network might be a great fit, review the role and upload a resume here:\n"
+                        f"🔗 {app_link}\n\n"
+                        f"Feel free to reach out if you have any questions!"
+                    )
+                    
+                    linkedin_post = (
+                        f"Are you ready to make a high-impact contribution? 🚀\n\n"
+                        f"We are officially hiring a **{job_title}** to join our {job_dept} team!\n\n"
+                        f"🔍 **What We're Looking For:**\n"
+                        f"• {exp_text} of proven hands-on experience\n"
+                        f"• Expertise in: {skills_str}\n"
+                        f"• Strong problem-solving abilities and passion for high-quality delivery\n\n"
+                        f"💡 **Why Join Us?**\n"
+                        f"✅ Work on modern, cutting-edge systems\n"
+                        f"✅ Fast-paced, collaborative growth culture\n"
+                        f"✅ Flexible work environment ({job_loc})\n\n"
+                        f"📥 **How to Apply:**\n"
+                        f"Skip traditional lengthy application processes — upload your resume directly through our fast-track portal:\n"
+                        f"🔗 {app_link}\n\n"
+                        f"Feel free to repost ♻️ to connect someone in your network with this opportunity!\n\n"
+                        f"#Hiring #{''.join(job_title.split())} #Careers #JobOpening #{''.join(job_dept.split())} #Jobs"
+                    )
+                    
+                    email_copy = (
+                        f"Subject: We're Hiring: {job_title} Opportunity\n\n"
+                        f"Hi [Candidate Name],\n\n"
+                        f"We came across your background and wanted to reach out regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
+                        f"Role Details:\n"
+                        f"• Position: {job_title}\n"
+                        f"• Location: {job_loc}\n"
+                        f"• Experience: {exp_text}\n"
+                        f"• Key Skills: {skills_str}\n\n"
+                        f"You can review the full requisition and submit your resume directly here:\n"
+                        f"👉 {app_link}\n\n"
+                        f"Best regards,\n"
+                        f"Talent Acquisition Team"
+                    )
+                    
+                    insta_copy = (
+                        f"🔥 WE'RE HIRING 🔥\n"
+                        f"✨ Role: {job_title}\n"
+                        f"📍 {job_loc} · {exp_text}\n"
+                        f"⚡ Skills: {skills_str}\n\n"
+                        f"🔗 Tap the link sticker to apply in 60s!"
+                    )
+                    
+                    t1, t2, t3, t4, t5 = st.tabs([
+                        "📱 WhatsApp Status",
+                        "💬 WhatsApp Message",
+                        "💼 LinkedIn Post",
+                        "📧 Candidate Email",
+                        "📸 Instagram Story"
+                    ])
+                    with t1:
+                        st.caption("Copy and paste to WhatsApp Status / Stories:")
+                        st.code(wa_status, language=None)
+                    with t2:
+                        st.caption("Copy and send directly to candidate contacts or WhatsApp groups:")
+                        st.code(wa_direct, language=None)
+                    with t3:
+                        st.caption("Copy and publish on LinkedIn:")
+                        st.code(linkedin_post, language="markdown")
+                    with t4:
+                        st.caption("Copy into your email outreach / candidate newsletter:")
+                        st.code(email_copy, language=None)
+                    with t5:
+                        st.caption("Instagram Story caption / Text banner layout:")
+                        st.code(insta_copy, language=None)
+
+                if st.button(
+                    "Share & Social posts",
+                    icon=":material/share:",
+                    key=f"share_job_button_{managed_job_id}",
+                ):
+                    share_job_dialog()
                 if st.button(
                     "Edit job",
                     icon=":material/edit:",
