@@ -3502,6 +3502,31 @@ elif selected_page == "Jobs":
                     encoded_email_body = urllib.parse.quote(email_copy)
                     encoded_li_url = urllib.parse.quote(app_link)
 
+                    # Pre-generate poster bytes so all social tabs have the image ready
+                    import importlib
+                    import services.poster_service as ps
+                    importlib.reload(ps)
+                    sal_min = safe_value(managed_job, "salary_min", "")
+                    sal_max = safe_value(managed_job, "salary_max", "")
+                    sal_display = f"₹{sal_min} - ₹{sal_max}" if sal_min and sal_max else ""
+                    
+                    theme_map = {"Royal Blue (Corporate)": "blue", "Teal & Gold (Modern)": "teal", "Vibrant Orange (Bold)": "orange"}
+                    selected_theme_label = st.session_state.get(f"poster_theme_select_{managed_job_id}", "Royal Blue (Corporate)")
+                    chosen_theme = theme_map.get(selected_theme_label, "blue")
+                    
+                    poster_bytes = ps.generate_job_banner_image(
+                        job_title=job_title,
+                        department=job_dept,
+                        location=job_loc,
+                        experience=exp_text,
+                        skills=skills_list,
+                        salary=sal_display,
+                        app_link=app_link,
+                        company_name=agency_name,
+                        recruiter_contact=f"{recruiter_name} ({recruiter_phone})",
+                        theme=chosen_theme,
+                    )
+
                     t1, t2, t3, t4, t5, t6 = st.tabs([
                         "📱 WhatsApp Status",
                         "💬 WhatsApp Message",
@@ -3511,88 +3536,129 @@ elif selected_page == "Jobs":
                         "🎨 Visual Hiring Poster"
                     ])
                     with t1:
-                        st.caption("Review or copy text (use the Copy icon on the top-right of the box):")
-                        edited_wa_status = st.text_area(
-                            "WhatsApp Status Text",
-                            value=wa_status,
-                            height=180,
-                            key=f"edit_wa_status_{managed_job_id}",
-                            label_visibility="collapsed",
-                        )
-                        st.link_button(
-                            "📲 Open WhatsApp Web / App",
-                            f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_status)}",
-                            type="primary",
-                            use_container_width=True,
-                        )
+                        c_t1_l, c_t1_r = st.columns([1.5, 1])
+                        with c_t1_l:
+                            st.caption("WhatsApp Status copy:")
+                            edited_wa_status = st.text_area(
+                                "WhatsApp Status Text",
+                                value=wa_status,
+                                height=180,
+                                key=f"edit_wa_status_{managed_job_id}",
+                                label_visibility="collapsed",
+                            )
+                            st.link_button(
+                                "📲 Open WhatsApp Web / App",
+                                f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_status)}",
+                                type="primary",
+                                use_container_width=True,
+                            )
+                        with c_t1_r:
+                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                            st.download_button(
+                                "📥 Download Poster Image",
+                                data=poster_bytes,
+                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                mime="image/png",
+                                key=f"dl_wa_status_{managed_job_id}",
+                                use_container_width=True,
+                            )
+
                     with t2:
-                        st.caption("Review or copy message for contacts / groups:")
-                        edited_wa_direct = st.text_area(
-                            "WhatsApp Message Text",
-                            value=wa_direct,
-                            height=180,
-                            key=f"edit_wa_direct_{managed_job_id}",
-                            label_visibility="collapsed",
-                        )
-                        c_wa1, c_wa2 = st.columns([1, 1])
-                        with c_wa1:
-                            st.link_button(
-                                "💬 Open WhatsApp Web / App",
-                                f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
+                        c_t2_l, c_t2_r = st.columns([1.5, 1])
+                        with c_t2_l:
+                            st.caption("WhatsApp chat message:")
+                            edited_wa_direct = st.text_area(
+                                "WhatsApp Message Text",
+                                value=wa_direct,
+                                height=180,
+                                key=f"edit_wa_direct_{managed_job_id}",
+                                label_visibility="collapsed",
+                            )
+                            c_wa1, c_wa2 = st.columns([1, 1])
+                            with c_wa1:
+                                st.link_button(
+                                    "💬 Open WhatsApp",
+                                    f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
+                                    use_container_width=True,
+                                )
+                            with c_wa2:
+                                if st.button("🚀 1-Click Broadcast (n8n)", key=f"auto_wa_{managed_job_id}", type="primary", use_container_width=True):
+                                    with st.spinner("Dispatching broadcast..."):
+                                        from services.social_service import auto_publish_social_post
+                                        res = auto_publish_social_post(
+                                            channel="whatsapp",
+                                            job_id=managed_job_id,
+                                            job_title=job_title,
+                                            caption=edited_wa_direct,
+                                            app_link=app_link,
+                                            image_bytes=poster_bytes,
+                                            agency_name=agency_name,
+                                            recruiter_name=recruiter_name,
+                                            recruiter_contact=recruiter_phone,
+                                        )
+                                        if res.get("success"):
+                                            st.success(f"✅ {res.get('message')}")
+                                        else:
+                                            st.error(f"❌ {res.get('message')}")
+                        with c_t2_r:
+                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                            st.download_button(
+                                "📥 Download Poster Image",
+                                data=poster_bytes,
+                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                mime="image/png",
+                                key=f"dl_wa_direct_{managed_job_id}",
                                 use_container_width=True,
                             )
-                        with c_wa2:
-                            if st.button("🚀 1-Click Auto-Broadcast (n8n)", key=f"auto_wa_{managed_job_id}", type="primary", use_container_width=True):
-                                with st.spinner("Dispatching WhatsApp broadcast via n8n automation..."):
-                                    from services.social_service import auto_publish_social_post
-                                    res = auto_publish_social_post(
-                                        channel="whatsapp",
-                                        job_id=managed_job_id,
-                                        job_title=job_title,
-                                        caption=edited_wa_direct,
-                                        app_link=app_link,
-                                        agency_name=agency_name,
-                                        recruiter_name=recruiter_name,
-                                        recruiter_contact=recruiter_phone,
-                                    )
-                                    if res.get("success"):
-                                        st.success(f"✅ {res.get('message')}")
-                                    else:
-                                        st.error(f"❌ {res.get('message')}")
+
                     with t3:
-                        st.caption("Review or copy LinkedIn post:")
-                        edited_li_post = st.text_area(
-                            "LinkedIn Post Text",
-                            value=linkedin_post,
-                            height=220,
-                            key=f"edit_li_post_{managed_job_id}",
-                            label_visibility="collapsed",
-                        )
-                        c_li1, c_li2 = st.columns([1, 1])
-                        with c_li1:
-                            st.link_button(
-                                "💼 Open LinkedIn Web Share",
-                                f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
+                        c_t3_l, c_t3_r = st.columns([1.5, 1])
+                        with c_t3_l:
+                            st.caption("LinkedIn Post text:")
+                            edited_li_post = st.text_area(
+                                "LinkedIn Post Text",
+                                value=linkedin_post,
+                                height=220,
+                                key=f"edit_li_post_{managed_job_id}",
+                                label_visibility="collapsed",
+                            )
+                            c_li1, c_li2 = st.columns([1, 1])
+                            with c_li1:
+                                st.link_button(
+                                    "💼 Share on LinkedIn",
+                                    f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
+                                    use_container_width=True,
+                                )
+                            with c_li2:
+                                if st.button("🚀 1-Click Auto-Post (n8n)", key=f"auto_li_{managed_job_id}", type="primary", use_container_width=True):
+                                    with st.spinner("Publishing post + poster to LinkedIn..."):
+                                        from services.social_service import auto_publish_social_post
+                                        res = auto_publish_social_post(
+                                            channel="linkedin",
+                                            job_id=managed_job_id,
+                                            job_title=job_title,
+                                            caption=edited_li_post,
+                                            app_link=app_link,
+                                            image_bytes=poster_bytes,
+                                            agency_name=agency_name,
+                                            recruiter_name=recruiter_name,
+                                            recruiter_contact=recruiter_phone,
+                                        )
+                                        if res.get("success"):
+                                            st.success(f"✅ {res.get('message')}")
+                                        else:
+                                            st.error(f"❌ {res.get('message')}")
+                        with c_t3_r:
+                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                            st.download_button(
+                                "📥 Download Poster for LinkedIn",
+                                data=poster_bytes,
+                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                mime="image/png",
+                                key=f"dl_li_{managed_job_id}",
                                 use_container_width=True,
                             )
-                        with c_li2:
-                            if st.button("🚀 1-Click Auto-Publish to LinkedIn", key=f"auto_li_{managed_job_id}", type="primary", use_container_width=True):
-                                with st.spinner("Publishing post + poster to LinkedIn via n8n agent..."):
-                                    from services.social_service import auto_publish_social_post
-                                    res = auto_publish_social_post(
-                                        channel="linkedin",
-                                        job_id=managed_job_id,
-                                        job_title=job_title,
-                                        caption=edited_li_post,
-                                        app_link=app_link,
-                                        agency_name=agency_name,
-                                        recruiter_name=recruiter_name,
-                                        recruiter_contact=recruiter_phone,
-                                    )
-                                    if res.get("success"):
-                                        st.success(f"✅ {res.get('message')}")
-                                    else:
-                                        st.error(f"❌ {res.get('message')}")
+
                     with t4:
                         st.markdown("##### 👥 Select Candidate(s) from Database")
                         
@@ -3692,84 +3758,77 @@ elif selected_page == "Jobs":
                                 use_container_width=True,
                             )
                     with t5:
-                        st.caption("Review or copy Instagram caption:")
-                        edited_insta_copy = st.text_area(
-                            "Instagram Post / Story Caption",
-                            value=insta_copy,
-                            height=180,
-                            key=f"edit_insta_copy_{managed_job_id}",
-                            label_visibility="collapsed",
-                        )
-                        c_ig1, c_ig2 = st.columns([1, 1])
-                        with c_ig1:
-                            st.link_button(
-                                "📸 Open Instagram Web",
-                                "https://www.instagram.com/",
+                        c_t5_l, c_t5_r = st.columns([1.5, 1])
+                        with c_t5_l:
+                            st.caption("Instagram caption:")
+                            edited_insta_copy = st.text_area(
+                                "Instagram Post / Story Caption",
+                                value=insta_copy,
+                                height=180,
+                                key=f"edit_insta_copy_{managed_job_id}",
+                                label_visibility="collapsed",
+                            )
+                            c_ig1, c_ig2 = st.columns([1, 1])
+                            with c_ig1:
+                                st.link_button(
+                                    "📸 Open Instagram",
+                                    "https://www.instagram.com/",
+                                    use_container_width=True,
+                                )
+                            with c_ig2:
+                                if st.button("🚀 1-Click Auto-Post (Meta)", key=f"auto_ig_{managed_job_id}", type="primary", use_container_width=True):
+                                    with st.spinner("Publishing post + poster to Instagram..."):
+                                        from services.social_service import auto_publish_social_post
+                                        res = auto_publish_social_post(
+                                            channel="instagram",
+                                            job_id=managed_job_id,
+                                            job_title=job_title,
+                                            caption=edited_insta_copy,
+                                            app_link=app_link,
+                                            image_bytes=poster_bytes,
+                                            agency_name=agency_name,
+                                            recruiter_name=recruiter_name,
+                                            recruiter_contact=recruiter_phone,
+                                        )
+                                        if res.get("success"):
+                                            st.success(f"✅ {res.get('message')}")
+                                        else:
+                                            st.error(f"❌ {res.get('message')}")
+                        with c_t5_r:
+                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                            st.download_button(
+                                "📥 Download Poster for Instagram",
+                                data=poster_bytes,
+                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                mime="image/png",
+                                key=f"dl_ig_{managed_job_id}",
                                 use_container_width=True,
                             )
-                        with c_ig2:
-                            if st.button("🚀 1-Click Auto-Publish (Meta)", key=f"auto_ig_{managed_job_id}", type="primary", use_container_width=True):
-                                with st.spinner("Publishing post + poster to Instagram via Meta Graph API..."):
-                                    from services.social_service import auto_publish_social_post
-                                    res = auto_publish_social_post(
-                                        channel="instagram",
-                                        job_id=managed_job_id,
-                                        job_title=job_title,
-                                        caption=edited_insta_copy,
-                                        app_link=app_link,
-                                        agency_name=agency_name,
-                                        recruiter_name=recruiter_name,
-                                        recruiter_contact=recruiter_phone,
-                                    )
-                                    if res.get("success"):
-                                        st.success(f"✅ {res.get('message')}")
-                                    else:
-                                        st.error(f"❌ {res.get('message')}")
+
                     with t6:
                         st.caption("📸 AI Generated Visual Hiring Poster with Working Scannable QR Code:")
                         
                         theme_col1, theme_col2 = st.columns([1, 2])
                         with theme_col1:
-                            theme_map = {"Teal & Gold (Modern)": "teal", "Royal Blue (Corporate)": "blue", "Vibrant Orange (Bold)": "orange"}
                             selected_theme_label = st.selectbox(
                                 "Poster Color Theme",
                                 options=list(theme_map.keys()),
+                                index=0,
                                 key=f"poster_theme_select_{managed_job_id}",
                             )
                             chosen_theme = theme_map[selected_theme_label]
                         with theme_col2:
                             st.info("💡 **Scan with your phone camera**: The QR Code on the bottom-left connects directly to your live candidate intake form!")
 
-                        try:
-                            import importlib
-                            import services.poster_service as ps
-                            importlib.reload(ps)
-                            sal_min = safe_value(managed_job, "salary_min", "")
-                            sal_max = safe_value(managed_job, "salary_max", "")
-                            sal_display = f"₹{sal_min} - ₹{sal_max}" if sal_min and sal_max else ""
-                            poster_bytes = ps.generate_job_banner_image(
-                                job_title=job_title,
-                                department=job_dept,
-                                location=job_loc,
-                                experience=exp_text,
-                                skills=skills_list,
-                                salary=sal_display,
-                                app_link=app_link,
-                                company_name=agency_name,
-                                recruiter_contact=f"{recruiter_name} ({recruiter_phone})",
-                                theme=chosen_theme,
-                            )
-                            st.image(poster_bytes, caption=f"Hiring Poster ({selected_theme_label}) - 1080x1080", use_container_width=True)
-                            st.download_button(
-                                "📥 Download High-Res Poster (PNG)",
-                                data=poster_bytes,
-                                file_name=f"Hiring_{job_title.replace(' ', '_')}_{chosen_theme}.png",
-                                mime="image/png",
-                                type="primary",
-                                use_container_width=True,
-                            )
-                        except Exception as p_err:
-                            st.error(f"Could not render image poster: {p_err}")
+                        st.image(poster_bytes, caption=f"Hiring Poster ({selected_theme_label}) - 1080x1080", use_container_width=True)
+                        st.download_button(
+                            "📥 Download High-Res Poster (PNG)",
+                            data=poster_bytes,
+                            file_name=f"Hiring_{job_title.replace(' ', '_')}_{chosen_theme}.png",
+                            mime="image/png",
+                            type="primary",
+                            use_container_width=True,
+                        )
 
                 if st.button(
                     "Share & Social posts",

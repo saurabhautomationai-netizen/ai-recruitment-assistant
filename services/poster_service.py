@@ -15,106 +15,134 @@ def generate_job_banner_image(
     app_link: str = "",
     company_name: str = "TALENT ACQUISITION",
     recruiter_contact: str = "",
-    theme: str = "teal",
+    theme: str = "blue",  # 'blue', 'teal', 'orange'
     **kwargs,
 ) -> bytes:
-    """Create a 1080x1080 modern hiring graphic matching professional agency templates."""
+    """Create a 1080x1080 modern hiring graphic matching professional agency card templates (like Image 5)."""
+
     if skills is None:
         skills = []
 
     width, height = 1080, 1080
 
     # Color palettes
-    if theme == "blue":
-        bg_main = "#0B2545"
-        accent_color = "#00B4D8"
-        gold_color = "#FFD166"
-        sub_card = "#134074"
+    if theme == "teal":
+        bg_top = "#044E42"
+        bg_bottom = "#064E3B"
+        accent_blue = "#0D9488"
+        card_bg = "#0F2922"
+        gold_highlight = "#F59E0B"
+        white = "#FFFFFF"
     elif theme == "orange":
-        bg_main = "#C2410C"
-        accent_color = "#FDBA74"
-        gold_color = "#FEF08A"
-        sub_card = "#9A3412"
-    else:  # Teal (Default, from user template)
-        bg_main = "#064E3B"
-        accent_color = "#34D399"
-        gold_color = "#FBBF24"
-        sub_card = "#047857"
+        bg_top = "#9A3412"
+        bg_bottom = "#7C2D12"
+        accent_blue = "#EA580C"
+        card_bg = "#431407"
+        gold_highlight = "#FDE047"
+        white = "#FFFFFF"
+    else:  # Royal Blue (Default, exact match to Image 5)
+        bg_top = "#1D4ED8"
+        bg_bottom = "#0F172A"
+        accent_blue = "#3B82F6"
+        card_bg = "#1E293B"
+        gold_highlight = "#FACC15"
+        white = "#FFFFFF"
 
-    image = Image.new("RGB", (width, height), color=bg_main)
+    image = Image.new("RGB", (width, height), color=bg_bottom)
     draw = ImageDraw.Draw(image)
 
-    # Decorative geometric background shapes
-    draw.ellipse([700, -150, 1300, 450], fill=sub_card)
-    draw.ellipse([-200, 650, 400, 1250], fill=sub_card)
-    draw.rectangle([0, 0, width, 18], fill=gold_color)
+    # Top header gradient banner
+    draw.rectangle([0, 0, width, 300], fill=bg_top)
+    draw.ellipse([750, -100, 1250, 400], fill=accent_blue)
+    draw.ellipse([-150, 100, 350, 550], fill=accent_blue)
 
     try:
-        font_company = ImageFont.truetype("arialbd.ttf", 26)
-        font_hero = ImageFont.truetype("arialbd.ttf", 74)
-        font_subhero = ImageFont.truetype("ariali.ttf", 46)
-        font_role = ImageFont.truetype("arialbd.ttf", 38)
-        font_sec = ImageFont.truetype("arialbd.ttf", 26)
-        font_bullet = ImageFont.truetype("arial.ttf", 26)
-        font_pill = ImageFont.truetype("arialbd.ttf", 22)
-        font_small = ImageFont.truetype("arial.ttf", 20)
+        font_super = ImageFont.truetype("arialbd.ttf", 26)
+        font_hero = ImageFont.truetype("arialbd.ttf", 68)
+        font_job = ImageFont.truetype("arialbd.ttf", 44)
+        font_sub = ImageFont.truetype("arialbd.ttf", 22)
+        font_card_title = ImageFont.truetype("arialbd.ttf", 24)
+        font_card_body = ImageFont.truetype("arial.ttf", 20)
+        font_pill = ImageFont.truetype("arialbd.ttf", 21)
+        font_footer_large = ImageFont.truetype("arialbd.ttf", 28)
+        font_footer_sub = ImageFont.truetype("arialbd.ttf", 22)
     except Exception:
-        font_company = ImageFont.load_default()
-        font_hero = font_company
-        font_subhero = font_company
-        font_role = font_company
-        font_sec = font_company
-        font_bullet = font_company
-        font_pill = font_company
-        font_small = font_company
+        font_super = ImageFont.load_default()
+        font_hero = font_super
+        font_job = font_super
+        font_sub = font_super
+        font_card_title = font_super
+        font_card_body = font_super
+        font_pill = font_super
+        font_footer_large = font_super
+        font_footer_sub = font_super
 
-    # 1. Company / Agency Header
-    draw.text((70, 55), str(company_name).upper()[:40], fill=gold_color, font=font_company)
+    # 1. Top Agency Tag
+    draw.text((60, 40), f"[ {str(company_name).upper()[:40]} ]", fill=gold_highlight, font=font_super)
 
-    # 2. Main Hero Title: WE ARE HIRING!
-    draw.text((70, 100), "WE ARE", fill="#FFFFFF", font=font_hero)
-    draw.text((70, 175), "HIRING!", fill=gold_color, font=font_hero)
+    # 2. Main Title: WE ARE HIRING!
+    draw.text((60, 75), "WE ARE", fill=white, font=font_hero)
+    draw.text((60, 140), "HIRING!", fill=gold_highlight, font=font_hero)
 
-    # Magnifying Glass / Search icon graphic on the right
-    draw.ellipse([880, 95, 990, 205], outline="#FFFFFF", width=12)
-    draw.line([965, 180, 1030, 245], fill="#FFFFFF", width=14)
+    # 3. Main Role Banner Card (White Box with Bold Dark Text)
+    draw.rounded_rectangle([60, 230, 1020, 320], radius=16, fill=white, outline=gold_highlight, width=3)
+    role_title_text = str(job_title).upper()[:36]
+    draw.text((90, 252), f"ROLE: {role_title_text}", fill="#0F172A", font=font_job)
 
-    # 3. Subheading: Join Our Team
-    draw.text((70, 270), "Join Our Team", fill="#E0E7FF", font=font_subhero)
+    # Subtitle tagline
+    draw.text((60, 335), "Join a High-Growth Team • Build Your Career • Fast-Track AI Screening!", fill="#93C5FD", font=font_sub)
 
-    # Divider bar
-    draw.line([70, 335, 1010, 335], fill=accent_color, width=3)
+    # 4. Top 2 Highlight Cards (Side by Side)
+    card_y = 380
+    card_w = 465
+    card_h = 135
 
-    # 4. Job Title Card
-    draw.rounded_rectangle([70, 355, 1010, 435], radius=14, fill="#0F172A", outline=gold_color, width=2)
-    draw.text((95, 375), f"ROLE: {str(job_title).upper()[:42]}", fill="#FFFFFF", font=font_role)
+    # Card 1: Work Type / Location
+    draw.rounded_rectangle([60, card_y, 60 + card_w, card_y + card_h], radius=14, fill=card_bg, outline=accent_blue, width=2)
+    draw.text((90, card_y + 25), "LOCATION & TYPE", fill=gold_highlight, font=font_card_title)
+    draw.text((90, card_y + 58), f"{location}", fill=white, font=font_card_title)
+    draw.text((90, card_y + 90), f"Department: {department}", fill="#94A3B8", font=font_card_body)
 
-    # 5. Specifications & Requirements Section
-    draw.text((70, 460), "SPECIFICATIONS & ROLE DETAILS :", fill=gold_color, font=font_sec)
+    # Card 2: Compensation / Package
+    draw.rounded_rectangle([555, card_y, 555 + card_w, card_y + card_h], radius=14, fill=card_bg, outline=accent_blue, width=2)
+    draw.text((585, card_y + 25), "COMPENSATION", fill=gold_highlight, font=font_card_title)
+    sal_text = salary if salary else "Competitive Package"
+    draw.text((585, card_y + 58), f"{sal_text}", fill=white, font=font_card_title)
+    draw.text((585, card_y + 90), "Performance-based growth", fill="#94A3B8", font=font_card_body)
 
-    specs = [
-        f"Location: {location}",
-        f"Experience Required: {experience}",
-    ]
-    if salary:
-        specs.append(f"Compensation: {salary}")
-    
-    clean_skills = [str(s).strip() for s in skills if str(s).strip()][:6]
-    if clean_skills:
-        specs.append(f"Key Tech Stack: {', '.join(clean_skills)}")
+    # 5. Middle 3 Specification Pill Cards
+    pill_y = 535
+    pill_w = 300
+    pill_h = 100
 
-    curr_y = 505
-    for idx, spec in enumerate(specs, start=1):
-        # Draw clean solid bullet dot
-        draw.ellipse([70, curr_y + 6, 84, curr_y + 20], fill=accent_color)
-        draw.text((100, curr_y), spec[:65], fill="#F8FAFC", font=font_bullet)
-        curr_y += 44
+    # Pill 1: Experience
+    draw.rounded_rectangle([60, pill_y, 60 + pill_w, pill_y + pill_h], radius=12, fill=card_bg, outline="#475569", width=2)
+    draw.text((80, pill_y + 20), "EXPERIENCE", fill=gold_highlight, font=font_pill)
+    draw.text((80, pill_y + 55), f"{experience}", fill=white, font=font_pill)
 
-    # 6. Bottom Application Section with Working QR Code
-    bottom_box_top = 750
-    draw.rounded_rectangle([70, bottom_box_top, 1010, 1010], radius=16, fill="#0F172A", outline=accent_color, width=2)
+    # Pill 2: Availability
+    draw.rounded_rectangle([390, pill_y, 390 + pill_w, pill_y + pill_h], radius=12, fill=card_bg, outline="#475569", width=2)
+    draw.text((410, pill_y + 20), "AVAILABILITY", fill=gold_highlight, font=font_pill)
+    draw.text((410, pill_y + 55), "Immediate / 30 Days", fill=white, font=font_pill)
 
-    # Generate QR Code for the application URL
+    # Pill 3: Key Skills Count
+    draw.rounded_rectangle([720, pill_y, 720 + pill_w, pill_y + pill_h], radius=12, fill=card_bg, outline="#475569", width=2)
+    draw.text((740, pill_y + 20), "KEY TECH STACK", fill=gold_highlight, font=font_pill)
+    clean_skills = [str(s).strip() for s in skills if str(s).strip()]
+    skills_preview = ", ".join(clean_skills[:3]) if clean_skills else "Domain Skills"
+    draw.text((740, pill_y + 55), skills_preview[:20], fill=white, font=font_pill)
+
+    # 6. "WHY JOIN US?" Feature Bar
+    why_y = 655
+    draw.rounded_rectangle([60, why_y, 1020, why_y + 60], radius=10, fill="#1E293B")
+    draw.text((80, why_y + 18), "WHY JOIN US:   • High Career Growth   • Meritocracy   • Global Impact", fill="#E2E8F0", font=font_sub)
+
+    # 7. Bottom CTA & Scannable QR Code Box
+    bottom_y = 735
+    bottom_h = 285
+    draw.rounded_rectangle([60, bottom_y, 1020, bottom_y + bottom_h], radius=16, fill="#0F172A", outline=gold_highlight, width=2)
+
+    # Generate QR Code
     qr_img = None
     if app_link and app_link.strip():
         try:
@@ -127,25 +155,25 @@ def generate_job_banner_image(
             qr.add_data(app_link.strip())
             qr.make(fit=True)
             qr_raw = qr.make_image(fill_color="#0F172A", back_color="#FFFFFF").convert("RGB")
-            qr_img = qr_raw.resize((210, 210))
+            qr_img = qr_raw.resize((230, 230))
         except Exception:
             qr_img = None
 
     if qr_img:
-        image.paste(qr_img, (95, bottom_box_top + 25))
-        draw.text((330, bottom_box_top + 35), "SCAN WITH PHONE CAMERA TO APPLY", fill=gold_color, font=font_sec)
-        draw.text((330, bottom_box_top + 75), "Point your camera at the QR code to open the 60s application portal.", fill="#CBD5E1", font=font_small)
+        image.paste(qr_img, (85, bottom_y + 25))
+        draw.text((345, bottom_y + 35), "READY TO TAKE THE NEXT STEP?", fill=gold_highlight, font=font_footer_large)
+        draw.text((345, bottom_y + 75), "Point phone camera at QR code to apply in 60s!", fill=white, font=font_card_title)
         
-        display_link = app_link if len(app_link) < 48 else app_link[:45] + "..."
-        draw.text((330, bottom_box_top + 115), f"Link: {display_link}", fill=accent_color, font=font_small)
+        display_link = app_link if len(app_link) < 46 else app_link[:43] + "..."
+        draw.text((345, bottom_y + 115), f"Link: {display_link}", fill="#38BDF8", font=font_card_body)
 
-        if recruiter_contact:
-            draw.text((330, bottom_box_top + 155), f"HR Contact / WhatsApp: {recruiter_contact}", fill="#F8FAFC", font=font_sec)
-        else:
-            draw.text((330, bottom_box_top + 155), "Fast-Track AI Screening Enabled", fill="#38BDF8", font=font_sec)
+        draw.rounded_rectangle([345, bottom_y + 155, 990, bottom_y + 245], radius=10, fill=card_bg, outline=accent_blue, width=1)
+        draw.text((365, bottom_y + 175), f"FOR MORE INFO / HR CONTACT:", fill="#94A3B8", font=font_card_body)
+        contact_display = recruiter_contact if recruiter_contact else "+91 98765 43210 (HR Helpline)"
+        draw.text((365, bottom_y + 205), f"Call / WhatsApp: {contact_display}", fill=gold_highlight, font=font_footer_sub)
     else:
-        draw.text((110, bottom_box_top + 45), "HOW TO APPLY :", fill=gold_color, font=font_sec)
-        draw.text((110, bottom_box_top + 90), f"Submit your CV at: {app_link}", fill="#FFFFFF", font=font_bullet)
+        draw.text((100, bottom_y + 50), "READY TO APPLY?", fill=gold_highlight, font=font_footer_large)
+        draw.text((100, bottom_y + 100), f"Submit CV at: {app_link}", fill=white, font=font_card_title)
 
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")

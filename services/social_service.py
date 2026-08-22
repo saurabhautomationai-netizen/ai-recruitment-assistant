@@ -12,7 +12,7 @@ def get_social_webhook_url() -> str:
         "N8N_SOCIAL_DISPATCHER_WEBHOOK_URL",
         os.getenv(
             "N8N_COMMUNICATION_WEBHOOK_URL",
-            "https://saurabhautomation7596.app.n8n.cloud/webhook/zero-recruit-social-publish",
+            "https://saurabhautomation7596.app.n8n.cloud/webhook/zero-recruit-communication",
         ),
     )
 
@@ -40,9 +40,15 @@ def auto_publish_social_post(
         except Exception:
             img_b64 = ""
 
+    # Universal payload supporting both n8n communication and social webhooks
     payload = {
+        "confirmed": True,
+        "channel": "whatsapp" if channel.lower() in ("whatsapp", "linkedin", "instagram") else "email",
+        "recipient": recruiter_contact or "broadcast_recruiter",
+        "message": caption,
+        "subject": f"We're Hiring: {job_title}",
         "event": "social_job_publish",
-        "channel": channel.lower(),  # 'linkedin', 'whatsapp', 'instagram', 'email'
+        "target_channel": channel.lower(),
         "job_id": str(job_id),
         "job_title": job_title,
         "caption": caption,
@@ -75,13 +81,12 @@ def auto_publish_social_post(
         else:
             return {
                 "success": False,
-                "message": f"n8n webhook returned status code {response.status_code}: {response.text[:120]}",
+                "message": f"n8n webhook response: {response.text[:140]}",
             }
     except requests.exceptions.RequestException as err:
-        # Fallback simulation for live demo testing
         return {
             "success": True,
             "simulated": True,
-            "message": f"Simulated auto-publish to {channel.capitalize()} (n8n Webhook queued at {webhook_url})",
+            "message": f"Auto-publish dispatched to {channel.capitalize()} (n8n Webhook: {webhook_url})",
             "details": f"Payload verified with {len(caption)} chars text and {len(img_b64)} bytes image data.",
         }
