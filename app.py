@@ -3484,26 +3484,44 @@ elif selected_page == "Jobs":
                         "📸 Instagram Story"
                     ])
                     with t1:
-                        st.caption("Copy and paste to WhatsApp Status / Stories:")
-                        st.code(wa_status, language=None)
+                        st.caption("Customize and send to WhatsApp Status / Stories:")
+                        edited_wa_status = st.text_area(
+                            "WhatsApp Status Text",
+                            value=wa_status,
+                            height=180,
+                            key=f"edit_wa_status_{managed_job_id}",
+                            label_visibility="collapsed",
+                        )
                         st.link_button(
                             "📲 Open WhatsApp Web / App",
-                            f"https://api.whatsapp.com/send?text={encoded_wa_status}",
+                            f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_status)}",
                             type="primary",
                             use_container_width=True,
                         )
                     with t2:
-                        st.caption("Copy and send directly to candidate contacts or WhatsApp groups:")
-                        st.code(wa_direct, language=None)
+                        st.caption("Customize and send directly to candidate contacts or WhatsApp groups:")
+                        edited_wa_direct = st.text_area(
+                            "WhatsApp Message Text",
+                            value=wa_direct,
+                            height=180,
+                            key=f"edit_wa_direct_{managed_job_id}",
+                            label_visibility="collapsed",
+                        )
                         st.link_button(
                             "💬 Send via WhatsApp Web / App",
-                            f"https://api.whatsapp.com/send?text={encoded_wa_direct}",
+                            f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
                             type="primary",
                             use_container_width=True,
                         )
                     with t3:
-                        st.caption("Copy and publish on LinkedIn:")
-                        st.code(linkedin_post, language="markdown")
+                        st.caption("Customize and publish on LinkedIn:")
+                        edited_li_post = st.text_area(
+                            "LinkedIn Post Text",
+                            value=linkedin_post,
+                            height=220,
+                            key=f"edit_li_post_{managed_job_id}",
+                            label_visibility="collapsed",
+                        )
                         st.link_button(
                             "💼 Open LinkedIn to Share",
                             f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
@@ -3569,10 +3587,16 @@ elif selected_page == "Jobs":
                             f"Talent Acquisition Team"
                         )
 
-                        st.code(personalized_email_copy, language=None)
+                        edited_email_copy = st.text_area(
+                            "Email Body",
+                            value=personalized_email_copy,
+                            height=220,
+                            key=f"edit_email_copy_{managed_job_id}",
+                            label_visibility="collapsed",
+                        )
 
                         encoded_pers_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
-                        encoded_pers_body = urllib.parse.quote(personalized_email_copy)
+                        encoded_pers_body = urllib.parse.quote(edited_email_copy)
                         
                         gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&su={encoded_pers_subj}&body={encoded_pers_body}"
                         if mail_to_param:
@@ -3599,15 +3623,20 @@ elif selected_page == "Jobs":
                                 use_container_width=True,
                             )
                     with t5:
-                        st.caption("Instagram Story caption / Text banner layout:")
-                        st.code(insta_copy, language=None)
+                        st.caption("Customize and copy for Instagram Post / Story caption:")
+                        edited_insta_copy = st.text_area(
+                            "Instagram Post / Story Caption",
+                            value=insta_copy,
+                            height=180,
+                            key=f"edit_insta_copy_{managed_job_id}",
+                            label_visibility="collapsed",
+                        )
                         st.link_button(
                             "📸 Open Instagram",
                             "https://www.instagram.com/",
                             type="primary",
                             use_container_width=True,
                         )
-                        st.info("💡 **How to post on Instagram**:\n1. Click **Copy** on the text above.\n2. Open Instagram on your phone and create a **Story**.\n3. Paste the text, tap the **Sticker icon 🔗** → select **LINK** → paste your application link!")
 
                 if st.button(
                     "Share & Social posts",
