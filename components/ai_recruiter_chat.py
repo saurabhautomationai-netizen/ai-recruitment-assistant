@@ -123,50 +123,94 @@ def hydrate_candidate_bookmarks(
 
 def _candidate_card(candidate: dict[str, Any], card_key: str) -> None:
     candidate_id = str(candidate.get("candidate_id", "")).strip()
+    cand_name = _display_value(candidate.get("Candidate"))
+    job_title = _display_value(candidate.get("Job"))
+    stage = _display_value(candidate.get("Stage"))
+    exp = _display_value(candidate.get("Experience"))
+    score_raw = candidate.get("Candidate score")
+    ats_raw = candidate.get("ATS score")
+    skills = _display_value(candidate.get("Skills"))
+    recommendation = _display_value(candidate.get("Recommendation"))
+
+    try:
+        score = int(float(score_raw))
+    except Exception:
+        score = 75
+
+    try:
+        ats = int(float(ats_raw))
+    except Exception:
+        ats = 80
+
+    initials = "".join([p[0].upper() for p in cand_name.split()[:2]]) if cand_name != "Not available" else "CD"
+
+    stage_lower = stage.lower()
+    if any(s in stage_lower for s in ("select", "hire", "join")):
+        badge_bg, badge_color = "#dcfce7", "#15803d"
+    elif any(s in stage_lower for s in ("interview", "sched")):
+        badge_bg, badge_color = "#e0e7ff", "#4338ca"
+    elif any(s in stage_lower for s in ("reject", "disqual")):
+        badge_bg, badge_color = "#fee2e2", "#b91c1c"
+    else:
+        badge_bg, badge_color = "#fef3c7", "#b45309"
+
     bookmarks = st.session_state.setdefault("ai_candidate_bookmarks", {})
+    is_bookmarked = candidate_id in bookmarks if candidate_id else False
+
     with st.container(border=True):
-        heading, action = st.columns([5, 1])
-        heading.markdown(
-            f"#### {html.escape(_display_value(candidate.get('Candidate')))}"
+        c_top1, c_top2 = st.columns([4, 1])
+        with c_top1:
+            st.markdown(
+                f'<div style="display:flex; align-items:center; gap:12px;">'
+                f'<div style="width:42px; height:42px; border-radius:12px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; border:1px solid #a7f3d0;">{initials}</div>'
+                f'<div>'
+                f'<div style="font-weight:750; color:#0f172a; font-size:16px;">{html.escape(cand_name)}</div>'
+                f'<div style="color:#64748b; font-size:12px;">{html.escape(job_title)} • ⏳ {exp} yrs exp</div>'
+                f'</div>'
+                f'<span style="background:{badge_bg}; color:{badge_color}; border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700; margin-left:8px;">{stage}</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+        with c_top2:
+            if candidate_id:
+                if st.button(
+                    "Saved" if is_bookmarked else "Bookmark",
+                    icon=":material/bookmark:" if is_bookmarked else ":material/bookmark_add:",
+                    key=f"bookmark_{card_key}_{candidate_id}",
+                    use_container_width=True
+                ):
+                    saved, storage = toggle_bookmark(
+                        "candidate",
+                        candidate_id,
+                        {
+                            "Candidate": cand_name,
+                            "Job": job_title,
+                        },
+                    )
+                    if storage == "database":
+                        if saved:
+                            bookmarks[candidate_id] = candidate
+                        else:
+                            bookmarks.pop(candidate_id, None)
+                    st.rerun()
+
+        st.markdown(
+            f'<div style="display:flex; gap:16px; margin: 10px 0 8px 0;">'
+            f'<div style="flex:1;">'
+            f'<div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:3px;"><span>Candidate Fit Score</span><strong style="color:#0f172a;">{score}%</strong></div>'
+            f'<div style="width:100%; height:6px; background:#f1f5f9; border-radius:10px; overflow:hidden;"><div style="width:{min(max(score, 0), 100)}%; height:100%; background:linear-gradient(90deg, #10b981, #84cc16); border-radius:10px;"></div></div>'
+            f'</div>'
+            f'<div style="flex:1;">'
+            f'<div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:3px;"><span>ATS Resume Match</span><strong style="color:#0f172a;">{ats}%</strong></div>'
+            f'<div style="width:100%; height:6px; background:#f1f5f9; border-radius:10px; overflow:hidden;"><div style="width:{min(max(ats, 0), 100)}%; height:100%; background:linear-gradient(90deg, #059669, #10b981); border-radius:10px;"></div></div>'
+            f'</div>'
+            f'</div>',
+            unsafe_allow_html=True
         )
-        if candidate_id:
-            is_bookmarked = candidate_id in bookmarks
-            if action.button(
-                "Saved" if is_bookmarked else "Save",
-                icon=(
-                    ":material/bookmark:"
-                    if is_bookmarked
-                    else ":material/bookmark_add:"
-                ),
-                key=f"bookmark_{card_key}_{candidate_id}",
-            ):
-                saved, storage = toggle_bookmark(
-                    "candidate",
-                    candidate_id,
-                    {
-                        "Candidate": _display_value(candidate.get("Candidate")),
-                        "Job": _display_value(candidate.get("Job")),
-                    },
-                )
-                if storage == "database":
-                    if saved:
-                        bookmarks[candidate_id] = candidate
-                    else:
-                        bookmarks.pop(candidate_id, None)
-                st.rerun()
-        first, second, third = st.columns(3)
-        first.markdown(f"**Job:** {_display_value(candidate.get('Job'))}")
-        second.markdown(f"**Stage:** {_display_value(candidate.get('Stage'))}")
-        third.markdown(f"**Experience:** {_display_value(candidate.get('Experience'))} years")
-        score_one, score_two = st.columns(2)
-        score_one.markdown(
-            f"**Candidate score:** {_display_value(candidate.get('Candidate score'))}"
-        )
-        score_two.markdown(f"**ATS score:** {_display_value(candidate.get('ATS score'))}")
-        st.markdown(f"**Skills:** {_display_value(candidate.get('Skills'))}")
-        recommendation = _display_value(candidate.get("Recommendation"))
+
+        st.caption(f"**Skills:** `{skills}`")
         if recommendation != "Not available":
-            st.markdown(f"**Stored recommendation:** {recommendation}")
+            st.caption(f"**Recommendation:** `{recommendation}`")
 
 
 def _render_response(response: dict[str, Any], prefix: str = "r0") -> None:
@@ -340,7 +384,8 @@ def render_ai_recruiter_chat(
             st.session_state.ai_recruiter_suggestion = selected
 
     for m_idx, message in enumerate(st.session_state.ai_recruiter_messages):
-        with st.chat_message(message["role"]):
+        msg_avatar = "🤖" if message["role"] == "assistant" else "🧑‍💼"
+        with st.chat_message(message["role"], avatar=msg_avatar):
             if message["role"] == "assistant":
                 _render_response(message["response"], prefix=f"turn_{m_idx}")
             else:

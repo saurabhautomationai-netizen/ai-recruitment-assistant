@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "title": "International Voice Process Executive",
+    "department": "BPO & Operations",
+    "location": "Pune, Maharashtra",
+    "employment_type": "Full Time",
+    "experience_required": 2,
+    "salary_min": 350000,
+    "salary_max": 600000,
+    "required_skills": [
+      "English Fluency",
+      "UK Accent",
+      "Customer Support",
+      "CRM",
+      "Active Listening"
+    ],
+    "job_description": "Handling inbound customer service queries for UK/US clients with rotational night shifts and cab facility.",
+    "status": "Open",
+    "id": "1719964a-5653-44ab-9561-263ccce81dba",
+    "created_at": "2026-08-23T18:08:09.621398+00:00"
+  },
+  {
+    "title": "International Voice Process Executive",
+    "department": "BPO & Operations",
+    "location": "Pune, Maharashtra, India",
+    "employment_type": "Full Time",
+    "experience_required": 2,
+    "salary_min": 350000,
+    "salary_max": 600000,
+    "required_skills": [
+      "English Fluency",
+      "UK Accent",
+      "Customer Support",
+      "CRM",
+      "Active Listening"
+    ],
+    "job_description": "Managing inbound customer inquiries for UK/US clients with rotational night shifts.",
+    "status": "Open",
+    "id": "50748872-14d0-49ce-8e50-ddf1e2df1817",
+    "created_at": "2026-08-23T18:08:05.138778+00:00"
+  }
+]
