@@ -300,6 +300,7 @@ navigation_pages = [
     "Jobs",
     "Interviews",
     "Bulk Import / Export",
+    "⚙️ Portals & Social Integrations",
     "Analytics",
 ]
 if has_permission("ai"):
@@ -1178,6 +1179,22 @@ if selected_page == "Overview":
         )
 
     st.write("")
+
+    if raw_jobs.empty:
+        with st.container(border=True):
+            st.markdown("### 🚀 Quick Start: Welcome to Your Recruiter Workspace")
+            st.caption("Your private pipeline is fresh and ready. Follow these 3 easy steps to begin hiring:")
+            
+            c_qs1, c_qs2, c_qs3 = st.columns(3)
+            with c_qs1:
+                st.markdown("##### 💼 1. Post a Job")
+                st.write("Publish your opening (e.g. *UK Voice Process*) to generate visual hiring posters & live application links.")
+            with c_qs2:
+                st.markdown("##### 📁 2. Upload Candidate Data")
+                st.write("Import existing candidate spreadsheets (.csv / .xlsx) or bulk PDF resumes in **Bulk Import**.")
+            with c_qs3:
+                st.markdown("##### ⚙️ 3. Connect Portals & WhatsApp")
+                st.write("Configure your Naukri, LinkedIn, Indeed, and WhatsApp in **⚙️ Portals & Social Integrations**.")
 
     # Charts
     chart_col, score_col = st.columns(
@@ -3299,7 +3316,9 @@ elif selected_page == "Jobs":
                 )
             ]
         if jobs_view.empty:
-            st.info("No jobs match the current filters.")
+            st.info("No jobs created yet in your active pipeline.")
+            if st.button("➕ Create Your First Job Requisition", type="primary", key="empty_post_job_btn", disabled=not can_manage_jobs):
+                create_new_job_dialog()
             st.stop()
 
         st.dataframe(
@@ -5401,6 +5420,14 @@ elif selected_page == "Analytics":
 # =========================================================
 elif selected_page == "🎯 Talent Lead Gen":
     render_talent_lead_gen_dashboard()
+
+
+# =========================================================
+# Recruiter Portals & Social Integrations Page
+# =========================================================
+elif selected_page == "⚙️ Portals & Social Integrations":
+    from services.portal_integration_service import render_portal_and_social_integrations
+    render_portal_and_social_integrations(current_recruiter_email)
 
 
 # =========================================================
