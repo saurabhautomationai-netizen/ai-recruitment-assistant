@@ -161,3 +161,83 @@ def filter_data_for_active_scope(
             filtered_interviews = pd.DataFrame(columns=raw_interviews.columns)
 
     return filtered_jobs, filtered_cands, filtered_apps, filtered_interviews
+
+
+def seed_recruiter_starter_data(recruiter_email: str) -> int:
+    """Populate a fresh recruiter workspace with 3 standardized industry requisitions and vetted candidate leads."""
+    from services.supabase_service import create_job, get_jobs
+    from lead_gen_core.orchestrator import DEFAULT_ORCHESTRATOR
+
+    clean_email = recruiter_email.strip().lower()
+    
+    starter_roles = [
+        {
+            "title": "International Voice Process Executive",
+            "department": "BPO & Customer Operations",
+            "location": "Pune, Maharashtra, India",
+            "employment_type": "Full Time",
+            "experience_required": 2,
+            "min_experience": 2,
+            "salary_min": 350000,
+            "salary_max": 600000,
+            "required_skills": ["English Fluency", "UK Accent", "Customer Support", "CRM", "Active Listening", "Rotational Night Shifts"],
+            "job_description": "Managing inbound UK/US customer inquiries, resolving customer tickets, and delivering exceptional customer satisfaction.",
+            "status": "Open",
+            "domain": "bpo",
+        },
+        {
+            "title": "Senior Financial & Equity Research Analyst",
+            "department": "KPO & Equity Research",
+            "location": "Mumbai / Pune, India",
+            "employment_type": "Full Time",
+            "experience_required": 3,
+            "min_experience": 3,
+            "salary_min": 750000,
+            "salary_max": 1300000,
+            "required_skills": ["Financial Modeling", "DCF Valuation", "Advanced Excel", "Secondary Research", "Bloomberg", "Equity Valuation"],
+            "job_description": "Conducting comprehensive fundamental equity analysis, financial statement forecasting, and writing investment research reports.",
+            "status": "Open",
+            "domain": "kpo",
+        },
+        {
+            "title": "Medical Billing & US Healthcare Claims Specialist",
+            "department": "Healthcare Operations",
+            "location": "Pune, Maharashtra, India",
+            "employment_type": "Full Time",
+            "experience_required": 2,
+            "min_experience": 2,
+            "salary_min": 400000,
+            "salary_max": 750000,
+            "required_skills": ["US Healthcare", "Medical Billing", "HIPAA Compliance", "Claims Adjudication", "Denial Management", "AR Calling"],
+            "job_description": "Handling end-to-end revenue cycle management (RCM), medical billing codes (ICD-10/CPT), and insurance claims adjudication.",
+            "status": "Open",
+            "domain": "healthcare_ops",
+        },
+    ]
+
+    created_count = 0
+    for role in starter_roles:
+        try:
+            domain = role.pop("domain", "bpo")
+            create_job(role)
+            get_jobs.clear()
+            recent_jobs = get_jobs()
+            if not recent_jobs.empty:
+                new_job_id = str(recent_jobs.iloc[0]["id"])
+                assign_job_to_recruiter(new_job_id, clean_email)
+                
+                # Auto source 10 vetted leads for this job
+                DEFAULT_ORCHESTRATOR.execute_sourcing_pipeline(
+                    job_id=new_job_id,
+                    title=role["title"],
+                    skills=role["required_skills"],
+                    location=role["location"],
+                    target_count=10,
+                    min_score=65,
+                    domain_override=domain,
+                )
+                created_count += 1
+        except Exception:
+            pass
+
+    return created_count

@@ -354,9 +354,15 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
+    nav_target = st.session_state.pop("nav_override", None)
+    default_nav_idx = 0
+    if nav_target and nav_target in navigation_pages:
+        default_nav_idx = navigation_pages.index(nav_target)
+
     selected_page = st.radio(
         "Navigation",
         navigation_pages,
+        index=default_nav_idx,
         label_visibility="collapsed",
     )
 
@@ -1191,18 +1197,33 @@ if selected_page == "Overview":
     if raw_jobs.empty:
         with st.container(border=True):
             st.markdown("### 🚀 Quick Start: Welcome to Your Recruiter Workspace")
-            st.caption("Your private pipeline is fresh and ready. Follow these 3 easy steps to begin hiring:")
+            st.caption("Your private pipeline is fresh and ready. Use these quick actions to set up your hiring workflow:")
             
-            c_qs1, c_qs2, c_qs3 = st.columns(3)
+            c_qs1, c_qs2, c_qs3, c_qs4 = st.columns(4)
             with c_qs1:
                 st.markdown("##### 💼 1. Post a Job")
-                st.write("Publish your opening (e.g. *UK Voice Process*) to generate visual hiring posters & live application links.")
+                st.caption("Publish your opening to generate visual posters & application forms.")
+                if st.button("➕ Post Job", key="qs_post_job_btn", type="primary", use_container_width=True):
+                    st.session_state["nav_override"] = "Jobs"
+                    st.rerun()
             with c_qs2:
-                st.markdown("##### 📁 2. Upload Candidate Data")
-                st.write("Import existing candidate spreadsheets (.csv / .xlsx) or bulk PDF resumes in **Bulk Import**.")
+                st.markdown("##### 🎯 2. Source Leads")
+                st.caption("Autonomous 30-lead sourcing across 9 industry verticals.")
+                if st.button("🎯 Source Leads", key="qs_src_leads_btn", use_container_width=True):
+                    st.session_state["nav_override"] = "🎯 Talent Lead Gen"
+                    st.rerun()
             with c_qs3:
-                st.markdown("##### ⚙️ 3. Connect Portals & WhatsApp")
-                st.write("Configure your Naukri, LinkedIn, Indeed, and WhatsApp in **⚙️ Portals & Social Integrations**.")
+                st.markdown("##### 📁 3. Import Candidates")
+                st.caption("Import existing candidate spreadsheets (.csv / .xlsx).")
+                if st.button("📤 Import Data", key="qs_import_btn", use_container_width=True):
+                    st.session_state["nav_override"] = "Bulk Import / Export"
+                    st.rerun()
+            with c_qs4:
+                st.markdown("##### ⚙️ 4. Connect Portals")
+                st.caption("Set up WhatsApp, Telegram, LinkedIn, Naukri, and Indeed.")
+                if st.button("⚙️ Portals & Social", key="qs_portals_btn", use_container_width=True):
+                    st.session_state["nav_override"] = "⚙️ Portals & Social Integrations"
+                    st.rerun()
 
     # Charts
     chart_col, score_col = st.columns(
@@ -3341,9 +3362,87 @@ elif selected_page == "Jobs":
     if raw_jobs.empty:
         with st.container(border=True):
             st.markdown("### 💼 No Job Requisitions in Your Pipeline Yet")
-            st.caption("You haven't posted any jobs in your private workspace yet. Click the button below to post your first requisition (e.g. *UK International Voice Process*), generate visual hiring posters, and auto-source candidate leads.")
-            if st.button("➕ Create Your First Job Requisition", type="primary", key="empty_hero_create_job_btn", disabled=not can_manage_jobs):
-                create_new_job_dialog()
+            st.caption("You haven't posted any jobs in your private workspace yet. Click **➕ Post New Job Requisition** above, or 1-click launch any standardized industry template below to immediately populate your pipeline and auto-source candidate leads:")
+            
+            col_launch1, col_launch2, col_launch3 = st.columns(3)
+            
+            with col_launch1:
+                with st.container(border=True):
+                    st.markdown("#### 📞 International Voice (BPO)")
+                    st.caption("📍 Pune, Maharashtra • ⏳ 2 yrs • 💰 ₹3.5L - ₹6L")
+                    st.markdown("**Skills:** `English Fluency`, `UK Accent`, `CRM`")
+                    if st.button("🚀 Launch Role & Source Leads", key="launch_preset_bpo", type="primary", use_container_width=True):
+                        try:
+                            create_job({
+                                "title": "International Voice Process Executive",
+                                "department": "BPO & Operations",
+                                "location": "Pune, Maharashtra, India",
+                                "employment_type": "Full Time",
+                                "experience_required": 2,
+                                "min_experience": 2,
+                                "salary_min": 350000,
+                                "salary_max": 600000,
+                                "required_skills": ["English Fluency", "UK Accent", "Customer Support", "CRM", "Active Listening"],
+                                "job_description": "Managing inbound customer inquiries for UK/US clients with rotational night shifts.",
+                                "status": "Open",
+                            })
+                            get_jobs.clear()
+                            st.session_state["job_management_success"] = "🎉 International Voice Process Executive published! Sourcing leads..."
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+            with col_launch2:
+                with st.container(border=True):
+                    st.markdown("#### 🧠 Equity Research (KPO)")
+                    st.caption("📍 Mumbai / Pune • ⏳ 3 yrs • 💰 ₹7.5L - ₹13L")
+                    st.markdown("**Skills:** `DCF Valuation`, `Excel`, `Bloomberg`")
+                    if st.button("🚀 Launch Role & Source Leads", key="launch_preset_kpo", type="primary", use_container_width=True):
+                        try:
+                            create_job({
+                                "title": "Senior Financial & Equity Research Analyst",
+                                "department": "KPO & Equity Research",
+                                "location": "Mumbai / Pune, India",
+                                "employment_type": "Full Time",
+                                "experience_required": 3,
+                                "min_experience": 3,
+                                "salary_min": 750000,
+                                "salary_max": 1300000,
+                                "required_skills": ["Financial Modeling", "DCF Valuation", "Advanced Excel", "Secondary Research", "Bloomberg"],
+                                "job_description": "Conducting comprehensive fundamental equity analysis and forecasting.",
+                                "status": "Open",
+                            })
+                            get_jobs.clear()
+                            st.session_state["job_management_success"] = "🎉 Senior Financial Analyst published! Sourcing leads..."
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+            with col_launch3:
+                with st.container(border=True):
+                    st.markdown("#### 🏥 Healthcare Medical Billing")
+                    st.caption("📍 Pune, Maharashtra • ⏳ 2 yrs • 💰 ₹4L - ₹7.5L")
+                    st.markdown("**Skills:** `US Healthcare`, `ICD-10`, `Claims`")
+                    if st.button("🚀 Launch Role & Source Leads", key="launch_preset_health", type="primary", use_container_width=True):
+                        try:
+                            create_job({
+                                "title": "Medical Billing & US Healthcare Claims Specialist",
+                                "department": "Healthcare Operations",
+                                "location": "Pune, Maharashtra, India",
+                                "employment_type": "Full Time",
+                                "experience_required": 2,
+                                "min_experience": 2,
+                                "salary_min": 400000,
+                                "salary_max": 750000,
+                                "required_skills": ["US Healthcare", "Medical Billing", "HIPAA Compliance", "Claims Adjudication", "Denial Management"],
+                                "job_description": "Managing revenue cycle management (RCM) and claims adjudication.",
+                                "status": "Open",
+                            })
+                            get_jobs.clear()
+                            st.session_state["job_management_success"] = "🎉 Medical Billing Specialist published! Sourcing leads..."
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {e}")
     else:
         with st.popover("Saved job bookmarks", icon=":material/bookmarks:"):
             if st.button(
