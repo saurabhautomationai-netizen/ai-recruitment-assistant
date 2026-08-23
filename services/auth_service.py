@@ -167,8 +167,12 @@ def render_login() -> None:
                 try:
                     with st.spinner("Signing in…"):
                         sign_in(email, password)
-                except Exception:
-                    st.error("Sign in failed. Check your email and password.")
+                except Exception as err:
+                    err_msg = str(err)
+                    if "not confirmed" in err_msg.casefold():
+                        st.warning("⚠️ Email address is not confirmed yet in Supabase. Please confirm the user in Supabase Auth -> Users or check your inbox for the confirmation email.")
+                    else:
+                        st.error(f"Sign in failed: {err_msg if 'invalid' in err_msg.casefold() else 'Check your email and password.'}")
                 else:
                     st.rerun()
 
