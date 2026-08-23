@@ -66,6 +66,16 @@ def import_candidates(rows: pd.DataFrame, schema_columns: set[str]) -> int:
     if not payload:
         raise ValueError("No valid candidate rows were provided.")
     response = get_supabase_client().table("candidates").insert(payload).execute()
+    if response.data:
+        try:
+            from services.recruiter_partition_service import assign_candidate_to_recruiter, get_current_recruiter_email
+            curr_email = get_current_recruiter_email()
+            if curr_email:
+                for item in response.data:
+                    if "id" in item:
+                        assign_candidate_to_recruiter(str(item["id"]), curr_email)
+        except Exception:
+            pass
     return len(response.data or payload)
 
 

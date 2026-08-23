@@ -330,24 +330,29 @@ with st.sidebar:
     # Recruiter Workspace Scope Selector
     if is_current_admin:
         scope_options = {
-            "🏢 Agency Master View (All Data)": "agency_master",
+            "🏢 Agency Master View (Admin)": "agency_master",
             "👤 Saurabh's Pipeline": "saurabh7596@gmail.com",
             "👤 Rumana HR's Pipeline": "rumana",
         }
+        selected_scope_label = st.selectbox(
+            "📍 Active Pipeline Scope",
+            options=list(scope_options.keys()),
+            index=0,
+            key="recruiter_scope_selector",
+        )
+        active_scope = scope_options[selected_scope_label]
+        st.session_state["recruiter_workspace_scope"] = active_scope
     else:
-        scope_options = {
-            "🏢 Agency Master View (All Data)": "agency_master",
-            "👤 My Private Pipeline": "my_pipeline",
-        }
-    
-    selected_scope_label = st.selectbox(
-        "📍 Active Pipeline Scope",
-        options=list(scope_options.keys()),
-        index=0,
-        key="recruiter_scope_selector",
-    )
-    active_scope = scope_options[selected_scope_label]
-    st.session_state["recruiter_workspace_scope"] = active_scope
+        st.session_state["recruiter_workspace_scope"] = "my_pipeline"
+        st.markdown(
+            f"""
+            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 8px 12px; margin: 8px 0;">
+                <div style="font-size: 11px; font-weight: 700; color: #166534;">🔒 PRIVATE RECRUITER PIPELINE</div>
+                <div style="font-size: 12px; color: #15803d; word-break: break-all;">{current_recruiter_email}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     selected_page = st.radio(
         "Navigation",
