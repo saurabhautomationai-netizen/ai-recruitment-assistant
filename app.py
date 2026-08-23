@@ -5419,7 +5419,7 @@ elif selected_page == "Analytics":
 # Talent Lead Gen Agent Control Center Page
 # =========================================================
 elif selected_page == "🎯 Talent Lead Gen":
-    render_talent_lead_gen_dashboard()
+    render_talent_lead_gen_dashboard(jobs_df=raw_jobs)
 
 
 # =========================================================

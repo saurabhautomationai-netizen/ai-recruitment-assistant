@@ -17,7 +17,10 @@ from services.supabase_service import get_jobs, get_candidates
 from services.industry_taxonomy import INDUSTRY_TAXONOMY, get_all_job_presets
 
 
-def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient] = None) -> None:
+def render_talent_lead_gen_dashboard(
+    client: Optional[TalentLeadGenServiceClient] = None,
+    jobs_df: Optional[pd.DataFrame] = None,
+) -> None:
     """Renders the comprehensive Talent Lead Gen Agent Control Center."""
     talent_client = client or DEFAULT_TALENT_CLIENT
 
@@ -60,23 +63,29 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
     # 2. Sourcing Configuration & Control Panel
     st.markdown("### 🎛️ Sourcing Control Panel")
     
-    jobs_df = get_jobs()
+    active_jobs = jobs_df if jobs_df is not None else get_jobs()
     job_options: Dict[str, Dict[str, Any]] = {}
     
-    if not jobs_df.empty and "id" in jobs_df.columns:
-        for _, row in jobs_df.iterrows():
+    if not active_jobs.empty and "id" in active_jobs.columns:
+        seen_titles = set()
+        for _, row in active_jobs.iterrows():
             job_id_str = str(row["id"])
-            title = row.get("title", "Untitled Role")
-            dept = row.get("department", "General")
+            title = str(row.get("title", "Untitled Role")).strip()
+            dept = str(row.get("department", "General")).strip()
             skills = row.get("required_skills", [])
-            loc = row.get("location", "Pune")
-            job_options[f"{title} ({dept}) — ID: {job_id_str[:8]}"] = {
-                "id": job_id_str,
-                "title": title,
-                "department": dept,
-                "skills": skills if isinstance(skills, list) else [s.strip() for s in str(skills).split(",") if s.strip()],
-                "location": loc,
-            }
+            loc = str(row.get("location", "Pune")).strip()
+            
+            # Deduplicate multiple legacy rows with same title
+            label = f"{title} ({dept})"
+            if label not in seen_titles:
+                seen_titles.add(label)
+                job_options[f"{label} — ID: {job_id_str[:8]}"] = {
+                    "id": job_id_str,
+                    "title": title,
+                    "department": dept,
+                    "skills": skills if isinstance(skills, list) else [s.strip() for s in str(skills).split(",") if s.strip()],
+                    "location": loc,
+                }
 
     tab_control, tab_live_leads, tab_portals = st.tabs([
         "🚀 Launch & Configure Sourcing",
@@ -92,7 +101,7 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
             
             sourcing_mode_options = [
                 "🏢 Browse 9 Industry Verticals & Role Hierarchy (L1-L5)",
-                "Select from My Open Jobs" if job_options else "Select from My Open Jobs (0 active)",
+                f"Select from My Open Jobs ({len(job_options)} active)",
                 "✍️ Custom / Ad-Hoc Requisition",
             ]
             sourcing_mode = st.radio(
@@ -103,22 +112,30 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
             )
 
             selected_job_data: Dict[str, Any] = {}
+            selected_domain_key = None
             
-            if sourcing_mode.startswith("Select from My Open Jobs") and job_options:
-                chosen_label = st.selectbox("Select Active Job Requisition", list(job_options.keys()))
-                selected_job_data = job_options[chosen_label]
-                req_title = selected_job_data["title"]
-                req_skills = selected_job_data["skills"]
-                req_location = selected_job_data["location"]
-                req_id = selected_job_data["id"]
-                selected_domain_key = None
+            if sourcing_mode.startswith("Select from My Open Jobs"):
+                if job_options:
+                    chosen_label = st.selectbox("Select Active Job Requisition", list(job_options.keys()))
+                    selected_job_data = job_options[chosen_label]
+                    req_title = selected_job_data["title"]
+                    req_skills = selected_job_data["skills"]
+                    req_location = selected_job_data["location"]
+                    req_id = selected_job_data["id"]
+                else:
+                    st.info("ℹ️ No open jobs created in your private pipeline yet. Use '🏢 Browse 9 Industry Verticals' above to source candidates, or go to **Jobs** to post your requisition!")
+                    req_title = "International Voice Process Executive"
+                    req_skills = ["English Fluency", "UK Accent", "Customer Support", "CRM", "Active Listening"]
+                    req_location = "Pune, Maharashtra, India"
+                    req_id = "default_bpo"
+                    selected_domain_key = "bpo"
             elif sourcing_mode.startswith("🏢 Browse 9 Industry Verticals"):
                 # 9-Vertical Hierarchical Browser
                 vertical_choices = {
                     f"{v_data['icon']} {v_data['name']}": v_key
                     for v_key, v_data in INDUSTRY_TAXONOMY.items()
                 }
-                v_label = st.selectbox("Industry Vertical", list(vertical_choices.keys()), index=5)  # default BPO or IT
+                v_label = st.selectbox("Industry Vertical", list(vertical_choices.keys()), index=5, key="v_browser_select")
                 selected_domain_key = vertical_choices[v_label]
                 v_info = INDUSTRY_TAXONOMY[selected_domain_key]
 
@@ -128,18 +145,18 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
                         f"{l_key}: {l_val['label']}": l_key
                         for l_key, l_val in v_info["levels"].items()
                     }
-                    lvl_label = st.selectbox("Hierarchy Level", list(level_options.keys()), index=4)  # default L1 or L2
+                    lvl_label = st.selectbox("Hierarchy Level", list(level_options.keys()), index=4, key=f"lvl_{selected_domain_key}")
                     selected_lvl_key = level_options[lvl_label]
                 
                 with col_role:
                     role_titles = v_info["levels"][selected_lvl_key]["titles"]
-                    chosen_title = st.selectbox("Role Title", role_titles, index=0)
+                    chosen_title = st.selectbox("Role Title", role_titles, index=0, key=f"role_{selected_domain_key}_{selected_lvl_key}")
 
-                req_title = st.text_input("Target Requisition Title *", value=chosen_title)
+                req_title = st.text_input("Target Requisition Title *", value=chosen_title, key=f"title_{chosen_title}")
                 default_skills_str = ", ".join(v_info["default_skills"])
-                req_skills_str = st.text_input("Required Skills", value=default_skills_str)
+                req_skills_str = st.text_input("Required Skills", value=default_skills_str, key=f"skills_{chosen_title}")
                 req_skills = [s.strip() for s in req_skills_str.split(",") if s.strip()]
-                req_location = st.text_input("Target Location", value="Pune / Mumbai, Maharashtra, India")
+                req_location = st.text_input("Target Location", value="Pune / Mumbai, Maharashtra, India", key=f"loc_{chosen_title}")
                 req_id = f"tax_{selected_domain_key}_{selected_lvl_key}_{abs(hash(req_title)) % 10000}"
             else:
                 # Custom freeform
@@ -171,7 +188,12 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
                         def_idx = idx
                         break
 
-            selected_domain_label = st.selectbox("Operational Job Domain", list(domain_options.keys()), index=def_idx)
+            selected_domain_label = st.selectbox(
+                "Operational Job Domain",
+                list(domain_options.keys()),
+                index=def_idx,
+                key=f"op_domain_select_{selected_domain_key}",
+            )
             selected_domain = domain_options[selected_domain_label] or selected_domain_key
 
         with col_c2:
