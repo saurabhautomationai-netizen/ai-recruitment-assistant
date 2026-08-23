@@ -1401,7 +1401,18 @@ elif selected_page == "Candidates":
         ]
 
     if visible_candidates.empty or raw_candidates.empty:
-        st.info("No candidates found.")
+        with st.container(border=True):
+            st.markdown("### 👥 No Candidates in Your Pipeline Yet")
+            st.caption("Start building your candidate pool with autonomous AI sourcing across 9 industry verticals or by uploading an existing candidate spreadsheet.")
+            c_c1, c_c2 = st.columns(2)
+            with c_c1:
+                if st.button("🎯 Source Candidates with Lead Gen Agent", type="primary", use_container_width=True, key="cand_empty_src_btn"):
+                    st.session_state["nav_override"] = "🎯 Talent Lead Gen"
+                    st.rerun()
+            with c_c2:
+                if st.button("📤 Upload Candidate Spreadsheet (.csv / .xlsx)", use_container_width=True, key="cand_empty_upl_btn"):
+                    st.session_state["nav_override"] = "Bulk Import / Export"
+                    st.rerun()
 
     else:
         # -------------------------------------------------
@@ -3109,7 +3120,12 @@ elif selected_page == "Applications":
     )
 
     if raw_applications.empty:
-        st.info("No applications found.")
+        with st.container(border=True):
+            st.markdown("### 📨 No Applications in Your Pipeline Yet")
+            st.caption("Once you publish a job requisition and share your visual hiring posters or candidate intake forms, incoming applicants will appear here.")
+            if st.button("💼 Go to Jobs to Publish a Role", type="primary", key="empty_app_go_jobs"):
+                st.session_state["nav_override"] = "Jobs"
+                st.rerun()
     else:
         displayed_applications = raw_applications.copy()
 
@@ -3170,8 +3186,156 @@ elif selected_page == "Jobs":
     if job_success:
         st.success(job_success)
 
+    @st.dialog("➕ Post a New Job Requisition", width="large")
+    def create_new_job_dialog() -> None:
+        from services.industry_taxonomy import INDUSTRY_TAXONOMY
+        
+        st.markdown("##### 🏢 Select Pre-configured Role Template (Optional)")
+        template_map = {
+            "📞 BPO - International Voice Process (UK/US Shifts)": {
+                "title": "International Voice Process Executive", "dept": "BPO & Operations", "loc": "Pune, Maharashtra",
+                "exp": 2, "smin": 350000, "smax": 600000, "skills": "English Fluency, UK Accent, Customer Support, CRM, Active Listening",
+                "desc": "Handling inbound customer service queries for UK/US clients with rotational night shifts and cab facility."
+            },
+            "💬 BPO - Non-Voice (Chat & Email Support)": {
+                "title": "Non-Voice Support Associate (Email & Chat)", "dept": "BPO & Customer Support", "loc": "Pune, Maharashtra",
+                "exp": 1, "smin": 300000, "smax": 480000, "skills": "Written English, Live Chat Support, Zendesk, Email Handling, Typing 50+ WPM",
+                "desc": "Delivering empathetic, fast live chat and email support for global e-commerce and technology accounts."
+            },
+            "🧠 KPO - Senior Financial & Equity Research Analyst": {
+                "title": "Senior Financial & Market Research Analyst", "dept": "KPO & Research", "loc": "Mumbai / Pune",
+                "exp": 3, "smin": 700000, "smax": 1200000, "skills": "Financial Modeling, Equity Valuation, Secondary Research, Advanced Excel, Bloomberg",
+                "desc": "Building valuation models, conducting secondary market intelligence, and writing comprehensive equity research reports."
+            },
+            "🏥 Healthcare - Medical Billing & US Claims Specialist": {
+                "title": "Medical Billing & US Healthcare Claims Specialist", "dept": "Healthcare Operations", "loc": "Pune, Maharashtra",
+                "exp": 2, "smin": 400000, "smax": 750000, "skills": "US Healthcare, Medical Billing, HIPAA Compliance, Claims Adjudication, Denial Management",
+                "desc": "Managing end-to-end US healthcare claims processing, AR follow-up, and denial adjudication."
+            },
+            "🎯 Inside Sales - Business Development Specialist": {
+                "title": "Inside Sales & Business Development Specialist", "dept": "Inside Sales & Growth", "loc": "Pune / Bangalore",
+                "exp": 2, "smin": 450000, "smax": 900000, "skills": "B2B Sales, Cold Calling, Lead Qualification, HubSpot, Pipeline Management",
+                "desc": "Outbound discovery, qualified pipeline generation, and closing high-velocity B2B SaaS accounts."
+            },
+            "💻 IT Services - Python Fullstack Developer": {
+                "title": "Python Fullstack Software Engineer", "dept": "Engineering", "loc": "Pune / Remote",
+                "exp": 3, "smin": 800000, "smax": 1600000, "skills": "Python, FastAPI, React, PostgreSQL, Docker, REST APIs, Git",
+                "desc": "Designing and deploying high-performance scalable web applications and microservices."
+            },
+        }
+
+        preset_selection = st.selectbox(
+            "Quick Industry Template Preset",
+            ["-- Custom Job Requisition --"] + list(template_map.keys()),
+            index=1,
+            key="job_creation_preset_select",
+        )
+
+        preset_data = template_map.get(preset_selection, {})
+
+        with st.form("create_new_job_form"):
+            new_title = st.text_input("Job Title *", value=preset_data.get("title", ""), placeholder="e.g. International Voice Process Executive")
+            c_dept, c_loc = st.columns(2)
+            new_dept = c_dept.text_input("Department *", value=preset_data.get("dept", "Operations"), placeholder="e.g. BPO & Operations")
+            new_loc = c_loc.text_input("Location *", value=preset_data.get("loc", "Pune, Maharashtra"), placeholder="e.g. Pune / Remote")
+            
+            c_type, c_exp = st.columns(2)
+            new_emp_type = c_type.selectbox(
+                "Employment Type",
+                ["Full Time", "Part Time", "Contract", "Internship", "Remote"]
+            )
+            new_exp = c_exp.number_input("Experience Required (Years)", min_value=0, max_value=30, value=preset_data.get("exp", 2), step=1)
+            
+            c_smin, c_smax = st.columns(2)
+            new_smin = c_smin.number_input("Minimum Salary (INR)", min_value=0, value=preset_data.get("smin", 350000), step=25000)
+            new_smax = c_smax.number_input("Maximum Salary (INR)", min_value=0, value=preset_data.get("smax", 600000), step=25000)
+            
+            new_skills = st.text_input(
+                "Required Skills (comma separated)",
+                value=preset_data.get("skills", "English Fluency, Customer Care, Active Listening, UK Shifts"),
+                placeholder="e.g. English Fluency, CRM, Active Listening"
+            )
+            new_desc = st.text_area(
+                "Job Description",
+                value=preset_data.get("desc", ""),
+                placeholder="Provide responsibilities, requirements, shift details, and benefits..."
+            )
+            auto_source_toggle = st.checkbox(
+                "⚡ Automatically source 30 top candidates with Talent Lead Gen Agent upon publishing",
+                value=True,
+                key="create_job_auto_source_chk",
+            )
+            
+            submitted = st.form_submit_button(
+                "Publish Job Requisition",
+                type="primary",
+                width="stretch",
+                disabled=not can_manage_jobs,
+            )
+        if submitted:
+            if not new_title.strip():
+                st.error("Job title is required.")
+                return
+            if not new_dept.strip():
+                st.error("Department is required.")
+                return
+            try:
+                create_job({
+                    "title": new_title.strip(),
+                    "department": new_dept.strip(),
+                    "location": new_loc.strip() or "Remote",
+                    "employment_type": new_emp_type,
+                    "experience_required": new_exp,
+                    "min_experience": new_exp,
+                    "salary_min": new_smin,
+                    "salary_max": new_smax,
+                    "required_skills": [s.strip() for s in new_skills.split(",") if s.strip()],
+                    "job_description": new_desc.strip(),
+                    "status": "Open",
+                })
+            except Exception as error:
+                st.error(f"Could not publish job: {error}")
+            else:
+                get_jobs.clear()
+                created_job_rec = get_jobs()
+                new_job_id = "job_" + str(hash(new_title) % 100000)
+                if not created_job_rec.empty and "id" in created_job_rec.columns:
+                    new_job_id = str(created_job_rec.iloc[0]["id"])
+                
+                if auto_source_toggle:
+                    try:
+                        skills_arr = [s.strip() for s in new_skills.split(",") if s.strip()]
+                        DEFAULT_TALENT_CLIENT.trigger_sourcing(
+                            job_id=new_job_id,
+                            title=new_title.strip(),
+                            skills=skills_arr,
+                            location=new_loc.strip() or "Pune",
+                            target_count=30,
+                        )
+                        st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published & 30 candidates auto-sourced via Talent Lead Gen Agent!"
+                    except Exception as s_err:
+                        st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published! (Auto-sourcing note: {s_err})"
+                else:
+                    st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published successfully!"
+                st.rerun()
+
+    col_left, col_right = st.columns([1, 1])
+    with col_left:
+        if st.button("➕ Post New Job Requisition", type="primary", key="post_new_job_btn", disabled=not can_manage_jobs):
+            create_new_job_dialog()
+    with col_right:
+        show_archived_jobs = st.toggle(
+            "Show archived jobs",
+            value=False,
+            key="show_archived_jobs",
+        )
+
     if raw_jobs.empty:
-        st.info("No jobs found.")
+        with st.container(border=True):
+            st.markdown("### 💼 No Job Requisitions in Your Pipeline Yet")
+            st.caption("You haven't posted any jobs in your private workspace yet. Click the button below to post your first requisition (e.g. *UK International Voice Process*), generate visual hiring posters, and auto-source candidate leads.")
+            if st.button("➕ Create Your First Job Requisition", type="primary", key="empty_hero_create_job_btn", disabled=not can_manage_jobs):
+                create_new_job_dialog()
     else:
         with st.popover("Saved job bookmarks", icon=":material/bookmarks:"):
             if st.button(
@@ -3196,102 +3360,6 @@ elif selected_page == "Jobs":
                     title_rows.iloc[0].get("title", bookmarked_job_id)
                     if not title_rows.empty else bookmarked_job_id
                 )
-        @st.dialog("➕ Post a New Job", width="large")
-        def create_new_job_dialog() -> None:
-            with st.form("create_new_job_form"):
-                new_title = st.text_input("Job Title *", placeholder="e.g. Python Backend Developer")
-                c_dept, c_loc = st.columns(2)
-                new_dept = c_dept.text_input("Department *", placeholder="e.g. Engineering")
-                new_loc = c_loc.text_input("Location *", placeholder="e.g. Pune / Remote")
-                
-                c_type, c_exp = st.columns(2)
-                new_emp_type = c_type.selectbox(
-                    "Employment Type",
-                    ["Full Time", "Part Time", "Contract", "Internship", "Remote"]
-                )
-                new_exp = c_exp.number_input("Experience Required (Years)", min_value=0, max_value=30, value=2, step=1)
-                
-                c_smin, c_smax = st.columns(2)
-                new_smin = c_smin.number_input("Minimum Salary (INR)", min_value=0, value=600000, step=50000)
-                new_smax = c_smax.number_input("Maximum Salary (INR)", min_value=0, value=1500000, step=50000)
-                
-                new_skills = st.text_input(
-                    "Required Skills (comma separated)",
-                    placeholder="e.g. Python, FastAPI, PostgreSQL, Docker, Redis"
-                )
-                new_desc = st.text_area(
-                    "Job Description",
-                    placeholder="Provide responsibilities, requirements, and benefits..."
-                )
-                auto_source_toggle = st.checkbox(
-                    "⚡ Automatically source 30 top candidates with Talent Lead Gen Agent upon publishing",
-                    value=True,
-                    key="create_job_auto_source_chk",
-                )
-                
-                submitted = st.form_submit_button(
-                    "Publish Job",
-                    type="primary",
-                    width="stretch",
-                    disabled=not can_manage_jobs,
-                )
-            if submitted:
-                if not new_title.strip():
-                    st.error("Job title is required.")
-                    return
-                if not new_dept.strip():
-                    st.error("Department is required.")
-                    return
-                try:
-                    create_job({
-                        "title": new_title.strip(),
-                        "department": new_dept.strip(),
-                        "location": new_loc.strip() or "Remote",
-                        "employment_type": new_emp_type,
-                        "experience_required": new_exp,
-                        "min_experience": new_exp,
-                        "salary_min": new_smin,
-                        "salary_max": new_smax,
-                        "required_skills": [s.strip() for s in new_skills.split(",") if s.strip()],
-                        "job_description": new_desc.strip(),
-                        "status": "Open",
-                    })
-                except Exception as error:
-                    st.error(f"Could not publish job: {error}")
-                else:
-                    get_jobs.clear()
-                    created_job_rec = get_jobs()
-                    new_job_id = "job_" + str(hash(new_title) % 100000)
-                    if not created_job_rec.empty and "id" in created_job_rec.columns:
-                        new_job_id = str(created_job_rec.iloc[0]["id"])
-                    
-                    if auto_source_toggle:
-                        try:
-                            skills_arr = [s.strip() for s in new_skills.split(",") if s.strip()]
-                            DEFAULT_TALENT_CLIENT.trigger_sourcing(
-                                job_id=new_job_id,
-                                title=new_title.strip(),
-                                skills=skills_arr,
-                                location=new_loc.strip() or "Pune",
-                                target_count=30,
-                            )
-                            st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published & 30 candidates auto-sourced via Talent Lead Gen Agent!"
-                        except Exception as s_err:
-                            st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published! (Auto-sourcing note: {s_err})"
-                    else:
-                        st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published successfully!"
-                    st.rerun()
-
-        col_left, col_right = st.columns([1, 1])
-        with col_left:
-            if st.button("➕ Post new job", type="primary", key="post_new_job_btn", disabled=not can_manage_jobs):
-                create_new_job_dialog()
-        with col_right:
-            show_archived_jobs = st.toggle(
-                "Show archived jobs",
-                value=False,
-                key="show_archived_jobs",
-            )
         jobs_view = raw_jobs.copy()
         if "status" in jobs_view.columns and not show_archived_jobs:
             jobs_view = jobs_view[
