@@ -3496,8 +3496,18 @@ elif selected_page == "Jobs":
                 create_new_job_dialog()
             st.stop()
 
+        displayed_jobs = jobs_view.copy()
+        for col in displayed_jobs.columns:
+            has_complex_values = displayed_jobs[col].apply(
+                lambda val: isinstance(val, (dict, list))
+            ).any()
+            if has_complex_values:
+                displayed_jobs[col] = displayed_jobs[col].apply(
+                    lambda val: ", ".join(val) if isinstance(val, list) else (json.dumps(val) if isinstance(val, dict) else (str(val) if pd.notna(val) else ""))
+                )
+
         st.dataframe(
-            jobs_view,
+            displayed_jobs,
             width="stretch",
             hide_index=True,
         )
