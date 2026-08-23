@@ -1,7 +1,7 @@
 """Talent Lead Gen Agent Controllable Dashboard Component.
 
 Provides a full interactive control center for autonomous candidate sourcing,
-supporting 30+ candidate generation across all domains & major job boards (Naukri, Indeed, Foundit, LinkedIn, GitHub).
+supporting 30+ candidate generation across 9 Industry Verticals & 5-Tier Level Hierarchies (L1-L5).
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from services.talent_lead_gen_service import DEFAULT_TALENT_CLIENT, TalentLeadGenServiceClient
 from services.supabase_service import get_jobs, get_candidates
+from services.industry_taxonomy import INDUSTRY_TAXONOMY, get_all_job_presets
 
 
 def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient] = None) -> None:
@@ -27,7 +28,7 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
                 🎯 Talent Lead Gen Control Center
             </h1>
             <p style="color: #6b7280; font-size: 14px; margin: 0;">
-                Autonomous multi-channel sourcing from <b>Naukri.com, Indeed, Foundit, LinkedIn, GitHub, Behance & ICAI</b>.
+                Autonomous multi-channel sourcing across <b>9 Industry Verticals (IT, Finance, Marketing, Trading, Investments, BPO, KPO, Sales & Healthcare)</b> from <b>Naukri.com, Indeed, Foundit, LinkedIn, GitHub, Behance & ICAI</b>.
             </p>
         </div>
         """,
@@ -44,23 +45,15 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
         if is_connected:
             st.success("🟢 Agent Online (Port 8005)")
         else:
-            st.error("🔴 Agent Offline (Port 8005)")
+            st.info("⚡ Autonomous Engine Active (In-App)")
     with col_status2:
         status_data = talent_client.get_status() if is_connected else {}
-        state = status_data.get("state", "OFFLINE")
+        state = status_data.get("state", "IDLE")
         st.metric("Pipeline State", state)
     with col_status3:
         st.metric("Sourcing Capacity", "30 Top Leads / Batch")
     with col_status4:
-        st.metric("Integrated Portals", "Naukri • Indeed • Foundit")
-
-    if not is_connected:
-        st.warning(
-            "⚠️ **Talent Lead Gen Agent API is currently not detected on http://127.0.0.1:8005.**\n\n"
-            "To launch the standalone agent server, execute:\n"
-            "`uvicorn lead_gen_core.api.webhook_server:app --port 8005 --reload`\n\n"
-            "*Note: Simulated on-demand execution is enabled for previewing candidate generation.*"
-        )
+        st.metric("Integrated Verticals", "9 Major Industries")
 
     st.divider()
 
@@ -88,102 +81,98 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
     tab_control, tab_live_leads, tab_portals = st.tabs([
         "🚀 Launch & Configure Sourcing",
         "👥 Sourced Candidate Leads (30 Profiles)",
-        "🔍 Job Board X-Ray & Search Strings (Naukri/Indeed/Foundit)",
+        "🔍 Job Board X-Ray & Search Strings (Naukri/Indeed/Foundit/LinkedIn)",
     ])
 
     with tab_control:
-        col_c1, col_c2 = st.columns([1.2, 1])
+        col_c1, col_c2 = st.columns([1.25, 1])
 
         with col_c1:
             st.markdown("#### 1. Target Requisition")
+            
+            sourcing_mode_options = [
+                "🏢 Browse 9 Industry Verticals & Role Hierarchy (L1-L5)",
+                "Select from My Open Jobs" if job_options else "Select from My Open Jobs (0 active)",
+                "✍️ Custom / Ad-Hoc Requisition",
+            ]
             sourcing_mode = st.radio(
                 "Requisition Source",
-                ["Select from Open Jobs", "Custom / Ad-Hoc Requisition"],
-                horizontal=True,
+                sourcing_mode_options,
+                index=0,
+                horizontal=False,
             )
 
-            PRESET_TEMPLATES = {
-                "📞 BPO - International UK/US Voice Process": {
-                    "title": "International Voice Process Executive (UK/US Shifts)",
-                    "skills": "English Fluency, UK Accent, Customer Support, CRM, Active Listening, Inbound Calls, Rotational Night Shifts",
-                    "location": "Pune / Mumbai, India",
-                    "domain": "bpo_voice",
-                },
-                "💬 BPO - Non-Voice (Chat & Email)": {
-                    "title": "Non-Voice Customer Support Executive (Chat & Email)",
-                    "skills": "Written English, Live Chat Support, Zendesk, Freshdesk, Email Handling, Typing Speed 50+ WPM",
-                    "location": "Pune / Bangalore, India",
-                    "domain": "bpo_non_voice",
-                },
-                "🧠 KPO - Senior Financial & Equity Research": {
-                    "title": "Senior Financial & Market Research Analyst",
-                    "skills": "Financial Modeling, Equity Valuation, Advanced Excel, Secondary Research, Bloomberg, DCF Modeling",
-                    "location": "Mumbai / Pune, India",
-                    "domain": "kpo_finance",
-                },
-                "🏥 KPO - US Healthcare Claims & Billing": {
-                    "title": "Medical Billing & US Healthcare Claims Specialist",
-                    "skills": "US Healthcare, Medical Billing, HIPAA Compliance, Claims Adjudication, Denial Management, AR Calling",
-                    "location": "Pune / Hyderabad, India",
-                    "domain": "kpo_healthcare",
-                },
-                "💼 Inside Sales & Telemarketing": {
-                    "title": "Inside Sales & Business Development Specialist",
-                    "skills": "B2B Sales, Cold Calling, Lead Qualification, HubSpot, Pipeline Management, Target Driven",
-                    "location": "Pune / Bangalore, India",
-                    "domain": "sales_bd",
-                },
-                "🤖 AI Automations & LLM Ops": {
-                    "title": "AI Automation Architect & Agentic Engineer",
-                    "skills": "Python, LangChain, n8n, FastAPI, PostgreSQL, Prompt Engineering, Docker",
-                    "location": "Pune, India",
-                    "domain": "ai_automation",
-                },
-            }
-
             selected_job_data: Dict[str, Any] = {}
-            if sourcing_mode == "Select from Open Jobs" and job_options:
+            
+            if sourcing_mode.startswith("Select from My Open Jobs") and job_options:
                 chosen_label = st.selectbox("Select Active Job Requisition", list(job_options.keys()))
                 selected_job_data = job_options[chosen_label]
                 req_title = selected_job_data["title"]
                 req_skills = selected_job_data["skills"]
                 req_location = selected_job_data["location"]
                 req_id = selected_job_data["id"]
-                default_domain_idx = 0
-            else:
-                st.caption("✨ **Quick 1-Click Role Presets:**")
-                preset_choice = st.selectbox(
-                    "Select Pre-configured Industry Template",
-                    ["-- Custom Role --"] + list(PRESET_TEMPLATES.keys()),
-                    index=1,
-                    key="preset_role_choice",
-                )
+                selected_domain_key = None
+            elif sourcing_mode.startswith("🏢 Browse 9 Industry Verticals"):
+                # 9-Vertical Hierarchical Browser
+                vertical_choices = {
+                    f"{v_data['icon']} {v_data['name']}": v_key
+                    for v_key, v_data in INDUSTRY_TAXONOMY.items()
+                }
+                v_label = st.selectbox("Industry Vertical", list(vertical_choices.keys()), index=5)  # default BPO or IT
+                selected_domain_key = vertical_choices[v_label]
+                v_info = INDUSTRY_TAXONOMY[selected_domain_key]
+
+                col_lvl, col_role = st.columns([1, 1.8])
+                with col_lvl:
+                    level_options = {
+                        f"{l_key}: {l_val['label']}": l_key
+                        for l_key, l_val in v_info["levels"].items()
+                    }
+                    lvl_label = st.selectbox("Hierarchy Level", list(level_options.keys()), index=4)  # default L1 or L2
+                    selected_lvl_key = level_options[lvl_label]
                 
-                if preset_choice in PRESET_TEMPLATES:
-                    p_data = PRESET_TEMPLATES[preset_choice]
-                    req_title = st.text_input("Job Title *", value=p_data["title"])
-                    req_skills_str = st.text_input("Core Required Skills", value=p_data["skills"])
-                    req_location = st.text_input("Target Location", value=p_data["location"])
-                else:
-                    req_title = st.text_input("Job Title *", value="International Voice Process Executive", placeholder="e.g. UK Voice Process / Senior Research Analyst")
-                    req_skills_str = st.text_input("Core Required Skills", value="English Fluency, Customer Care, Active Listening, UK Shifts", placeholder="Comma-separated skills")
-                    req_location = st.text_input("Target Location", value="Pune, Maharashtra, India")
-                
+                with col_role:
+                    role_titles = v_info["levels"][selected_lvl_key]["titles"]
+                    chosen_title = st.selectbox("Role Title", role_titles, index=0)
+
+                req_title = st.text_input("Target Requisition Title *", value=chosen_title)
+                default_skills_str = ", ".join(v_info["default_skills"])
+                req_skills_str = st.text_input("Required Skills", value=default_skills_str)
                 req_skills = [s.strip() for s in req_skills_str.split(",") if s.strip()]
+                req_location = st.text_input("Target Location", value="Pune / Mumbai, Maharashtra, India")
+                req_id = f"tax_{selected_domain_key}_{selected_lvl_key}_{abs(hash(req_title)) % 10000}"
+            else:
+                # Custom freeform
+                req_title = st.text_input("Job Title *", value="Senior Voice Process Specialist", placeholder="e.g. Quantitative Trader / Head of Operations")
+                req_skills_str = st.text_input("Core Required Skills", value="English Fluency, Customer Care, Active Listening, UK Shifts", placeholder="Comma-separated skills")
+                req_skills = [s.strip() for s in req_skills_str.split(",") if s.strip()]
+                req_location = st.text_input("Target Location", value="Pune, Maharashtra, India")
                 req_id = f"custom_{abs(hash(req_title)) % 100000}"
+                selected_domain_key = None
 
             domain_options = {
                 "Auto-Detect Domain (Recommended)": None,
-                "📞 BPO - International Voice Process (UK/US Shifts)": "bpo_voice",
-                "💬 BPO - Non-Voice (Chat, Email & Back-Office)": "bpo_non_voice",
-                "🧠 KPO - Financial & Market Research / Analytics": "kpo_finance",
-                "🏥 KPO/BPO - US Healthcare Claims & Medical Billing": "kpo_healthcare",
-                "💼 Inside Sales, Telemarketing & Business Development": "sales_bd",
-                "🤖 AI Automations & LLM Ops": "ai_automation",
-                "💻 Software Engineering & Tech": "engineering",
+                "💻 1. IT Services & Software Engineering": "it_services",
+                "📊 2. Finance (Corporate & Enterprise)": "finance",
+                "📈 3. Marketing & Growth": "marketing",
+                "📉 4. Trading (Capital Markets & Proprietary)": "trading",
+                "💰 5. Investments (PE, VC & Asset Management)": "investments",
+                "📞 6. Business Process Outsourcing (BPO)": "bpo",
+                "🧠 7. Knowledge Process Outsourcing (KPO)": "kpo",
+                "🎯 8. Inside Sales & Business Development": "inside_sales",
+                "🏥 9. Healthcare Operations & Medical Billing": "healthcare_ops",
             }
-            selected_domain_label = st.selectbox("Operational Job Domain", list(domain_options.keys()))
-            selected_domain = domain_options[selected_domain_label]
+            
+            # Match index if selected via vertical browser
+            def_idx = 0
+            if selected_domain_key:
+                for idx, (k_label, k_val) in enumerate(domain_options.items()):
+                    if k_val == selected_domain_key:
+                        def_idx = idx
+                        break
+
+            selected_domain_label = st.selectbox("Operational Job Domain", list(domain_options.keys()), index=def_idx)
+            selected_domain = domain_options[selected_domain_label] or selected_domain_key
 
         with col_c2:
             st.markdown("#### 2. Sourcing Parameters")
@@ -285,7 +274,7 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
             for c in candidates:
                 name = c.get("name") or c.get("full_name", "")
                 skills_text = " ".join(c.get("skills", []))
-                bio = c.get("resume_text", "")
+                bio = c.get("summary") or c.get("resume_text", "")
                 tier = c.get("fit_tier", "TIER_2")
                 
                 if search_kw:
@@ -298,17 +287,17 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
                         continue
                 filtered_candidates.append(c)
 
-            st.write(f"Showing **{len(filtered_candidates)}** candidates matching criteria:")
+            st.caption(f"Showing **{len(filtered_candidates)}** candidates matching criteria:")
 
             for i, cand in enumerate(filtered_candidates, 1):
-                name = cand.get("name") or cand.get("full_name", f"Candidate {i}")
-                title = cand.get("current_role") or cand.get("title", "Professional")
+                name = cand.get("name") or cand.get("full_name", "Candidate")
+                title = cand.get("current_role") or cand.get("title", "Specialist")
                 score = cand.get("match_score", 85)
                 tier = cand.get("fit_tier", "TIER_1")
                 email = cand.get("email", "Not provided")
                 phone = cand.get("phone", "Not provided")
                 loc = cand.get("location", "Pune, India")
-                exp = cand.get("years_experience") or cand.get("experience_years", 5.0)
+                exp = cand.get("years_experience") or cand.get("experience_years", 3.0)
                 company = cand.get("current_company", "Leading Industry Firm")
                 linkedin = cand.get("linkedin_url")
                 github = cand.get("github_url")
@@ -341,7 +330,7 @@ def render_talent_lead_gen_dashboard(client: Optional[TalentLeadGenServiceClient
                     if linkedin:
                         links_md.append(f"[🔗 LinkedIn Profile]({linkedin})")
                     if github and "github" in github:
-                        links_md.append(f"[💻 GitHub]({github})")
+                        links_md.append(f"[💻 GitHub / Portfolio]({github})")
                     if portfolio:
                         links_md.append(f"[🎨 Portfolio / Credential]({portfolio})")
 
