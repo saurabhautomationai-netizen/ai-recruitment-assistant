@@ -238,7 +238,15 @@ def create_job(job_data: dict) -> dict:
     response = client.table("jobs").insert(safe_data).execute()
     if not response.data:
         raise RuntimeError("Could not create the job.")
-    return response.data[0]
+    new_job = response.data[0]
+    try:
+        from services.recruiter_partition_service import assign_job_to_recruiter, get_current_recruiter_email
+        cur_email = get_current_recruiter_email()
+        if cur_email and "id" in new_job:
+            assign_job_to_recruiter(str(new_job["id"]), cur_email)
+    except Exception:
+        pass
+    return new_job
 
 
 @st.cache_data(ttl=60)

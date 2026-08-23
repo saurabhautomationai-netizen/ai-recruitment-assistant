@@ -13,6 +13,8 @@ from components.candidate_communications import (
     render_confirmed_send_button,
 )
 from components.ai_recruiter_chat import render_ai_recruiter_chat
+from components.talent_lead_gen_control import render_talent_lead_gen_dashboard
+from services.talent_lead_gen_service import DEFAULT_TALENT_CLIENT
 from components.metric_cards import metric_card
 from components.interview_copilot import render_interview_copilot
 from components.semantic_candidate_search import render_semantic_candidate_search
@@ -292,6 +294,7 @@ if not is_authenticated():
 # =========================================================
 navigation_pages = [
     "Overview",
+    "🎯 Talent Lead Gen",
     "Candidates",
     "Applications",
     "Jobs",
@@ -308,11 +311,39 @@ if has_permission("ai"):
 if has_permission("communicate"):
     navigation_pages.insert(-1, "Communication History")
 
+from services.recruiter_partition_service import (
+    is_admin_recruiter,
+    get_current_recruiter_email,
+    filter_data_for_active_scope,
+)
+
+current_recruiter_email = get_current_recruiter_email()
+is_current_admin = is_admin_recruiter(current_recruiter_email)
+
 with st.sidebar:
     st.markdown("## 🧠 ZERO Recruit")
     st.caption("AI Recruitment Assistant")
     st.caption(st.session_state["auth_user"].get("email", "Authenticated recruiter"))
     st.badge(get_current_role(), color="blue")
+
+    # Recruiter Workspace Scope Selector
+    if is_current_admin:
+        scope_options = {
+            "🏢 Agency Master View (All)": "agency_master",
+            "👤 My Pipeline (Saurabh)": "saurabh7596@gmail.com",
+            "👤 Rumana HR's Pipeline": "rumana",
+        }
+        selected_scope_label = st.selectbox(
+            "📍 Active Pipeline Scope",
+            options=list(scope_options.keys()),
+            index=0,
+            key="recruiter_scope_selector",
+        )
+        active_scope = scope_options[selected_scope_label]
+        st.session_state["recruiter_workspace_scope"] = active_scope
+    else:
+        st.session_state["recruiter_workspace_scope"] = "my_pipeline"
+        st.caption(f"🔒 **Private Recruiter Pipeline**\n\n`{current_recruiter_email}`")
 
     selected_page = st.radio(
         "Navigation",
@@ -334,11 +365,21 @@ with st.sidebar:
 
 
 # =========================================================
-# Load live database data
+# Load live database data (Partitioned for active scope)
 # =========================================================
-raw_candidates = get_candidates()
-raw_applications = get_applications()
-raw_jobs = get_jobs()
+raw_candidates_all = get_candidates()
+raw_applications_all = get_applications()
+raw_jobs_all = get_jobs()
+raw_interviews_all = get_interviews()
+
+raw_jobs, raw_candidates, raw_applications, raw_interviews = filter_data_for_active_scope(
+    raw_jobs=raw_jobs_all,
+    raw_candidates=raw_candidates_all,
+    raw_applications=raw_applications_all,
+    raw_interviews=raw_interviews_all,
+    scope=st.session_state.get("recruiter_workspace_scope", "my_pipeline"),
+)
+
 can_manage_candidates = has_permission("candidate_write")
 can_manage_jobs = has_permission("job_write")
 can_manage_interviews = has_permission("interview_write")
@@ -3165,6 +3206,11 @@ elif selected_page == "Jobs":
                     "Job Description",
                     placeholder="Provide responsibilities, requirements, and benefits..."
                 )
+                auto_source_toggle = st.checkbox(
+                    "⚡ Automatically source 30 top candidates with Talent Lead Gen Agent upon publishing",
+                    value=True,
+                    key="create_job_auto_source_chk",
+                )
                 
                 submitted = st.form_submit_button(
                     "Publish Job",
@@ -3197,7 +3243,26 @@ elif selected_page == "Jobs":
                     st.error(f"Could not publish job: {error}")
                 else:
                     get_jobs.clear()
-                    st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published successfully!"
+                    created_job_rec = get_jobs()
+                    new_job_id = "job_" + str(hash(new_title) % 100000)
+                    if not created_job_rec.empty and "id" in created_job_rec.columns:
+                        new_job_id = str(created_job_rec.iloc[0]["id"])
+                    
+                    if auto_source_toggle:
+                        try:
+                            skills_arr = [s.strip() for s in new_skills.split(",") if s.strip()]
+                            DEFAULT_TALENT_CLIENT.trigger_sourcing(
+                                job_id=new_job_id,
+                                title=new_title.strip(),
+                                skills=skills_arr,
+                                location=new_loc.strip() or "Pune",
+                                target_count=30,
+                            )
+                            st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published & 30 candidates auto-sourced via Talent Lead Gen Agent!"
+                        except Exception as s_err:
+                            st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published! (Auto-sourcing note: {s_err})"
+                    else:
+                        st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published successfully!"
                     st.rerun()
 
         col_left, col_right = st.columns([1, 1])
@@ -3533,13 +3598,14 @@ elif selected_page == "Jobs":
                         theme=chosen_theme,
                     )
 
-                    t1, t2, t3, t4, t5, t6 = st.tabs([
+                    t1, t2, t3, t4, t5, t6, t7 = st.tabs([
                         "📱 WhatsApp Status",
                         "💬 WhatsApp Message",
                         "💼 LinkedIn Post",
                         "📧 Candidate Email",
                         "📸 Instagram Post",
-                        "🎨 Visual Hiring Poster"
+                        "🎨 Visual Hiring Poster",
+                        "🏢 Job Boards (Naukri / Indeed / LinkedIn / GitHub / Foundit)"
                     ])
                     with t1:
                         c_t1_l, c_t1_r = st.columns([1.5, 1])
@@ -3981,6 +4047,89 @@ elif selected_page == "Jobs":
                                 use_container_width=True,
                             )
                             st.info("💡 **Live Scannable QR Code**: Point your phone camera at the QR code to test instant redirection to your candidate intake form!")
+
+                    with t7:
+                        st.markdown("#### 🏢 Multi-Platform Job Posting & Syndication")
+                        st.caption("Post across **Naukri, Indeed, LinkedIn Jobs, GitHub Careers & Foundit**, or syndicate via standard ATS XML Feed:")
+                        
+                        from services.job_feed_service import generate_indeed_xml_feed
+                        
+                        p_tab_naukri, p_tab_indeed, p_tab_linkedin, p_tab_github, p_tab_foundit, p_tab_xml = st.tabs([
+                            "🇮🇳 Naukri.com",
+                            "🌐 Indeed",
+                            "💼 LinkedIn Jobs",
+                            "💻 GitHub Careers",
+                            "🎯 Foundit",
+                            "📡 Automated XML Feed"
+                        ])
+                        
+                        with p_tab_naukri:
+                            st.markdown("##### 🇮🇳 Naukri.com Recruiter Post")
+                            naukri_desc = f"Role: {job_title}\nDepartment: {job_dept}\nLocation: {job_loc}\nExperience: {exp_text}\nKey Skills: {skills_str}\nSalary: {sal_display or 'Competitive'}\n\nApply Online: {app_link}\nContact: {recruiter_name} ({recruiter_phone})"
+                            st.text_area("Naukri Post Text", value=naukri_desc, height=150, key=f"naukri_post_txt_{managed_job_id}")
+                            st.link_button("🚀 Open Naukri Recruiter Job Posting Page", "https://recruiter.naukri.com/post-job", type="primary", use_container_width=True)
+
+                        with p_tab_indeed:
+                            st.markdown("##### 🌐 Indeed for Employers")
+                            indeed_desc = f"Position: {job_title}\nLocation: {job_loc}\nJob Type: Full-time\nRequired Experience: {exp_text}\nSkills: {skills_str}\n\nJob Description:\n{safe_value(managed_job, 'description', '')}\n\nApply here: {app_link}"
+                            st.text_area("Indeed Post Text", value=indeed_desc, height=150, key=f"indeed_post_txt_{managed_job_id}")
+                            st.link_button("🚀 Open Indeed Employer Posting Page", "https://employers.indeed.com/p#post-job", type="primary", use_container_width=True)
+
+                        with p_tab_linkedin:
+                            st.markdown("##### 💼 LinkedIn Talent Solutions & Job Post")
+                            li_job_desc = f"We are hiring a {job_title} at {agency_name}!\n\n📍 Location: {job_loc}\n⏳ Experience: {exp_text}\n🛠️ Skills: {skills_str}\n💰 Compensation: {sal_display or 'Industry Standard'}\n\nDirect Application Form: {app_link}\nRecruiter: {recruiter_name}"
+                            st.text_area("LinkedIn Job Details", value=li_job_desc, height=150, key=f"li_job_txt_{managed_job_id}")
+                            st.link_button("🚀 Post Job on LinkedIn Talent", "https://www.linkedin.com/talent/post-a-job", type="primary", use_container_width=True)
+
+                        with p_tab_github:
+                            st.markdown("##### 💻 GitHub Discussions / Developer Hiring Board")
+                            github_md = f"### We are hiring: {job_title}\n\n- **Department**: `{job_dept}`\n- **Location**: `{job_loc}`\n- **Experience**: `{exp_text}`\n- **Key Tech Stack**: `{skills_str}`\n\n#### Job Description\n{safe_value(managed_job, 'description', 'Join our engineering and automation team!')}\n\n👉 **[Click Here to Apply Directly]({app_link})**"
+                            st.text_area("GitHub Markdown Template", value=github_md, height=150, key=f"gh_job_txt_{managed_job_id}")
+                            st.link_button("🚀 Open GitHub Discussions / Job Template", "https://github.com", use_container_width=True)
+
+                        with p_tab_foundit:
+                            st.markdown("##### 🎯 Foundit.in (Monster Employer)")
+                            st.link_button("🚀 Open Foundit Employer Portal", "https://employer.foundit.in/job-posting", type="primary", use_container_width=True)
+
+                        with p_tab_xml:
+                            st.markdown("##### 📡 Automated ATS XML Feed (Indeed / Google for Jobs / Glassdoor)")
+                            st.caption("Copy this feed URL into your employer account on Indeed, Foundit, or Google for automatic hourly sync:")
+                            xml_feed_str = generate_indeed_xml_feed(raw_jobs, company_name=agency_name, base_app_url=app_link)
+                            st.code(f"{app_link}/jobs_feed.xml", language="text")
+                            st.download_button(
+                                "📥 Download XML Feed File (jobs_feed.xml)",
+                                data=xml_feed_str,
+                                file_name="jobs_feed.xml",
+                                mime="application/xml",
+                                key=f"dl_xml_feed_{managed_job_id}",
+                                use_container_width=True,
+                            )
+
+                if st.button(
+                    "⚡ Auto-Source Leads (30 Candidates)",
+                    icon=":material/bolt:",
+                    key=f"auto_source_job_{managed_job_id}",
+                    type="primary",
+                ):
+                    with st.spinner("Talent Lead Gen Agent is sourcing 30 qualified candidates across channels..."):
+                        try:
+                            req_skills_raw = safe_value(managed_job, "required_skills", [])
+                            if isinstance(req_skills_raw, list):
+                                req_skills_list = req_skills_raw
+                            else:
+                                req_skills_list = [s.strip() for s in str(req_skills_raw).split(",") if s.strip()]
+                            
+                            src_res = DEFAULT_TALENT_CLIENT.trigger_sourcing(
+                                job_id=managed_job_id,
+                                title=safe_value(managed_job, "title", "Open Role"),
+                                skills=req_skills_list,
+                                location=safe_value(managed_job, "location", "Pune"),
+                                target_count=30,
+                            )
+                            st.session_state["job_management_success"] = f"🎉 Successfully sourced {src_res.get('sourced_count', 30)} candidates for '{safe_value(managed_job, 'title')}'! Check '🎯 Talent Lead Gen' to view."
+                            st.rerun()
+                        except Exception as src_err:
+                            st.error(f"Sourcing failed: {src_err}")
 
                 if st.button(
                     "Share & Social posts",
@@ -5245,6 +5394,13 @@ elif selected_page == "Analytics":
             width="stretch",
             config={"displayModeBar": False},
         )
+
+
+# =========================================================
+# Talent Lead Gen Agent Control Center Page
+# =========================================================
+elif selected_page == "🎯 Talent Lead Gen":
+    render_talent_lead_gen_dashboard()
 
 
 # =========================================================
