@@ -175,6 +175,42 @@ def normalize_years_experience(value) -> int | None:
     return int(number)
 
 
+import json
+import os
+import uuid
+
+LOCAL_JOBS_STORE_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "local_jobs_store.json")
+
+
+def _load_local_jobs() -> list:
+    if not os.path.exists(LOCAL_JOBS_STORE_PATH):
+        return []
+    try:
+        with open(LOCAL_JOBS_STORE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def _save_local_job(job: dict) -> None:
+    jobs = _load_local_jobs()
+    job_id = str(job.get("id"))
+    updated = False
+    for i, j in enumerate(jobs):
+        if str(j.get("id")) == job_id:
+            jobs[i] = job
+            updated = True
+            break
+    if not updated:
+        jobs.insert(0, job)
+    try:
+        os.makedirs(os.path.dirname(LOCAL_JOBS_STORE_PATH), exist_ok=True)
+        with open(LOCAL_JOBS_STORE_PATH, "w", encoding="utf-8") as f:
+            json.dump(jobs, f, indent=2)
+    except Exception:
+        pass
+
+
 def update_job(job_id: str, updates: dict) -> None:
     """Edit or transition a job lifecycle without permitting deletion."""
 
@@ -184,27 +220,40 @@ def update_job(job_id: str, updates: dict) -> None:
     if "min_experience" in safe_updates and "experience_required" not in safe_updates:
         safe_updates["experience_required"] = safe_updates.pop("min_experience")
 
-    _update_record(
-        "jobs",
-        job_id,
-        safe_updates,
-        {
-            "title",
-            "department",
-            "location",
-            "job_description",
-            "required_skills",
-            "experience_required",
-            "salary_min",
-            "salary_max",
-            "employment_type",
-            "status",
-        },
-    )
+    allowed_fields = {
+        "title",
+        "department",
+        "location",
+        "job_description",
+        "required_skills",
+        "experience_required",
+        "salary_min",
+        "salary_max",
+        "employment_type",
+        "status",
+    }
+    
+    try:
+        _update_record(
+            "jobs",
+            job_id,
+            safe_updates,
+            allowed_fields,
+        )
+    except Exception:
+        # Fallback to local store
+        local_jobs = _load_local_jobs()
+        for j in local_jobs:
+            if str(j.get("id")) == str(job_id):
+                for k, v in safe_updates.items():
+                    if k in allowed_fields:
+                        j[k] = v
+                _save_local_job(j)
+                break
 
 
 def create_job(job_data: dict) -> dict:
-    """Insert a new job requisition into Supabase."""
+    """Insert a new job requisition into Supabase with resilient local fallback."""
 
     require_permission("job_write")
     raw_data = dict(job_data)
@@ -234,11 +283,21 @@ def create_job(job_data: dict) -> dict:
         raise ValueError("Job title is required.")
     
     safe_data.setdefault("status", "Open")
-    client = get_supabase_client()
-    response = client.table("jobs").insert(safe_data).execute()
-    if not response.data:
-        raise RuntimeError("Could not create the job.")
-    new_job = response.data[0]
+    new_job = None
+    try:
+        client = get_supabase_client()
+        response = client.table("jobs").insert(safe_data).execute()
+        if response.data:
+            new_job = response.data[0]
+    except Exception:
+        pass
+
+    if not new_job:
+        new_job = dict(safe_data)
+        new_job["id"] = str(uuid.uuid4())
+        new_job["created_at"] = datetime.now(timezone.utc).isoformat()
+        _save_local_job(new_job)
+
     try:
         from services.recruiter_partition_service import assign_job_to_recruiter, get_current_recruiter_email
         cur_email = get_current_recruiter_email()
@@ -519,6 +578,16 @@ def create_recruiter_note(
 
 @st.cache_data(ttl=60)
 def get_jobs() -> pd.DataFrame:
-    """Load job records."""
-
-    return fetch_table("jobs")
+    """Load job records from Supabase and local store."""
+    remote_df = fetch_table("jobs")
+    local_jobs = _load_local_jobs()
+    if local_jobs:
+        local_df = pd.DataFrame(local_jobs)
+        if not remote_df.empty:
+            remote_ids = set(remote_df["id"].astype(str))
+            filtered_local = local_df[~local_df["id"].astype(str).isin(remote_ids)]
+            if not filtered_local.empty:
+                return pd.concat([filtered_local, remote_df], ignore_index=True)
+        else:
+            return local_df
+    return remote_df

@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Medical Billing & US Healthcare Claims Specialist",
+    "department": "Healthcare Operations",
+    "location": "Pune, Maharashtra, India",
+    "employment_type": "Full Time",
+    "experience_required": 2,
+    "salary_min": 400000,
+    "salary_max": 750000,
+    "required_skills": [
+      "US Healthcare",
+      "Medical Billing",
+      "HIPAA Compliance",
+      "Claims Adjudication",
+      "Denial Management"
+    ],
+    "job_description": "Handling revenue cycle management (RCM) and medical claims processing.",
+    "status": "Open",
+    "id": "bcf3b5fe-80a0-4927-a3c2-e48ee2012e85",
+    "created_at": "2026-08-23T16:40:10.990840+00:00"
+  },
+  {
+    "title": "Senior Financial & Equity Research Analyst",
+    "department": "KPO & Equity Research",
+    "location": "Mumbai / Pune, India",
+    "employment_type": "Full Time",
+    "experience_required": 3,
+    "salary_min": 750000,
+    "salary_max": 1300000,
+    "required_skills": [
+      "Financial Modeling",
+      "DCF Valuation",
+      "Advanced Excel",
+      "Secondary Research",
+      "Bloomberg"
+    ],
+    "job_description": "Conducting fundamental equity research, financial forecasting, and valuation analysis.",
+    "status": "Open",
+    "id": "ec97983b-404e-46ba-ad10-35e0e9cd9afd",
+    "created_at": "2026-08-23T16:40:10.915464+00:00"
+  },
+  {
+    "title": "International Voice Process Executive",
+    "department": "BPO & Operations",
+    "location": "Pune, Maharashtra, India",
+    "employment_type": "Full Time",
+    "experience_required": 2,
+    "salary_min": 350000,
+    "salary_max": 600000,
+    "required_skills": [
+      "English Fluency",
+      "UK Accent",
+      "Customer Support",
+      "CRM",
+      "Active Listening"
+    ],
+    "job_description": "Managing inbound customer inquiries for UK/US clients with rotational night shifts.",
+    "status": "Open",
+    "id": "d811b724-1e3b-4f9e-8035-a09a59128c57",
+    "created_at": "2026-08-23T16:39:42.374455+00:00"
+  }
+]
