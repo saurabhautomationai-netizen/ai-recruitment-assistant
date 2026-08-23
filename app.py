@@ -330,21 +330,24 @@ with st.sidebar:
     # Recruiter Workspace Scope Selector
     if is_current_admin:
         scope_options = {
-            "🏢 Agency Master View (All)": "agency_master",
-            "👤 My Pipeline (Saurabh)": "saurabh7596@gmail.com",
+            "🏢 Agency Master View (All Data)": "agency_master",
+            "👤 Saurabh's Pipeline": "saurabh7596@gmail.com",
             "👤 Rumana HR's Pipeline": "rumana",
         }
-        selected_scope_label = st.selectbox(
-            "📍 Active Pipeline Scope",
-            options=list(scope_options.keys()),
-            index=0,
-            key="recruiter_scope_selector",
-        )
-        active_scope = scope_options[selected_scope_label]
-        st.session_state["recruiter_workspace_scope"] = active_scope
     else:
-        st.session_state["recruiter_workspace_scope"] = "my_pipeline"
-        st.caption(f"🔒 **Private Recruiter Pipeline**\n\n`{current_recruiter_email}`")
+        scope_options = {
+            "🏢 Agency Master View (All Data)": "agency_master",
+            "👤 My Private Pipeline": "my_pipeline",
+        }
+    
+    selected_scope_label = st.selectbox(
+        "📍 Active Pipeline Scope",
+        options=list(scope_options.keys()),
+        index=0,
+        key="recruiter_scope_selector",
+    )
+    active_scope = scope_options[selected_scope_label]
+    st.session_state["recruiter_workspace_scope"] = active_scope
 
     selected_page = st.radio(
         "Navigation",

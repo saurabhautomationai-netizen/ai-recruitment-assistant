@@ -84,7 +84,7 @@ def filter_data_for_active_scope(
 
     # Determine effective scope
     if scope == "auto":
-        scope = st.session_state.get("recruiter_workspace_scope", "my_pipeline")
+        scope = st.session_state.get("recruiter_workspace_scope", "agency_master")
 
     if scope == "agency_master":
         # Full master agency view
