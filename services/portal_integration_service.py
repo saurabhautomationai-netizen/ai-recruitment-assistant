@@ -4,30 +4,39 @@ import json
 import os
 import streamlit as st
 
+from services.secret_encryption_service import decrypt_dict, encrypt_dict
+
 INTEGRATIONS_STORE_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "recruiter_integrations.json")
 
 
 def _load_integrations_store() -> dict:
-    """Load stored recruiter portal and social credentials."""
+    """Load stored recruiter portal and social credentials with automated decryption."""
     if not os.path.exists(INTEGRATIONS_STORE_PATH):
         os.makedirs(os.path.dirname(INTEGRATIONS_STORE_PATH), exist_ok=True)
         default_data = {}
-        with open(INTEGRATIONS_STORE_PATH, "w", encoding="utf-8") as f:
-            json.dump(default_data, f, indent=2)
+        _save_integrations_store(default_data)
         return default_data
     try:
         with open(INTEGRATIONS_STORE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+            raw_text = f.read().strip()
+            if not raw_text:
+                return {}
+            # If armored ciphertext enc::
+            if raw_text.startswith("enc::"):
+                return decrypt_dict(raw_text)
+            # Legacy unencrypted fallback
+            return json.loads(raw_text)
     except Exception:
         return {}
 
 
 def _save_integrations_store(data: dict) -> None:
-    """Save stored recruiter portal and social credentials."""
+    """Save stored recruiter portal and social credentials with AES encryption."""
     try:
         os.makedirs(os.path.dirname(INTEGRATIONS_STORE_PATH), exist_ok=True)
+        encrypted_payload = encrypt_dict(data)
         with open(INTEGRATIONS_STORE_PATH, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+            f.write(encrypted_payload)
     except Exception:
         pass
 

@@ -173,6 +173,12 @@ def send_candidate_message(
         )
     _validate_webhook_url(webhook_url)
 
+    import hashlib
+
+    idempotency_key = hashlib.sha256(
+        f"{application_id.strip()}:{normalized_channel}:{message_type}:{recipient.strip()}:{message.strip()[:100]}".encode("utf-8")
+    ).hexdigest()
+
     payload = {
         "channel": normalized_channel,
         "recipient": recipient.strip(),
@@ -184,13 +190,18 @@ def send_candidate_message(
         "application_stage": application_stage.strip(),
         "application_id": application_id.strip(),
         "confirmed": True,
+        "idempotency_key": idempotency_key,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotency_key,
     }
     last_error: Exception | None = None
     response = None
 
     for attempt in range(1, max_attempts + 1):
         try:
-            response = requests.post(webhook_url, json=payload, timeout=timeout)
+            response = requests.post(webhook_url, json=payload, headers=headers, timeout=timeout)
             if 200 <= response.status_code < 300:
                 result = {
                     "success": True,
