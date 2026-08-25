@@ -127,3 +127,51 @@ class TestPhase2Hardening:
         assert res["synced"] == 0
         assert res["remaining"] == 0
         assert res["success"] is True
+
+
+class TestPhase3Performance:
+    def test_pagination_dataframe_slicing(self):
+        import pandas as pd
+        from services.pagination_service import paginate_dataframe
+        df = pd.DataFrame({"id": range(1, 101), "score": range(101, 201)})
+        sliced, meta = paginate_dataframe(df, page=3, page_size=20)
+        assert len(sliced) == 20
+        assert meta["total_rows"] == 100
+        assert meta["total_pages"] == 5
+        assert meta["current_page"] == 3
+        assert meta["has_prev"] is True
+        assert meta["has_next"] is True
+        assert sliced.iloc[0]["id"] == 41
+        assert sliced.iloc[-1]["id"] == 60
+
+    def test_pagination_empty_dataframe(self):
+        import pandas as pd
+        from services.pagination_service import paginate_dataframe
+        empty_df = pd.DataFrame()
+        sliced, meta = paginate_dataframe(empty_df, page=1, page_size=25)
+        assert sliced.empty
+        assert meta["total_rows"] == 0
+        assert meta["total_pages"] == 1
+
+    def test_async_task_manager_lifecycle(self):
+        import time
+        from services.async_task_service import DEFAULT_TASK_MANAGER
+        def quick_add(a, b):
+            return a + b
+        t_id = DEFAULT_TASK_MANAGER.submit_task("quick_add", quick_add, 10, 20)
+        assert t_id.startswith("task_")
+        time.sleep(0.2)
+        stat = DEFAULT_TASK_MANAGER.get_task_status(t_id)
+        assert stat["status"] == "COMPLETED"
+        assert stat["result"] == 30
+
+    def test_async_task_manager_error_containment(self):
+        import time
+        from services.async_task_service import DEFAULT_TASK_MANAGER
+        def failing_task():
+            raise ValueError("Deliberate background error")
+        t_id = DEFAULT_TASK_MANAGER.submit_task("failing_task", failing_task)
+        time.sleep(0.2)
+        stat = DEFAULT_TASK_MANAGER.get_task_status(t_id)
+        assert stat["status"] == "FAILED"
+        assert "Deliberate background error" in stat["error"]
