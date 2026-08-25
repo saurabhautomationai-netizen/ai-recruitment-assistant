@@ -278,7 +278,7 @@ def render_talent_lead_gen_dashboard(
         candidates = []
         if last_res and "candidates" in last_res:
             candidates = last_res["candidates"]
-        elif is_connected:
+        if not candidates:
             candidates = talent_client.get_leads()
 
         if not candidates:

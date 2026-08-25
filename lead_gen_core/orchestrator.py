@@ -107,8 +107,14 @@ class LeadGenOrchestrator:
             cand_role = role_titles[h % len(role_titles)]
             college = colleges_pool[h % len(colleges_pool)]
             
-            cand_skills = random.sample(effective_skills, min(len(effective_skills), random.randint(4, len(effective_skills))))
-            
+            if effective_skills:
+                min_k = min(1, len(effective_skills))
+                max_k = len(effective_skills)
+                sample_k = random.randint(min_k, max_k)
+                cand_skills = random.sample(effective_skills, sample_k)
+            else:
+                cand_skills = ["Communication", "Customer Care", "Process Excellence"]
+                
             phone_num = f"+91 {7000000000 + (h % 2999999999)}"
             email_addr = f"{first.lower()}.{last.lower()}{h % 999}@gmail.com"
             linkedin_handle = f"https://www.linkedin.com/in/{first.lower()}-{last.lower()}-{h % 99999}"
