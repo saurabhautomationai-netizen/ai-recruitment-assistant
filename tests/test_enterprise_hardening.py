@@ -86,3 +86,44 @@ class TestInputSanitization:
         assert "<iframe" not in cleaned["notes"][0]
         assert cleaned["meta"]["location"] == "Pune"
         assert "<script>" not in cleaned["meta"]["location"]
+
+
+class TestPhase2Hardening:
+    def test_resume_extraction_plain_text(self):
+        from services.resume_ocr_service import extract_resume_content
+        sample = b"Senior Full-Stack Engineer with React, Node.js, and PostgreSQL expertise."
+        res = extract_resume_content("candidate_resume.txt", sample)
+        assert res["success"] is True
+        assert "React" in res["text"]
+        assert res["word_count"] > 5
+
+    def test_llm_resilience_tiered_evaluation(self):
+        from services.llm_resilience_service import evaluate_candidate_fit_tiered
+        res = evaluate_candidate_fit_tiered(
+            job_title="DevOps Specialist",
+            job_description="Kubernetes, Terraform, AWS infrastructure",
+            required_skills=["Kubernetes", "AWS", "Terraform", "Docker"],
+            candidate_resume="Cloud engineer managing AWS clusters with Kubernetes and Docker.",
+        )
+        assert "ats_score" in res
+        assert res["ats_score"] > 0
+        assert "matched_skills" in res
+        assert "AWS" in res["matched_skills"]
+        assert "Kubernetes" in res["matched_skills"]
+        assert "Docker" in res["matched_skills"]
+
+    def test_llm_json_repair_fencing(self):
+        from services.llm_resilience_service import _extract_json_payload
+        raw_markdown = "```json\n{\"ats_score\": 88, \"fit_tier\": \"Strong Fit\"}\n```"
+        parsed = _extract_json_payload(raw_markdown)
+        assert parsed.get("ats_score") == 88
+        assert parsed.get("fit_tier") == "Strong Fit"
+
+    def test_data_reconciliation_empty_buffer(self, monkeypatch):
+        from services.data_reconciliation_service import reconcile_offline_jobs_to_cloud
+        import services.data_reconciliation_service as drs
+        monkeypatch.setattr(drs, "_load_local_jobs", lambda: [])
+        res = reconcile_offline_jobs_to_cloud()
+        assert res["synced"] == 0
+        assert res["remaining"] == 0
+        assert res["success"] is True
