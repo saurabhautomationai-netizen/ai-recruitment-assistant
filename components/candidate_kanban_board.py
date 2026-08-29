@@ -97,11 +97,13 @@ def render_candidate_kanban_board(candidates_df: pd.DataFrame, applications_df: 
         st.info("No candidates currently in the pipeline.")
         return
 
-    # Build normalized records
+    # Build normalized records with guaranteed unique IDs
     all_cands = []
-    for _, row in candidates_df.iterrows():
-        c_id = str(row.get("candidate_id") or row.get("id") or "")
-        c_name = str(row.get("Candidate") or row.get("full_name") or row.get("name") or "Candidate")
+    for c_idx, (_, row) in enumerate(candidates_df.iterrows()):
+        raw_id = row.get("candidate_id") or row.get("id") or row.get("Candidate") or row.get("full_name") or f"c_{c_idx}"
+        c_id = str(raw_id).strip() if (pd.notna(raw_id) and str(raw_id).strip()) else f"cand_{c_idx}"
+
+        c_name = str(row.get("Candidate") or row.get("full_name") or row.get("name") or f"Candidate #{c_idx+1}")
         c_role = str(row.get("Role") or row.get("role") or row.get("current_title") or "Technical Specialist")
         c_exp = str(row.get("Experience") or row.get("years_experience") or "3")
         c_score = int(float(row.get("Candidate Score") or row.get("candidate_score") or row.get("ats_score") or 85))
@@ -121,6 +123,7 @@ def render_candidate_kanban_board(candidates_df: pd.DataFrame, applications_df: 
             "email": c_email,
             "phone": c_phone,
             "resume_text": c_resume,
+            "idx": c_idx,
         })
 
     # Group by stage
@@ -131,13 +134,12 @@ def render_candidate_kanban_board(candidates_df: pd.DataFrame, applications_df: 
     # -------------------------------------------------------------------------
     # 5-COLUMN KANBAN BOARD
     # -------------------------------------------------------------------------
-    col_width = [1, 1, 1, 1, 1]
     cols = st.columns(5)
 
-    for idx, stage_meta in enumerate(KANBAN_STAGES):
+    for s_col_idx, stage_meta in enumerate(KANBAN_STAGES):
         s_id = stage_meta["id"]
         s_cands = stage_buckets.get(s_id, [])
-        stage_col = cols[idx]
+        stage_col = cols[s_col_idx]
 
         with stage_col:
             # Column Header Card
@@ -164,7 +166,7 @@ def render_candidate_kanban_board(candidates_df: pd.DataFrame, applications_df: 
                     unsafe_allow_html=True,
                 )
             else:
-                for c in s_cands:
+                for c_item_idx, c in enumerate(s_cands):
                     is_selected = (st.session_state.get("kanban_selected_cand_id") == c["id"])
                     border_color = "#059669" if is_selected else "#e8eae6"
                     card_shadow = "0 4px 16px rgba(5, 150, 105, 0.12)" if is_selected else "0 2px 8px rgba(22, 46, 32, 0.03)"
@@ -186,23 +188,24 @@ def render_candidate_kanban_board(candidates_df: pd.DataFrame, applications_df: 
                     """
                     st.html(card_box_html)
 
-                    # Card Action Row: Inspect & Move
+                    # Card Action Row: Inspect & Move (Guaranteed Unique Keys)
                     act_col1, act_col2 = st.columns([1.1, 1.3])
+                    unique_cand_key = f"{c['id']}_{s_id}_{c['idx']}_{c_item_idx}"
+
                     with act_col1:
-                        if st.button("🔍 Inspect", key=f"insp_{c['id']}", use_container_width=True):
+                        if st.button("🔍 Inspect", key=f"btn_insp_{unique_cand_key}", use_container_width=True):
                             st.session_state["kanban_selected_cand_id"] = c["id"]
                             st.rerun()
 
                     with act_col2:
-                        # Direct Move Dropdown
                         stage_options = [s["title"] for s in KANBAN_STAGES]
                         curr_stage_title = next((s["title"] for s in KANBAN_STAGES if s["id"] == c["stage"]), "Shortlisted")
                         new_stage_label = st.selectbox(
-                            f"Move {c['id']}",
+                            f"Move {unique_cand_key}",
                             options=stage_options,
                             index=stage_options.index(curr_stage_title),
                             label_visibility="collapsed",
-                            key=f"move_{c['id']}",
+                            key=f"sel_move_{unique_cand_key}",
                         )
                         target_stage_meta = next((s for s in KANBAN_STAGES if s["title"] == new_stage_label), None)
                         if target_stage_meta and target_stage_meta["id"] != c["stage"]:
@@ -224,7 +227,7 @@ def render_candidate_kanban_board(candidates_df: pd.DataFrame, applications_df: 
 def _execute_stage_transition(candidate_id: str, new_stage_id: str, new_stage_title: str, candidate_name: str):
     """Updates candidate stage across database/applications and local session state."""
     try:
-        from services.supabase_service import update_candidate, update_application_stage, get_supabase_client
+        from services.supabase_service import update_candidate, get_supabase_client
         # 1. Update candidate table if possible
         try:
             update_candidate(candidate_id, {"status": new_stage_title})
@@ -240,7 +243,7 @@ def _execute_stage_transition(candidate_id: str, new_stage_id: str, new_stage_ti
 
         st.cache_data.clear()
         st.toast(f"✅ Moved {candidate_name} to '{new_stage_title}' successfully!", icon="🚀")
-    except Exception as e:
+    except Exception:
         st.toast(f"⚠️ Stage updated locally for {candidate_name}: {new_stage_title}")
 
 
@@ -329,10 +332,10 @@ def _render_candidate_intelligence_panel(cand: dict, selected_domain: str):
     # Resume Viewer Action Row
     v_col1, v_col2, v_col3 = st.columns([1.5, 1.5, 3])
     with v_col1:
-        if st.toggle("📄 View Full Resume", key=f"toggle_res_{cand['id']}"):
+        if st.toggle("📄 View Full Resume", key=f"toggle_res_{cand['id']}_{cand.get('idx', 0)}"):
             _render_full_resume_modal(cand)
     with v_col2:
-        if st.button("❌ Close Inspector", key=f"close_insp_{cand['id']}", use_container_width=True):
+        if st.button("❌ Close Inspector", key=f"close_insp_{cand['id']}_{cand.get('idx', 0)}", use_container_width=True):
             st.session_state["kanban_selected_cand_id"] = None
             st.rerun()
 
@@ -377,5 +380,5 @@ def _render_full_resume_modal(cand: dict):
             data=resume_body,
             file_name=f"Resume_{c_name.replace(' ', '_')}.txt",
             mime="text/plain",
-            key=f"dl_res_{cand['id']}",
+            key=f"dl_res_{cand['id']}_{cand.get('idx', 0)}",
         )

@@ -696,7 +696,11 @@ def prepare_candidate_data(
         candidates_df["Applied On"] = "Not available"
 
 
-    return candidates_df[display_columns]
+    out_cols = [c for c in display_columns if c in candidates_df.columns]
+    for extra_col in ["candidate_id", "email", "phone", "skills"]:
+        if extra_col in candidates_df.columns and extra_col not in out_cols:
+            out_cols.append(extra_col)
+    return candidates_df[out_cols]
 
 
 candidates = prepare_candidate_data(
