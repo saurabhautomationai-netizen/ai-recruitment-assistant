@@ -1274,7 +1274,7 @@ if selected_page == "Overview":
     with filter_col2:
         overview_view_tab = st.pills(
             "Overview View",
-            ["Executive Dashboard", "AI Autonomy Matrix", "Recruiter Velocity", "Funnel Analytics"],
+            ["Executive Dashboard", "Interactive Pipeline Kanban", "AI Autonomy Matrix", "Recruiter Velocity", "Funnel Analytics"],
             default="Executive Dashboard",
             label_visibility="collapsed",
             key="cmd_overview_subview",
@@ -1282,7 +1282,10 @@ if selected_page == "Overview":
 
     st.write("")
 
-    if overview_view_tab == "AI Autonomy Matrix":
+    if overview_view_tab == "Interactive Pipeline Kanban":
+        from components.candidate_kanban_board import render_candidate_kanban_board
+        render_candidate_kanban_board(candidates, raw_applications)
+    elif overview_view_tab == "AI Autonomy Matrix":
         from components.recruitment_autonomy_matrix import render_recruitment_autonomy_matrix
         render_recruitment_autonomy_matrix()
 
@@ -1776,9 +1779,15 @@ elif selected_page == "Candidates":
                     st.rerun()
 
     else:
+        from components.candidate_kanban_board import render_candidate_kanban_board
+        render_candidate_kanban_board(visible_candidates, raw_applications)
+        st.write("")
+        st.divider()
+
         # -------------------------------------------------
-        # Candidate filters
+        # Candidate filters & Directory View
         # -------------------------------------------------
+        st.markdown('<div style="font-size: 17px; font-weight: 800; color: #162E20; margin-bottom: 8px;">🔍 Search & Detailed Candidate Profiles Directory</div>', unsafe_allow_html=True)
         search_col, status_col, role_col = st.columns(
             [2, 1, 1]
         )
