@@ -66,50 +66,29 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-        /* =========================================================
-           ZERO RECRUIT: OBSIDIAN CYBER GLASS DESIGN SYSTEM
-           ========================================================= */
         .stApp {
-            background: radial-gradient(circle at 12% 18%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
-                        radial-gradient(circle at 88% 82%, rgba(139, 92, 246, 0.08) 0%, transparent 45%),
-                        #070a13;
-            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-            color: #f8fafc;
+            background: #f3f4f1;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #162e20;
         }
 
         .main .block-container {
-            max-width: 1440px !important;
-            padding-top: 2rem !important;
-            padding-bottom: 4rem !important;
+            max-width: 1400px !important;
+            padding-top: 1.8rem !important;
+            padding-bottom: 3.5rem !important;
             padding-left: 2.2rem !important;
             padding-right: 2.2rem !important;
             margin: 0 auto !important;
         }
 
-        /* Sleek Modern Scrollbars */
-        ::-webkit-scrollbar {
-            width: 7px;
-            height: 7px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #070a13;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(6, 182, 212, 0.25);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(6, 182, 212, 0.6);
-        }
-
-        /* Sidebar: Deep Obsidian with Glass Edge */
+        /* Sidebar: Deep Forest Green (#162E20) */
         [data-testid="stSidebar"] {
-            background: #06080f !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+            background: #162e20 !important;
+            border-right: 1px solid #112419 !important;
         }
 
         [data-testid="stSidebar"] * {
-            color: #94a3b8 !important;
+            color: #d1e3d7 !important;
         }
 
         [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] strong {
@@ -118,180 +97,138 @@ st.markdown(
 
         /* Sidebar Navigation Active Capsule */
         [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] div:has(input:checked) {
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.22) 0%, rgba(147, 51, 234, 0.22) 100%) !important;
-            border: 1px solid rgba(6, 182, 212, 0.5) !important;
+            background: #ffffff !important;
             border-radius: 12px !important;
             padding: 8px 14px !important;
-            box-shadow: 0 0 16px rgba(6, 182, 212, 0.2) !important;
         }
 
         [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] div:has(input:checked) * {
-            color: #00f0ff !important;
+            color: #162e20 !important;
             font-weight: 750 !important;
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
         }
 
         [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] {
-            padding: 5px 10px !important;
+            padding: 4px 8px !important;
             border-radius: 10px !important;
-            transition: all 0.2s ease !important;
+            transition: all 0.15s ease !important;
         }
 
         [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"]:hover {
-            background: rgba(255, 255, 255, 0.05) !important;
-            color: #f8fafc !important;
+            background: rgba(255, 255, 255, 0.08) !important;
         }
 
         [data-testid="stHeader"] {
-            background: rgba(7, 10, 19, 0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(243, 244, 241, 0.9);
+            backdrop-filter: blur(8px);
         }
 
         .main-title {
-            font-size: 32px;
+            font-size: 30px;
             font-weight: 850;
-            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 60%, #38bdf8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 4px;
-            letter-spacing: -0.025em;
+            color: #162e20;
+            margin-bottom: 2px;
+            letter-spacing: -0.02em;
         }
 
         .main-subtitle {
-            color: #94a3b8;
+            color: #55695c;
             font-size: 14px;
-            margin-bottom: 24px;
-            line-height: 1.5;
+            margin-bottom: 22px;
         }
 
-        /* Obsidian Cyber Glass Cards */
+        /* Card Architecture matching HashStaff reference */
         .hash-card {
-            background: rgba(15, 23, 42, 0.65) !important;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            background: #ffffff;
+            border: 1px solid #e8eae6;
             border-radius: 20px;
-            padding: 24px 26px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #f8fafc;
+            padding: 22px 24px;
+            box-shadow: 0 2px 12px rgba(22, 46, 32, 0.03);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .hash-card:hover {
-            border-color: rgba(6, 182, 212, 0.45) !important;
-            box-shadow: 0 12px 36px rgba(6, 182, 212, 0.12);
-            transform: translateY(-2px);
+            border-color: #162e20;
+            box-shadow: 0 6px 20px rgba(22, 46, 32, 0.06);
         }
 
-        /* Buttons: Cyber Gradient & Glass */
+        /* Modern HashStaff Buttons */
         button[kind="primary"], .stButton>button[kind="primary"], [data-testid="stFormSubmitButton"]>button {
-            background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 50%, #8b5cf6 100%) !important;
-            color: #050811 !important;
+            background: #162e20 !important;
+            color: #ffffff !important;
             border: none !important;
             border-radius: 12px !important;
-            font-weight: 800 !important;
-            padding: 10px 24px !important;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.35) !important;
+            font-weight: 700 !important;
+            padding: 10px 22px !important;
+            box-shadow: 0 4px 14px rgba(22, 46, 32, 0.2) !important;
             transition: all 0.2s ease !important;
         }
 
         button[kind="primary"]:hover, .stButton>button[kind="primary"]:hover, [data-testid="stFormSubmitButton"]>button:hover {
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6) !important;
+            background: #0d1d14 !important;
+            box-shadow: 0 6px 20px rgba(22, 46, 32, 0.3) !important;
             transform: translateY(-1px) !important;
         }
 
         .stButton>button:not([kind="primary"]) {
-            background: rgba(15, 23, 42, 0.75) !important;
-            color: #f1f5f9 !important;
-            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            background: #ffffff !important;
+            color: #162e20 !important;
+            border: 1px solid #e2e8f0 !important;
             border-radius: 12px !important;
             font-weight: 650 !important;
             transition: all 0.2s ease !important;
         }
 
         .stButton>button:not([kind="primary"]):hover {
-            border-color: #00f0ff !important;
-            color: #00f0ff !important;
-            background: rgba(15, 23, 42, 0.95) !important;
-            box-shadow: 0 0 14px rgba(0, 240, 255, 0.2) !important;
+            border-color: #162e20 !important;
+            background: #f8fafc !important;
         }
 
-        /* Segmented Controls & Pills */
+        /* Capsule Segmented Controls & Pills */
         [data-testid="stSegmentedControl"] [data-baseweb="button-group"] button[aria-checked="true"],
         [data-testid="stPills"] button[aria-pressed="true"] {
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%) !important;
-            color: #00f0ff !important;
-            border: 1px solid #00f0ff !important;
-            font-weight: 700 !important;
-            box-shadow: 0 0 12px rgba(0, 240, 255, 0.25) !important;
+            background: #162e20 !important;
+            color: #ffffff !important;
+            border-color: #162e20 !important;
         }
 
         [data-testid="stSegmentedControl"] [data-baseweb="button-group"] button,
         [data-testid="stPills"] button {
             border-radius: 10px !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid #e2e8f0 !important;
             font-weight: 600 !important;
-            background: rgba(15, 23, 42, 0.6) !important;
-            color: #94a3b8 !important;
+            background: #ffffff !important;
             transition: all 0.2s ease !important;
         }
 
         /* Sliders */
         div[data-baseweb="slider"] div[role="slider"] {
-            background-color: #00f0ff !important;
-            border-color: #06080f !important;
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.8) !important;
+            background-color: #162e20 !important;
+            border-color: #0d1d14 !important;
+            box-shadow: 0 2px 6px rgba(22, 46, 32, 0.4) !important;
         }
         div[data-baseweb="slider"] > div > div:first-child {
-            background-color: #00f0ff !important;
+            background-color: #162e20 !important;
         }
         div[data-testid="stSlider"] [data-testid="stThumbValue"] {
-            color: #00f0ff !important;
-            font-weight: 750 !important;
+            color: #162e20 !important;
+            font-weight: 700 !important;
         }
 
         /* Tabs styling */
         [data-baseweb="tab-list"] button[aria-selected="true"] {
-            color: #00f0ff !important;
-            border-bottom-color: #00f0ff !important;
+            color: #162e20 !important;
+            border-bottom-color: #162e20 !important;
             font-weight: 750 !important;
-            text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
-        }
-        [data-baseweb="tab-list"] button {
-            color: #94a3b8 !important;
         }
 
-        /* Form Inputs & Selectboxes */
-        [data-baseweb="input"] input, [data-baseweb="textarea"] textarea {
-            background: rgba(15, 23, 42, 0.75) !important;
-            color: #f8fafc !important;
-            border-color: rgba(255, 255, 255, 0.12) !important;
-            border-radius: 10px !important;
-        }
-
-        [data-baseweb="select"] > div {
-            background: rgba(15, 23, 42, 0.75) !important;
-            color: #f8fafc !important;
-            border-color: rgba(255, 255, 255, 0.12) !important;
-            border-radius: 10px !important;
-        }
-
-        /* Candidate Profile Cards */
         .candidate-profile-card {
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
             padding: 24px;
             margin-top: 12px;
             margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-            transition: all 0.2s ease;
-        }
-
-        .candidate-profile-card:hover {
-            border-color: rgba(0, 240, 255, 0.35);
-            box-shadow: 0 12px 36px rgba(0, 240, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
         }
 
         .candidate-profile-header {
@@ -311,8 +248,7 @@ st.markdown(
             width: 58px;
             height: 58px;
             border-radius: 16px;
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%);
-            border: 1px solid rgba(6, 182, 212, 0.4);
+            background: #eef4ff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -320,16 +256,15 @@ st.markdown(
         }
 
         .candidate-name {
-            font-size: 24px;
-            font-weight: 800;
-            color: #f8fafc;
+            font-size: 25px;
+            font-weight: 750;
+            color: #152238;
             margin-bottom: 3px;
         }
 
         .candidate-role {
-            color: #38bdf8;
+            color: #667085;
             font-size: 15px;
-            font-weight: 600;
         }
 
         .candidate-meta {
@@ -340,52 +275,45 @@ st.markdown(
         }
 
         .candidate-meta-item {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #f7f9fc;
+            border: 1px solid #e8ebf2;
             border-radius: 10px;
             padding: 8px 12px;
-            color: #cbd5e1;
+            color: #475467;
             font-size: 13px;
         }
 
         .status-badge {
             display: inline-block;
             border-radius: 20px;
-            padding: 6px 14px;
+            padding: 6px 12px;
             font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
+            font-weight: 650;
         }
 
         .status-pending {
-            background: rgba(245, 158, 11, 0.18);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            color: #fbbf24;
+            background: #fff4dd;
+            color: #9a6700;
         }
 
         .status-shortlisted {
-            background: rgba(16, 185, 129, 0.18);
-            border: 1px solid rgba(16, 185, 129, 0.45);
-            color: #34d399;
+            background: #eaf8f1;
+            color: #137a52;
         }
 
         .status-interview {
-            background: rgba(59, 130, 246, 0.18);
-            border: 1px solid rgba(59, 130, 246, 0.45);
-            color: #60a5fa;
+            background: #eaf2ff;
+            color: #2457a6;
         }
 
         .status-rejected {
-            background: rgba(239, 68, 68, 0.18);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #f87171;
+            background: #fff0f0;
+            color: #b42318;
         }
 
         .status-selected {
-            background: rgba(16, 185, 129, 0.28);
-            border: 1px solid rgba(16, 185, 129, 0.7);
-            color: #10b981;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+            background: #e8f7ed;
+            color: #067647;
         }
 
         .score-panel {
@@ -396,26 +324,23 @@ st.markdown(
 
         .score-box {
             min-width: 125px;
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(0, 240, 255, 0.25);
+            background: #f8faff;
+            border: 1px solid #e4e9f3;
             border-radius: 14px;
             padding: 14px;
             text-align: center;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
         .score-number {
-            font-size: 26px;
-            font-weight: 800;
-            color: #00f0ff;
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+            font-size: 25px;
+            font-weight: 750;
+            color: #152238;
         }
 
         .score-label {
-            color: #94a3b8;
+            color: #667085;
             font-size: 12px;
             margin-top: 3px;
-            font-weight: 600;
         }
 
         .skills-container {
@@ -428,13 +353,13 @@ st.markdown(
 
         .skill-chip {
             display: inline-block;
-            background: rgba(6, 182, 212, 0.12);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            color: #38bdf8;
+            background: #eef4ff;
+            border: 1px solid #dce8ff;
+            color: #2457a6;
             border-radius: 20px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 600;
+            padding: 6px 11px;
+            font-size: 13px;
+            font-weight: 550;
         }
     </style>
     """,
@@ -487,20 +412,8 @@ current_recruiter_email = get_current_recruiter_email()
 is_current_admin = is_admin_recruiter(current_recruiter_email)
 
 with st.sidebar:
-    st.markdown(
-        """
-        <div style="padding: 4px 0 14px 0;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #00f0ff 0%, #8b5cf6 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);">🧠</div>
-                <div>
-                    <div style="font-size: 19px; font-weight: 850; color: #ffffff; letter-spacing: -0.02em;">ZERO Recruit</div>
-                    <div style="font-size: 11px; color: #38bdf8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Autonomous AI Suite</div>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("## 🧠 ZERO Recruit")
+    st.caption("AI Recruitment Assistant")
     st.caption(st.session_state["auth_user"].get("email", "Authenticated recruiter"))
     st.badge(get_current_role(), color="blue")
 
@@ -522,9 +435,9 @@ with st.sidebar:
         st.session_state["recruiter_workspace_scope"] = "my_pipeline"
         st.markdown(
             f"""
-            <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 8px 12px; margin: 8px 0;">
-                <div style="font-size: 11px; font-weight: 700; color: #34d399;">🔒 PRIVATE RECRUITER PIPELINE</div>
-                <div style="font-size: 12px; color: #a7f3d0; word-break: break-all;">{current_recruiter_email}</div>
+            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 8px 12px; margin: 8px 0;">
+                <div style="font-size: 11px; font-weight: 700; color: #166534;">🔒 PRIVATE RECRUITER PIPELINE</div>
+                <div style="font-size: 12px; color: #15803d; word-break: break-all;">{current_recruiter_email}</div>
             </div>
             """,
             unsafe_allow_html=True,
