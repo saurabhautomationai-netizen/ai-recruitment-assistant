@@ -1274,13 +1274,17 @@ if selected_page == "Overview":
     with filter_col2:
         overview_view_tab = st.pills(
             "Overview View",
-            ["Executive Dashboard", "Recruiter Velocity", "Funnel Analytics"],
+            ["Executive Dashboard", "AI Autonomy Matrix", "Recruiter Velocity", "Funnel Analytics"],
             default="Executive Dashboard",
             label_visibility="collapsed",
             key="cmd_overview_subview",
         )
 
     st.write("")
+
+    if overview_view_tab == "AI Autonomy Matrix":
+        from components.recruitment_autonomy_matrix import render_recruitment_autonomy_matrix
+        render_recruitment_autonomy_matrix()
 
     # ---------------------------------------------------------
     # 1. JARVIS RECRUITMENT INTELLIGENCE & ACTION PANEL
@@ -1591,6 +1595,42 @@ if selected_page == "Overview":
                 )
 
     st.write("")
+
+    # ---------------------------------------------------------
+    # AI SIGNAL & ANOMALY ALERTS STRIP (Screenshot 1 Pattern)
+    # ---------------------------------------------------------
+    signals_banner_html = """
+    <div style="background: #ffffff; border: 1px solid #e8eae6; border-radius: 18px; padding: 18px 22px; box-shadow: 0 2px 12px rgba(22, 46, 32, 0.03); margin-bottom: 22px;">
+        <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #059669; display: inline-block;"></span>
+            AI Telemetry Signals & Pipeline Recommendations
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div style="display: flex; gap: 12px; align-items: flex-start; border-right: 1px solid #f1f5f9; padding-right: 14px;">
+                <span style="font-size: 20px;">⚠️</span>
+                <div>
+                    <div style="font-size: 13px; font-weight: 750; color: #b45309;">3 Stalled in Interview Stage</div>
+                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">Awaiting interviewer scorecard > 4 days. Automated WhatsApp reminder dispatched.</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-start; border-right: 1px solid #f1f5f9; padding-right: 14px;">
+                <span style="font-size: 20px;">⏳</span>
+                <div>
+                    <div style="font-size: 13px; font-weight: 750; color: #166534;">4 Fast-Track Candidates (>90%)</div>
+                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">High ATS match with active certifications. 1-click offer generation recommended.</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <span style="font-size: 20px;">💡</span>
+                <div>
+                    <div style="font-size: 13px; font-weight: 750; color: #1d4ed8;">Channel Conversion Velocity</div>
+                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">Careers Portal candidates convert 2.4x faster than third-party cold outbound.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(signals_banner_html, unsafe_allow_html=True)
 
     # ---------------------------------------------------------
     # 5. LIVE CANDIDATE STREAM & RECENT ACTIVITY
