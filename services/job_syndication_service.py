@@ -1,0 +1,154 @@
+"""Third-Party Job Board Ecosystem & Syndication Service.
+
+Provides:
+1. Google for Jobs JSON-LD Schema (schema.org/JobPosting) for organic search indexing.
+2. Indeed & Aggregator XML Feed generation (Indeed XML standard format).
+3. Multi-Portal Syndication Dispatch payloads (LinkedIn, Indeed, ZipRecruiter, Naukri).
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone, timedelta
+from typing import Any, Dict, List, Optional
+from xml.sax.saxutils import escape
+
+from services.sanitization_service import sanitize_text
+
+
+def generate_google_jobs_json_ld(
+    job: Dict[str, Any],
+    company_name: str = "Netizen AI Automation Ltd.",
+    company_url: str = "https://netizen.ai",
+    careers_url: str = "http://127.0.0.1:8501",
+) -> Dict[str, Any]:
+    """Generate RFC/W3C compliant schema.org/JobPosting JSON-LD for Google for Jobs."""
+    clean_title = sanitize_text(job.get("title", "Software Engineer"))
+    clean_desc = sanitize_text(job.get("job_description") or job.get("description") or clean_title)
+    clean_location = sanitize_text(job.get("location", "Remote"))
+    clean_dept = sanitize_text(job.get("department", "Engineering"))
+    job_id = str(job.get("id", "job_001"))
+
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    valid_through = (datetime.now(timezone.utc) + timedelta(days=60)).strftime("%Y-%m-%d")
+
+    salary_min = float(job.get("salary_min") or 600000.0)
+    salary_max = float(job.get("salary_max") or 1200000.0)
+
+    schema = {
+        "@context": "https://schema.org/",
+        "@type": "JobPosting",
+        "title": clean_title,
+        "description": f"<p>{clean_desc}</p>",
+        "identifier": {
+            "@type": "PropertyValue",
+            "name": company_name,
+            "value": job_id,
+        },
+        "datePosted": now_iso,
+        "validThrough": valid_through,
+        "employmentType": "FULL_TIME",
+        "hiringOrganization": {
+            "@type": "Organization",
+            "name": company_name,
+            "sameAs": company_url,
+        },
+        "jobLocation": {
+            "@type": "Place",
+            "address": {
+                "@type": "PostalAddress",
+                "addressLocality": clean_location,
+                "addressCountry": "IN",
+            },
+        },
+        "baseSalary": {
+            "@type": "MonetaryAmount",
+            "currency": "INR",
+            "value": {
+                "@type": "QuantitativeValue",
+                "minValue": salary_min,
+                "maxValue": salary_max,
+                "unitText": "YEAR",
+            },
+        },
+        "directApply": True,
+        "url": f"{careers_url}/?job_id={job_id}",
+    }
+    return schema
+
+
+def generate_indeed_xml_feed(
+    jobs: List[Dict[str, Any]],
+    company_name: str = "Netizen AI Automation Ltd.",
+    careers_url: str = "http://127.0.0.1:8501",
+) -> str:
+    """Generate an Indeed Publisher XML feed with valid CDATA blocks."""
+    lines = [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<source>",
+        f"  <publisher>{escape(company_name)}</publisher>",
+        f"  <publisherurl>{escape(careers_url)}</publisherurl>",
+        f"  <lastBuildDate>{datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')}</lastBuildDate>",
+    ]
+
+    for job in jobs:
+        j_id = str(job.get("id", ""))
+        title = escape(sanitize_text(job.get("title", "Role")))
+        desc = escape(sanitize_text(job.get("job_description") or job.get("description") or title))
+        loc = escape(sanitize_text(job.get("location", "Pune, India")))
+        category = escape(sanitize_text(job.get("department", "Technology")))
+        sal_min = str(job.get("salary_min") or "")
+        sal_max = str(job.get("salary_max") or "")
+        job_url = f"{careers_url}/?job_id={j_id}"
+
+        lines.append("  <job>")
+        lines.append(f"    <title><![CDATA[{title}]]></title>")
+        lines.append(f"    <date><![CDATA[{datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')}]]></date>")
+        lines.append(f"    <referencenumber><![CDATA[{j_id}]]></referencenumber>")
+        lines.append(f"    <url><![CDATA[{job_url}]]></url>")
+        lines.append(f"    <company><![CDATA[{company_name}]]></company>")
+        lines.append(f"    <city><![CDATA[{loc}]]></city>")
+        lines.append("    <country><![CDATA[IN]]></country>")
+        lines.append(f"    <description><![CDATA[{desc}]]></description>")
+        lines.append(f"    <category><![CDATA[{category}]]></category>")
+        if sal_min or sal_max:
+            lines.append(f"    <salary><![CDATA[INR {sal_min} - {sal_max} per annum]]></salary>")
+        lines.append("  </job>")
+
+    lines.append("</source>")
+    return "\n".join(lines)
+
+
+def generate_multi_board_broadcast_payload(
+    job: Dict[str, Any],
+    target_boards: Optional[List[str]] = None,
+    company_name: str = "Netizen AI Automation Ltd.",
+) -> Dict[str, Any]:
+    """Format syndication payloads for LinkedIn, Indeed, ZipRecruiter, and Naukri with UTM tags."""
+    if not target_boards:
+        target_boards = ["linkedin", "indeed", "ziprecruiter", "naukri"]
+
+    clean_title = sanitize_text(job.get("title", ""))
+    job_id = str(job.get("id", ""))
+    base_url = "http://127.0.0.1:8501"
+
+    broadcast_data = {}
+    for board in target_boards:
+        utm_url = f"{base_url}/?job_id={job_id}&utm_source={board}&utm_medium=job_board&utm_campaign=hiring"
+        broadcast_data[board] = {
+            "title": clean_title,
+            "job_reference_id": job_id,
+            "company": company_name,
+            "location": job.get("location", "Remote"),
+            "apply_url": utm_url,
+            "status": "READY_FOR_SYNDICATION",
+            "syndicated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    return {
+        "job_id": job_id,
+        "job_title": clean_title,
+        "boards_syndicated": list(broadcast_data.keys()),
+        "payloads": broadcast_data,
+        "success": True,
+    }

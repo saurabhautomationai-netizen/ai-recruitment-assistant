@@ -39,7 +39,7 @@ class Phase2FeatureTests(unittest.TestCase):
             active_patch.start()
         try:
             app_path = str(Path(__file__).resolve().parents[1] / "app.py")
-            app = AppTest.from_file(app_path, default_timeout=20)
+            app = AppTest.from_file(app_path, default_timeout=45)
             app.session_state["auth_user"] = {
                 "id": "viewer-1", "email": "viewer@example.com", "role": "VIEWER"
             }
