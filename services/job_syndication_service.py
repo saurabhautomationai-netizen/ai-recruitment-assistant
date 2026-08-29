@@ -119,14 +119,97 @@ def generate_indeed_xml_feed(
     return "\n".join(lines)
 
 
+def generate_linkedin_job_posting_payload(
+    job: Dict[str, Any],
+    company_urn: str = "urn:li:organization:9847123",
+    company_name: str = "Netizen AI Automation Ltd.",
+    careers_url: str = "http://127.0.0.1:8501",
+) -> Dict[str, Any]:
+    """Generate official LinkedIn Job Posting API v2 compliant payload."""
+    clean_title = sanitize_text(job.get("title", "Software Engineer"))
+    clean_desc = sanitize_text(job.get("job_description") or job.get("description") or clean_title)
+    job_id = str(job.get("id", "job_001"))
+    loc = sanitize_text(job.get("location", "Remote"))
+    is_remote = "remote" in loc.lower()
+    apply_url = f"{careers_url}/?job_id={job_id}&utm_source=linkedin&utm_medium=job_posting_api"
+
+    sal_min = float(job.get("salary_min") or 600000.0)
+    sal_max = float(job.get("salary_max") or 1400000.0)
+
+    return {
+        "externalJobPostingId": job_id,
+        "title": clean_title,
+        "description": clean_desc,
+        "companyName": company_name,
+        "company": company_urn,
+        "location": loc,
+        "workplaceTypes": ["urn:li:workplaceType:2"] if is_remote else ["urn:li:workplaceType:1"],
+        "jobPostingOperationType": "CREATE",
+        "employmentStatus": "FULL_TIME",
+        "listedAt": int(datetime.now(timezone.utc).timestamp() * 1000),
+        "applicationMethod": {
+            "externalJobApplicationUrl": apply_url,
+        },
+        "compensation": {
+            "currencyCode": "INR",
+            "minAmount": sal_min,
+            "maxAmount": sal_max,
+            "period": "ANNUAL",
+        },
+        "tracking_source": "LINKEDIN_OFFICIAL_API",
+        "status": "READY_FOR_DISPATCH",
+    }
+
+
+def generate_naukri_job_posting_payload(
+    job: Dict[str, Any],
+    company_name: str = "Netizen AI Automation Ltd.",
+    careers_url: str = "http://127.0.0.1:8501",
+) -> Dict[str, Any]:
+    """Generate official Naukri.com / InfoEdge eApps JSON payload."""
+    clean_title = sanitize_text(job.get("title", "Software Engineer"))
+    clean_desc = sanitize_text(job.get("job_description") or job.get("description") or clean_title)
+    job_id = str(job.get("id", "job_001"))
+    loc = sanitize_text(job.get("location", "Pune"))
+    skills = job.get("skills_required") or ["Python", "FastAPI", "SQL", "Cloud"]
+    if isinstance(skills, list):
+        keywords_str = ", ".join(skills)
+    else:
+        keywords_str = str(skills)
+
+    sal_min = float(job.get("salary_min") or 600000.0)
+    sal_max = float(job.get("salary_max") or 1400000.0)
+    apply_url = f"{careers_url}/?job_id={job_id}&utm_source=naukri&utm_medium=job_portal"
+
+    return {
+        "jobReferenceId": job_id,
+        "jobTitle": clean_title,
+        "jobDescription": clean_desc,
+        "companyName": company_name,
+        "minExperienceYears": int(job.get("min_experience", 2)),
+        "maxExperienceYears": int(job.get("max_experience", 6)),
+        "minSalaryAnnualINR": sal_min,
+        "maxSalaryAnnualINR": sal_max,
+        "hideSalaryFromCandidate": False,
+        "keywords": keywords_str,
+        "locations": [loc],
+        "functionalArea": "IT Software - Application Programming / Maintenance",
+        "roleCategory": "Programming & Design",
+        "vacancies": int(job.get("vacancies", 1)),
+        "applyUrl": apply_url,
+        "tracking_source": "NAUKRI_RESDEX_EAPPS_API",
+        "status": "READY_FOR_DISPATCH",
+    }
+
+
 def generate_multi_board_broadcast_payload(
     job: Dict[str, Any],
     target_boards: Optional[List[str]] = None,
     company_name: str = "Netizen AI Automation Ltd.",
 ) -> Dict[str, Any]:
-    """Format syndication payloads for LinkedIn, Indeed, ZipRecruiter, and Naukri with UTM tags."""
+    """Format syndication payloads for LinkedIn, Naukri, Indeed, and ZipRecruiter with UTM tags."""
     if not target_boards:
-        target_boards = ["linkedin", "indeed", "ziprecruiter", "naukri"]
+        target_boards = ["linkedin", "naukri", "indeed", "ziprecruiter"]
 
     clean_title = sanitize_text(job.get("title", ""))
     job_id = str(job.get("id", ""))
@@ -134,16 +217,21 @@ def generate_multi_board_broadcast_payload(
 
     broadcast_data = {}
     for board in target_boards:
-        utm_url = f"{base_url}/?job_id={job_id}&utm_source={board}&utm_medium=job_board&utm_campaign=hiring"
-        broadcast_data[board] = {
-            "title": clean_title,
-            "job_reference_id": job_id,
-            "company": company_name,
-            "location": job.get("location", "Remote"),
-            "apply_url": utm_url,
-            "status": "READY_FOR_SYNDICATION",
-            "syndicated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        if board == "linkedin":
+            broadcast_data["linkedin"] = generate_linkedin_job_posting_payload(job, company_name=company_name, careers_url=base_url)
+        elif board == "naukri":
+            broadcast_data["naukri"] = generate_naukri_job_posting_payload(job, company_name=company_name, careers_url=base_url)
+        else:
+            utm_url = f"{base_url}/?job_id={job_id}&utm_source={board}&utm_medium=job_board&utm_campaign=hiring"
+            broadcast_data[board] = {
+                "title": clean_title,
+                "job_reference_id": job_id,
+                "company": company_name,
+                "location": job.get("location", "Remote"),
+                "apply_url": utm_url,
+                "status": "READY_FOR_SYNDICATION",
+                "syndicated_at": datetime.now(timezone.utc).isoformat(),
+            }
 
     return {
         "job_id": job_id,

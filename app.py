@@ -46,6 +46,10 @@ from services.auth_service import (
 )
 from services.communication_service import get_communication_history
 from services.ai_persistence_service import list_bookmarks, toggle_bookmark
+from components.public_careers_portal import render_public_careers_portal
+from components.self_service_booking import render_self_service_booking
+from components.offer_letter_generator import render_offer_letter_generator
+from components.compliance_privacy import render_compliance_privacy
 
 
 st.set_page_config(
@@ -377,12 +381,16 @@ if not is_authenticated():
 navigation_pages = [
     "Overview",
     "🎯 Talent Lead Gen",
+    "🌐 Public Careers Portal",
     "Candidates",
     "Applications",
     "Jobs",
     "Interviews",
+    "📅 Self-Service Booking",
+    "📝 Offer Letters & E-Sign",
     "Bulk Import / Export",
     "⚙️ Portals & Social Integrations",
+    "🔒 GDPR & Blind Hiring",
     "Analytics",
 ]
 if has_permission("ai"):
@@ -414,7 +422,6 @@ with st.sidebar:
         scope_options = {
             "🏢 Agency Master View (Admin)": "agency_master",
             "👤 Saurabh's Pipeline": "saurabh7596@gmail.com",
-            "👤 Rumana HR's Pipeline": "rumana",
         }
         selected_scope_label = st.selectbox(
             "📍 Active Pipeline Scope",
@@ -6031,6 +6038,22 @@ elif selected_page == "🎯 Talent Lead Gen":
 elif selected_page == "⚙️ Portals & Social Integrations":
     from services.portal_integration_service import render_portal_and_social_integrations
     render_portal_and_social_integrations(current_recruiter_email)
+
+elif selected_page == "🌐 Public Careers Portal":
+    jobs_list = raw_jobs.to_dict("records") if isinstance(raw_jobs, pd.DataFrame) else []
+    render_public_careers_portal(jobs=jobs_list)
+
+elif selected_page == "📅 Self-Service Booking":
+    apps_list = raw_applications.to_dict("records") if isinstance(raw_applications, pd.DataFrame) else []
+    render_self_service_booking(applications=apps_list)
+
+elif selected_page == "📝 Offer Letters & E-Sign":
+    apps_list = raw_applications.to_dict("records") if isinstance(raw_applications, pd.DataFrame) else []
+    render_offer_letter_generator(applications=apps_list)
+
+elif selected_page == "🔒 GDPR & Blind Hiring":
+    cands_list = raw_candidates.to_dict("records") if isinstance(raw_candidates, pd.DataFrame) else []
+    render_compliance_privacy(candidates=cands_list)
 
 
 # =========================================================

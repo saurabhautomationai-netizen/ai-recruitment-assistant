@@ -5,6 +5,8 @@ import pytest
 from services.job_syndication_service import (
     generate_google_jobs_json_ld,
     generate_indeed_xml_feed,
+    generate_linkedin_job_posting_payload,
+    generate_naukri_job_posting_payload,
     generate_multi_board_broadcast_payload,
 )
 from services.compliance_service import (
@@ -55,8 +57,43 @@ class TestJobSyndicationEcosystem:
         res = generate_multi_board_broadcast_payload(job, ["linkedin", "indeed", "ziprecruiter", "naukri"])
         assert res["success"] is True
         assert len(res["boards_syndicated"]) == 4
-        assert "utm_source=linkedin" in res["payloads"]["linkedin"]["apply_url"]
-        assert "utm_source=naukri" in res["payloads"]["naukri"]["apply_url"]
+        assert "utm_source=linkedin" in res["payloads"]["linkedin"]["applicationMethod"]["externalJobApplicationUrl"]
+        assert "utm_source=naukri" in res["payloads"]["naukri"]["applyUrl"]
+
+    def test_linkedin_job_posting_payload(self):
+        job = {
+            "id": "job_li_10",
+            "title": "Staff AI Engineer",
+            "job_description": "Lead LLM infrastructure and multi-agent systems.",
+            "location": "Remote, India",
+            "salary_min": 3500000,
+            "salary_max": 5000000,
+        }
+        li_payload = generate_linkedin_job_posting_payload(job)
+        assert li_payload["externalJobPostingId"] == "job_li_10"
+        assert li_payload["title"] == "Staff AI Engineer"
+        assert "urn:li:workplaceType:2" in li_payload["workplaceTypes"] # Remote detected
+        assert li_payload["compensation"]["currencyCode"] == "INR"
+        assert li_payload["status"] == "READY_FOR_DISPATCH"
+
+    def test_naukri_job_posting_payload(self):
+        job = {
+            "id": "job_nk_20",
+            "title": "Senior Backend Architect",
+            "location": "Pune",
+            "skills_required": ["Python", "FastAPI", "PostgreSQL", "Docker"],
+            "salary_min": 2200000,
+            "salary_max": 3200000,
+            "min_experience": 4,
+            "max_experience": 8,
+        }
+        nk_payload = generate_naukri_job_posting_payload(job)
+        assert nk_payload["jobReferenceId"] == "job_nk_20"
+        assert nk_payload["jobTitle"] == "Senior Backend Architect"
+        assert "Python, FastAPI" in nk_payload["keywords"]
+        assert nk_payload["minExperienceYears"] == 4
+        assert nk_payload["minSalaryAnnualINR"] == 2200000.0
+        assert nk_payload["tracking_source"] == "NAUKRI_RESDEX_EAPPS_API"
 
 
 class TestEnterpriseCompliance:

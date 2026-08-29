@@ -46,11 +46,11 @@ def get_recruiter_integrations(recruiter_email: str) -> dict:
     store = _load_integrations_store()
     clean_email = str(recruiter_email).strip().lower()
     return store.get(clean_email, {
-        "recruiter_name": "Rumana Sharif" if "rumana" in clean_email else "Talent Acquisition",
+        "recruiter_name": "Talent Acquisition Lead",
         "agency_name": "Netizen Recruitment",
-        "recruiter_phone": "+91 96070 53130" if "rumana" in clean_email else "+91 98765 43210",
-        "whatsapp_number": "+91 96070 53130" if "rumana" in clean_email else "+91 98765 43210",
-        "telegram_handle": "@Rumana_HR" if "rumana" in clean_email else "@Netizen_Recruiter",
+        "recruiter_phone": "+91 98765 43210",
+        "whatsapp_number": "+91 98765 43210",
+        "telegram_handle": "@Netizen_Recruiter",
         "outreach_email": clean_email,
         "naukri_user": "",
         "linkedin_user": "",
@@ -103,7 +103,7 @@ def render_portal_and_social_integrations(recruiter_email: str) -> None:
             tele_h = st.text_input(
                 "Telegram Recruiter Handle / Bot",
                 value=current_cfg.get("telegram_handle", ""),
-                placeholder="@Rumana_Recruiter",
+                placeholder="@Agency_Recruiter",
             )
         with c2:
             out_email = st.text_input(
@@ -127,11 +127,11 @@ def render_portal_and_social_integrations(recruiter_email: str) -> None:
         col_j1, col_j2 = st.columns(2)
         with col_j1:
             st.markdown("##### 💼 LinkedIn Recruiter")
-            li_user = st.text_input("LinkedIn Email / Username", value=current_cfg.get("linkedin_user", ""), placeholder="rumana.hr@linkedin.com")
+            li_user = st.text_input("LinkedIn Email / Username", value=current_cfg.get("linkedin_user", ""), placeholder="recruiter@agency.com")
             li_pass = st.text_input("LinkedIn Password / Auth Token", type="password", placeholder="••••••••••••", key="li_p")
 
             st.markdown("##### 🔍 Naukri.com / Resdex")
-            naukri_user = st.text_input("Naukri Recruiter Login ID", value=current_cfg.get("naukri_user", ""), placeholder="rumana_resdex")
+            naukri_user = st.text_input("Naukri Recruiter Login ID", value=current_cfg.get("naukri_user", ""), placeholder="agency_resdex")
             naukri_pass = st.text_input("Naukri Password", type="password", placeholder="••••••••••••", key="nk_p")
 
         with col_j2:
@@ -158,10 +158,10 @@ def render_portal_and_social_integrations(recruiter_email: str) -> None:
 
         cb1, cb2 = st.columns(2)
         with cb1:
-            rec_name = st.text_input("Recruiter Full Name", value=current_cfg.get("recruiter_name", "Rumana Sharif"))
+            rec_name = st.text_input("Recruiter Full Name", value=current_cfg.get("recruiter_name", "Talent Acquisition Lead"))
             ag_name = st.text_input("Agency / Company Name", value=current_cfg.get("agency_name", "Netizen Recruitment"))
         with cb2:
-            rec_phone = st.text_input("Helpline Phone Number (on posters)", value=current_cfg.get("recruiter_phone", "+91 96070 53130"))
+            rec_phone = st.text_input("Helpline Phone Number (on posters)", value=current_cfg.get("recruiter_phone", "+91 98765 43210"))
             form_url = st.text_input("Candidate Application Intake Form URL (QR Code)", value=current_cfg.get("candidate_form_url", "https://saurabhautomation7596.app.n8n.cloud/form/b34bc21c-4b57-4147-9759-994fa51752b0"))
 
         if st.button("💾 Save Branding & QR Code Settings", type="primary", key="save_brand_btn"):
