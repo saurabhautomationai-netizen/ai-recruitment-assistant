@@ -16,6 +16,9 @@ from services.marketplace_integration_service import (
     trigger_background_check,
     dispatch_coding_assessment,
     dispatch_esign_envelope,
+    get_supported_industries,
+    get_platforms_for_industry,
+    dispatch_industry_assessment,
 )
 
 
@@ -126,3 +129,41 @@ class TestMarketplaceHub:
         res = dispatch_esign_envelope("signee@corp.com", "Siddharth Roy", provider="DOCUSIGN")
         assert res["success"] is True
         assert res["status"] == "SENT_FOR_SIGNATURE"
+
+    def test_dynamic_industry_assessments(self):
+        industries = get_supported_industries()
+        assert "Healthcare & Medicine" in industries
+        assert "Engineering & Manufacturing" in industries
+        assert "Animation, Design & Creative" in industries
+        assert "BPO, KPO & Customer Operations" in industries
+
+        # Healthcare Nurse test
+        health_res = dispatch_industry_assessment(
+            candidate_email="nurse@hospital.org",
+            candidate_name="Sarah Jenkins",
+            industry="Healthcare & Medicine",
+            role="Nurse",
+        )
+        assert health_res["success"] is True
+        assert "Prophecy Health" in health_res["platform"] or "Relias" in health_res["platform"]
+        assert "Pharmacology" in health_res["test_title"] or "RN Clinical" in health_res["test_title"]
+
+        # Civil Engineer test
+        eng_res = dispatch_industry_assessment(
+            candidate_email="engineer@infra.com",
+            candidate_name="Anil Kulkarni",
+            industry="Engineering & Manufacturing",
+            role="Civil Engineer",
+        )
+        assert eng_res["success"] is True
+        assert "AutoCAD" in eng_res["platform"] or "SolidWorks" in eng_res["platform"]
+
+        # Animation 3D Maya test
+        anim_res = dispatch_industry_assessment(
+            candidate_email="animator@studio.com",
+            candidate_name="Leo Varma",
+            industry="Animation, Design & Creative",
+            role="3D Animator",
+        )
+        assert anim_res["success"] is True
+        assert "Maya" in anim_res["test_title"] or "Blender" in anim_res["test_title"]
