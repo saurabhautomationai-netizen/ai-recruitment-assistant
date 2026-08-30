@@ -5370,520 +5370,523 @@ elif selected_page == "AI Recruiter":
     from ui.views.view_ai_recruiter import render_ai_recruiter_workspace
     render_ai_recruiter_workspace(candidates_df=raw_candidates, applications_df=raw_applications, jobs_df=raw_jobs, interviews_df=get_interviews())
 elif selected_page == "Analytics":
-    st.markdown(
-        '<div class="main-title">'
-        "Recruitment Analytics"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="main-subtitle">'
-        "Live recruitment metrics from candidates, jobs and applications."
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    def normalize_stage_value(value) -> str:
-        """Normalize a stage for analytics comparisons only."""
-
-        if value is None or isinstance(
-            value,
-            (dict, list, tuple, set),
-        ):
-            return ""
-
-        try:
-            if pd.isna(value):
-                return ""
-        except (TypeError, ValueError):
-            return ""
-
-        return " ".join(
-            str(value).strip().casefold().split()
+    from ui.views.view_analytics import render_analytics_suite
+    render_analytics_suite(raw_candidates=raw_candidates, raw_applications=raw_applications, raw_jobs=raw_jobs, raw_interviews=get_interviews())
+    with st.expander('📊 Legacy Analytics & Charts', expanded=False):
+        st.markdown(
+            '<div class="main-title">'
+            "Recruitment Analytics"
+            "</div>",
+            unsafe_allow_html=True,
         )
 
-    stage_groups = {
-        "Pending Review": {
-            "applied",
-            "new",
-            "pending",
-            "pending review",
-        },
-        "Shortlisted": {
-            "shortlist",
-            "shortlisted",
-        },
-        "Interview": {
-            "interview",
-            "interview scheduled",
-            "interviewing",
-        },
-        "Selected": {
-            "hired",
-            "joined",
-            "selected",
-        },
-        "Rejected": {
-            "reject",
-            "rejected",
-        },
-    }
+        st.markdown(
+            '<div class="main-subtitle">'
+            "Live recruitment metrics from candidates, jobs and applications."
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
-    def stage_label(normalized_stage: str) -> str:
-        """Return a readable label for a normalized stored stage."""
+        def normalize_stage_value(value) -> str:
+            """Normalize a stage for analytics comparisons only."""
 
-        if not normalized_stage:
-            return "Unspecified"
-
-        for label, values in stage_groups.items():
-            if normalized_stage in values:
-                return label
-
-        return normalized_stage.title()
-
-    def normalize_identifier(value) -> str:
-        """Return a safe string identifier for joins."""
-
-        if value is None or isinstance(
-            value,
-            (dict, list, tuple, set),
-        ):
-            return ""
-
-        try:
-            if pd.isna(value):
+            if value is None or isinstance(
+                value,
+                (dict, list, tuple, set),
+            ):
                 return ""
-        except (TypeError, ValueError):
-            return ""
 
-        return str(value).strip()
+            try:
+                if pd.isna(value):
+                    return ""
+            except (TypeError, ValueError):
+                return ""
 
-    candidate_status_by_id = {}
-
-    if (
-        not raw_candidates.empty
-        and "id" in raw_candidates.columns
-    ):
-        for _, candidate_row in raw_candidates.iterrows():
-            candidate_id = normalize_identifier(
-                candidate_row.get("id")
+            return " ".join(
+                str(value).strip().casefold().split()
             )
 
-            if candidate_id:
-                candidate_status_by_id[candidate_id] = (
-                    normalize_stage_value(
-                        candidate_row.get("status")
-                    )
+        stage_groups = {
+            "Pending Review": {
+                "applied",
+                "new",
+                "pending",
+                "pending review",
+            },
+            "Shortlisted": {
+                "shortlist",
+                "shortlisted",
+            },
+            "Interview": {
+                "interview",
+                "interview scheduled",
+                "interviewing",
+            },
+            "Selected": {
+                "hired",
+                "joined",
+                "selected",
+            },
+            "Rejected": {
+                "reject",
+                "rejected",
+            },
+        }
+
+        def stage_label(normalized_stage: str) -> str:
+            """Return a readable label for a normalized stored stage."""
+
+            if not normalized_stage:
+                return "Unspecified"
+
+            for label, values in stage_groups.items():
+                if normalized_stage in values:
+                    return label
+
+            return normalized_stage.title()
+
+        def normalize_identifier(value) -> str:
+            """Return a safe string identifier for joins."""
+
+            if value is None or isinstance(
+                value,
+                (dict, list, tuple, set),
+            ):
+                return ""
+
+            try:
+                if pd.isna(value):
+                    return ""
+            except (TypeError, ValueError):
+                return ""
+
+            return str(value).strip()
+
+        candidate_status_by_id = {}
+
+        if (
+            not raw_candidates.empty
+            and "id" in raw_candidates.columns
+        ):
+            for _, candidate_row in raw_candidates.iterrows():
+                candidate_id = normalize_identifier(
+                    candidate_row.get("id")
                 )
 
-    analytics_applications = raw_applications.copy()
+                if candidate_id:
+                    candidate_status_by_id[candidate_id] = (
+                        normalize_stage_value(
+                            candidate_row.get("status")
+                        )
+                    )
 
-    if analytics_applications.empty:
-        analytics_applications = pd.DataFrame(
-            columns=[
-                "candidate_id",
-                "job_id",
-                "application_stage",
-                "candidate_score",
-                "ats_score",
-            ]
-        )
+        analytics_applications = raw_applications.copy()
 
-    if "application_stage" in analytics_applications.columns:
-        analytics_applications["_normalized_stage"] = (
-            analytics_applications["application_stage"].apply(
-                normalize_stage_value
+        if analytics_applications.empty:
+            analytics_applications = pd.DataFrame(
+                columns=[
+                    "candidate_id",
+                    "job_id",
+                    "application_stage",
+                    "candidate_score",
+                    "ats_score",
+                ]
             )
-        )
-    else:
-        analytics_applications["_normalized_stage"] = ""
 
-    if "candidate_id" in analytics_applications.columns:
-        missing_stage_mask = analytics_applications[
+        if "application_stage" in analytics_applications.columns:
+            analytics_applications["_normalized_stage"] = (
+                analytics_applications["application_stage"].apply(
+                    normalize_stage_value
+                )
+            )
+        else:
+            analytics_applications["_normalized_stage"] = ""
+
+        if "candidate_id" in analytics_applications.columns:
+            missing_stage_mask = analytics_applications[
+                "_normalized_stage"
+            ].eq("")
+            fallback_stages = (
+                analytics_applications["candidate_id"]
+                .apply(normalize_identifier)
+                .map(candidate_status_by_id)
+                .fillna("")
+            )
+            analytics_applications.loc[
+                missing_stage_mask,
+                "_normalized_stage",
+            ] = fallback_stages[missing_stage_mask]
+
+        analytics_applications["Stage"] = analytics_applications[
             "_normalized_stage"
-        ].eq("")
-        fallback_stages = (
-            analytics_applications["candidate_id"]
-            .apply(normalize_identifier)
-            .map(candidate_status_by_id)
-            .fillna("")
+        ].apply(stage_label)
+
+        candidate_current_stages = pd.DataFrame(
+            {
+                "candidate_id": list(candidate_status_by_id.keys()),
+                "_normalized_stage": list(
+                    candidate_status_by_id.values()
+                ),
+            }
         )
-        analytics_applications.loc[
-            missing_stage_mask,
-            "_normalized_stage",
-        ] = fallback_stages[missing_stage_mask]
 
-    analytics_applications["Stage"] = analytics_applications[
-        "_normalized_stage"
-    ].apply(stage_label)
+        if (
+            not analytics_applications.empty
+            and "candidate_id" in analytics_applications.columns
+            and not candidate_current_stages.empty
+        ):
+            latest_applications = analytics_applications.copy()
 
-    candidate_current_stages = pd.DataFrame(
-        {
-            "candidate_id": list(candidate_status_by_id.keys()),
-            "_normalized_stage": list(
-                candidate_status_by_id.values()
-            ),
-        }
-    )
+            if "applied_at" in latest_applications.columns:
+                latest_applications["_applied_at"] = pd.to_datetime(
+                    latest_applications["applied_at"],
+                    errors="coerce",
+                )
+                latest_applications = latest_applications.sort_values(
+                    "_applied_at",
+                    ascending=False,
+                    na_position="last",
+                )
 
-    if (
-        not analytics_applications.empty
-        and "candidate_id" in analytics_applications.columns
-        and not candidate_current_stages.empty
-    ):
-        latest_applications = analytics_applications.copy()
+            latest_applications["candidate_id"] = (
+                latest_applications["candidate_id"].apply(
+                    normalize_identifier
+                )
+            )
+            latest_applications = latest_applications.drop_duplicates(
+                subset=["candidate_id"],
+                keep="first",
+            )
+            latest_stage_by_candidate = latest_applications.set_index(
+                "candidate_id"
+            )["_normalized_stage"]
+            candidate_current_stages["_application_stage"] = (
+                candidate_current_stages["candidate_id"].map(
+                    latest_stage_by_candidate
+                )
+            )
+            has_application_stage = candidate_current_stages[
+                "_application_stage"
+            ].fillna("").ne("")
+            candidate_current_stages.loc[
+                has_application_stage,
+                "_normalized_stage",
+            ] = candidate_current_stages.loc[
+                has_application_stage,
+                "_application_stage",
+            ]
 
-        if "applied_at" in latest_applications.columns:
-            latest_applications["_applied_at"] = pd.to_datetime(
-                latest_applications["applied_at"],
+        def count_applications_in(group: str) -> int:
+            """Count applications in one normalized stage group."""
+
+            return int(
+                analytics_applications["_normalized_stage"].isin(
+                    stage_groups[group]
+                ).sum()
+            )
+
+        def count_candidates_in(group: str) -> int:
+            """Count candidates by latest application stage with fallback."""
+
+            if candidate_current_stages.empty:
+                return 0
+
+            return int(
+                candidate_current_stages["_normalized_stage"].isin(
+                    stage_groups[group]
+                ).sum()
+            )
+
+        analytics_total_candidates = len(raw_candidates)
+        analytics_total_applications = len(raw_applications)
+
+        if raw_jobs.empty or "status" not in raw_jobs.columns:
+            analytics_open_jobs = 0
+        else:
+            analytics_open_jobs = int(
+                raw_jobs["status"].apply(
+                    normalize_stage_value
+                ).eq("open").sum()
+            )
+
+        analytics_pending = count_applications_in("Pending Review")
+        analytics_shortlisted = count_candidates_in("Shortlisted")
+        analytics_interview = count_candidates_in("Interview")
+        analytics_selected = count_candidates_in("Selected")
+        analytics_rejected = count_candidates_in("Rejected")
+
+        def average_application_score(column: str):
+            """Average valid numeric application scores."""
+
+            if column not in analytics_applications.columns:
+                return None
+
+            scores = pd.to_numeric(
+                analytics_applications[column],
                 errors="coerce",
-            )
-            latest_applications = latest_applications.sort_values(
-                "_applied_at",
-                ascending=False,
-                na_position="last",
-            )
+            ).dropna()
 
-        latest_applications["candidate_id"] = (
-            latest_applications["candidate_id"].apply(
-                normalize_identifier
-            )
+            if scores.empty:
+                return None
+
+            return round(float(scores.mean()), 1)
+
+        analytics_candidate_score = average_application_score(
+            "candidate_score"
         )
-        latest_applications = latest_applications.drop_duplicates(
-            subset=["candidate_id"],
-            keep="first",
-        )
-        latest_stage_by_candidate = latest_applications.set_index(
-            "candidate_id"
-        )["_normalized_stage"]
-        candidate_current_stages["_application_stage"] = (
-            candidate_current_stages["candidate_id"].map(
-                latest_stage_by_candidate
-            )
-        )
-        has_application_stage = candidate_current_stages[
-            "_application_stage"
-        ].fillna("").ne("")
-        candidate_current_stages.loc[
-            has_application_stage,
-            "_normalized_stage",
-        ] = candidate_current_stages.loc[
-            has_application_stage,
-            "_application_stage",
+        analytics_ats_score = average_application_score("ats_score")
+
+        analytics_metrics = [
+            (
+                "Total Candidates",
+                analytics_total_candidates,
+                "Live database",
+                "👥",
+            ),
+            (
+                "Open Jobs",
+                analytics_open_jobs,
+                "Jobs marked open",
+                "💼",
+            ),
+            (
+                "Total Applications",
+                analytics_total_applications,
+                "Live database",
+                "📨",
+            ),
+            (
+                "Pending Review",
+                analytics_pending,
+                "Applications",
+                "📋",
+            ),
+            (
+                "Shortlisted",
+                analytics_shortlisted,
+                "Candidates",
+                "⭐",
+            ),
+            (
+                "In Interview",
+                analytics_interview,
+                "Candidates",
+                "📅",
+            ),
+            (
+                "Selected",
+                analytics_selected,
+                "Candidates",
+                "✅",
+            ),
+            (
+                "Rejected",
+                analytics_rejected,
+                "Candidates",
+                "⛔",
+            ),
+            (
+                "Average Candidate Score",
+                (
+                    f"{analytics_candidate_score}%"
+                    if analytics_candidate_score is not None
+                    else "N/A"
+                ),
+                "Applications",
+                "🧠",
+            ),
+            (
+                "Average ATS Score",
+                (
+                    f"{analytics_ats_score}%"
+                    if analytics_ats_score is not None
+                    else "N/A"
+                ),
+                "Applications",
+                "📄",
+            ),
         ]
 
-    def count_applications_in(group: str) -> int:
-        """Count applications in one normalized stage group."""
+        for metric_start in range(0, len(analytics_metrics), 5):
+            metric_columns = st.columns(5)
 
-        return int(
-            analytics_applications["_normalized_stage"].isin(
-                stage_groups[group]
-            ).sum()
-        )
-
-    def count_candidates_in(group: str) -> int:
-        """Count candidates by latest application stage with fallback."""
-
-        if candidate_current_stages.empty:
-            return 0
-
-        return int(
-            candidate_current_stages["_normalized_stage"].isin(
-                stage_groups[group]
-            ).sum()
-        )
-
-    analytics_total_candidates = len(raw_candidates)
-    analytics_total_applications = len(raw_applications)
-
-    if raw_jobs.empty or "status" not in raw_jobs.columns:
-        analytics_open_jobs = 0
-    else:
-        analytics_open_jobs = int(
-            raw_jobs["status"].apply(
-                normalize_stage_value
-            ).eq("open").sum()
-        )
-
-    analytics_pending = count_applications_in("Pending Review")
-    analytics_shortlisted = count_candidates_in("Shortlisted")
-    analytics_interview = count_candidates_in("Interview")
-    analytics_selected = count_candidates_in("Selected")
-    analytics_rejected = count_candidates_in("Rejected")
-
-    def average_application_score(column: str):
-        """Average valid numeric application scores."""
-
-        if column not in analytics_applications.columns:
-            return None
-
-        scores = pd.to_numeric(
-            analytics_applications[column],
-            errors="coerce",
-        ).dropna()
-
-        if scores.empty:
-            return None
-
-        return round(float(scores.mean()), 1)
-
-    analytics_candidate_score = average_application_score(
-        "candidate_score"
-    )
-    analytics_ats_score = average_application_score("ats_score")
-
-    analytics_metrics = [
-        (
-            "Total Candidates",
-            analytics_total_candidates,
-            "Live database",
-            "👥",
-        ),
-        (
-            "Open Jobs",
-            analytics_open_jobs,
-            "Jobs marked open",
-            "💼",
-        ),
-        (
-            "Total Applications",
-            analytics_total_applications,
-            "Live database",
-            "📨",
-        ),
-        (
-            "Pending Review",
-            analytics_pending,
-            "Applications",
-            "📋",
-        ),
-        (
-            "Shortlisted",
-            analytics_shortlisted,
-            "Candidates",
-            "⭐",
-        ),
-        (
-            "In Interview",
-            analytics_interview,
-            "Candidates",
-            "📅",
-        ),
-        (
-            "Selected",
-            analytics_selected,
-            "Candidates",
-            "✅",
-        ),
-        (
-            "Rejected",
-            analytics_rejected,
-            "Candidates",
-            "⛔",
-        ),
-        (
-            "Average Candidate Score",
-            (
-                f"{analytics_candidate_score}%"
-                if analytics_candidate_score is not None
-                else "N/A"
-            ),
-            "Applications",
-            "🧠",
-        ),
-        (
-            "Average ATS Score",
-            (
-                f"{analytics_ats_score}%"
-                if analytics_ats_score is not None
-                else "N/A"
-            ),
-            "Applications",
-            "📄",
-        ),
-    ]
-
-    for metric_start in range(0, len(analytics_metrics), 5):
-        metric_columns = st.columns(5)
-
-        for metric_column, metric_values in zip(
-            metric_columns,
-            analytics_metrics[metric_start:metric_start + 5],
-        ):
-            with metric_column:
-                metric_card(*metric_values)
-
-        st.write("")
-
-    funnel_data = pd.DataFrame(
-        {
-            "Stage": [
-                "Applications",
-                "Shortlisted",
-                "Interview",
-                "Selected",
-            ],
-            "Count": [
-                analytics_total_applications,
-                count_applications_in("Shortlisted"),
-                count_applications_in("Interview"),
-                count_applications_in("Selected"),
-            ],
-        }
-    )
-
-    if "job_id" in analytics_applications.columns:
-        application_job_ids = analytics_applications[
-            "job_id"
-        ].apply(normalize_identifier)
-    else:
-        application_job_ids = pd.Series(
-            "",
-            index=analytics_applications.index,
-            dtype="object",
-        )
-
-    job_titles_by_id = {}
-
-    if (
-        not raw_jobs.empty
-        and "id" in raw_jobs.columns
-        and "title" in raw_jobs.columns
-    ):
-        for _, job_row in raw_jobs.iterrows():
-            job_id = normalize_identifier(job_row.get("id"))
-            job_title = job_row.get("title")
-
-            if (
-                job_id
-                and job_title is not None
-                and str(job_title).strip()
+            for metric_column, metric_values in zip(
+                metric_columns,
+                analytics_metrics[metric_start:metric_start + 5],
             ):
-                job_titles_by_id[job_id] = str(job_title).strip()
+                with metric_column:
+                    metric_card(*metric_values)
 
-    applications_by_job = (
-        application_job_ids.map(job_titles_by_id)
-        .fillna("Unknown Job")
-        .replace("", "Unknown Job")
-        .value_counts()
-        .rename_axis("Job")
-        .reset_index(name="Applications")
-    )
+            st.write("")
 
-    stage_distribution = (
-        analytics_applications["Stage"]
-        .value_counts()
-        .rename_axis("Stage")
-        .reset_index(name="Applications")
-    )
+        funnel_data = pd.DataFrame(
+            {
+                "Stage": [
+                    "Applications",
+                    "Shortlisted",
+                    "Interview",
+                    "Selected",
+                ],
+                "Count": [
+                    analytics_total_applications,
+                    count_applications_in("Shortlisted"),
+                    count_applications_in("Interview"),
+                    count_applications_in("Selected"),
+                ],
+            }
+        )
 
-    funnel_col, job_col = st.columns([1.2, 1])
+        if "job_id" in analytics_applications.columns:
+            application_job_ids = analytics_applications[
+                "job_id"
+            ].apply(normalize_identifier)
+        else:
+            application_job_ids = pd.Series(
+                "",
+                index=analytics_applications.index,
+                dtype="object",
+            )
 
-    with funnel_col:
-        st.markdown("### 📈 Hiring Pipeline Velocity & Conversion")
+        job_titles_by_id = {}
 
-        if analytics_total_applications == 0:
-            st.info("No application data is available for the funnel.")
+        if (
+            not raw_jobs.empty
+            and "id" in raw_jobs.columns
+            and "title" in raw_jobs.columns
+        ):
+            for _, job_row in raw_jobs.iterrows():
+                job_id = normalize_identifier(job_row.get("id"))
+                job_title = job_row.get("title")
+
+                if (
+                    job_id
+                    and job_title is not None
+                    and str(job_title).strip()
+                ):
+                    job_titles_by_id[job_id] = str(job_title).strip()
+
+        applications_by_job = (
+            application_job_ids.map(job_titles_by_id)
+            .fillna("Unknown Job")
+            .replace("", "Unknown Job")
+            .value_counts()
+            .rename_axis("Job")
+            .reset_index(name="Applications")
+        )
+
+        stage_distribution = (
+            analytics_applications["Stage"]
+            .value_counts()
+            .rename_axis("Stage")
+            .reset_index(name="Applications")
+        )
+
+        funnel_col, job_col = st.columns([1.2, 1])
+
+        with funnel_col:
+            st.markdown("### 📈 Hiring Pipeline Velocity & Conversion")
+
+            if analytics_total_applications == 0:
+                st.info("No application data is available for the funnel.")
+            else:
+                import plotly.graph_objects as go
+                fig_funnel = go.Figure()
+                fig_funnel.add_trace(go.Scatter(
+                    x=funnel_data["Stage"],
+                    y=funnel_data["Count"],
+                    mode="lines+markers+text",
+                    name="Candidates",
+                    text=funnel_data["Count"],
+                    textposition="top center",
+                    textfont=dict(size=13, color="#0F172A", family="Arial Black"),
+                    line=dict(color="#10B981", width=3.5, shape="spline"),
+                    marker=dict(size=10, color="#059669", line=dict(width=2, color="#FFFFFF")),
+                    fill="tozeroy",
+                    fillcolor="rgba(16, 185, 129, 0.12)",
+                ))
+                fig_funnel.update_layout(
+                    height=360,
+                    margin=dict(l=10, r=10, t=30, b=20),
+                    paper_bgcolor="#FFFFFF",
+                    plot_bgcolor="#FFFFFF",
+                    showlegend=False,
+                    xaxis=dict(showgrid=False, linecolor="#E2E8F0"),
+                    yaxis=dict(showgrid=True, gridcolor="#F1F5F9", linecolor="#E2E8F0"),
+                )
+                st.plotly_chart(fig_funnel, width="stretch", config={"displayModeBar": False})
+
+        with job_col:
+            st.markdown("### 💼 Applications by Role")
+
+            if applications_by_job.empty:
+                st.info("No application-to-job data is available.")
+            else:
+                import plotly.graph_objects as go
+                sorted_jobs = applications_by_job.sort_values(by="Applications", ascending=True)
+                fig_job = go.Figure(go.Bar(
+                    x=sorted_jobs["Applications"],
+                    y=sorted_jobs["Job"],
+                    orientation="h",
+                    text=sorted_jobs["Applications"],
+                    textposition="auto",
+                    marker=dict(
+                        color="#10B981",
+                        line=dict(color="#059669", width=1),
+                    ),
+                ))
+                fig_job.update_layout(
+                    height=360,
+                    margin=dict(l=10, r=10, t=30, b=20),
+                    paper_bgcolor="#FFFFFF",
+                    plot_bgcolor="#FFFFFF",
+                    showlegend=False,
+                    xaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
+                    yaxis=dict(showgrid=False),
+                )
+                st.plotly_chart(fig_job, width="stretch", config={"displayModeBar": False})
+
+        st.markdown("### 📊 Application Stage Distribution")
+
+        if stage_distribution.empty:
+            st.info("No application-stage data is available.")
         else:
             import plotly.graph_objects as go
-            fig_funnel = go.Figure()
-            fig_funnel.add_trace(go.Scatter(
-                x=funnel_data["Stage"],
-                y=funnel_data["Count"],
-                mode="lines+markers+text",
-                name="Candidates",
-                text=funnel_data["Count"],
-                textposition="top center",
-                textfont=dict(size=13, color="#0F172A", family="Arial Black"),
-                line=dict(color="#10B981", width=3.5, shape="spline"),
-                marker=dict(size=10, color="#059669", line=dict(width=2, color="#FFFFFF")),
-                fill="tozeroy",
-                fillcolor="rgba(16, 185, 129, 0.12)",
+            stage_palette = {
+                "Applied": "#38BDF8",
+                "Shortlisted": "#84CC16",
+                "Interview": "#6366F1",
+                "Selected": "#10B981",
+                "Rejected": "#F87171",
+                "Pending Review": "#FCD34D",
+            }
+            bar_colors = [stage_palette.get(s, "#10B981") for s in stage_distribution["Stage"]]
+
+            fig_stage = go.Figure(go.Bar(
+                x=stage_distribution["Stage"],
+                y=stage_distribution["Applications"],
+                text=stage_distribution["Applications"],
+                textposition="auto",
+                textfont=dict(size=12, color="#FFFFFF", family="Arial Black"),
+                marker=dict(
+                    color=bar_colors,
+                    line=dict(color="#FFFFFF", width=2),
+                ),
             ))
-            fig_funnel.update_layout(
-                height=360,
-                margin=dict(l=10, r=10, t=30, b=20),
+            fig_stage.update_layout(
+                height=340,
+                margin=dict(l=10, r=10, t=20, b=20),
                 paper_bgcolor="#FFFFFF",
                 plot_bgcolor="#FFFFFF",
                 showlegend=False,
                 xaxis=dict(showgrid=False, linecolor="#E2E8F0"),
                 yaxis=dict(showgrid=True, gridcolor="#F1F5F9", linecolor="#E2E8F0"),
             )
-            st.plotly_chart(fig_funnel, width="stretch", config={"displayModeBar": False})
-
-    with job_col:
-        st.markdown("### 💼 Applications by Role")
-
-        if applications_by_job.empty:
-            st.info("No application-to-job data is available.")
-        else:
-            import plotly.graph_objects as go
-            sorted_jobs = applications_by_job.sort_values(by="Applications", ascending=True)
-            fig_job = go.Figure(go.Bar(
-                x=sorted_jobs["Applications"],
-                y=sorted_jobs["Job"],
-                orientation="h",
-                text=sorted_jobs["Applications"],
-                textposition="auto",
-                marker=dict(
-                    color="#10B981",
-                    line=dict(color="#059669", width=1),
-                ),
-            ))
-            fig_job.update_layout(
-                height=360,
-                margin=dict(l=10, r=10, t=30, b=20),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
-                showlegend=False,
-                xaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
-                yaxis=dict(showgrid=False),
-            )
-            st.plotly_chart(fig_job, width="stretch", config={"displayModeBar": False})
-
-    st.markdown("### 📊 Application Stage Distribution")
-
-    if stage_distribution.empty:
-        st.info("No application-stage data is available.")
-    else:
-        import plotly.graph_objects as go
-        stage_palette = {
-            "Applied": "#38BDF8",
-            "Shortlisted": "#84CC16",
-            "Interview": "#6366F1",
-            "Selected": "#10B981",
-            "Rejected": "#F87171",
-            "Pending Review": "#FCD34D",
-        }
-        bar_colors = [stage_palette.get(s, "#10B981") for s in stage_distribution["Stage"]]
-
-        fig_stage = go.Figure(go.Bar(
-            x=stage_distribution["Stage"],
-            y=stage_distribution["Applications"],
-            text=stage_distribution["Applications"],
-            textposition="auto",
-            textfont=dict(size=12, color="#FFFFFF", family="Arial Black"),
-            marker=dict(
-                color=bar_colors,
-                line=dict(color="#FFFFFF", width=2),
-            ),
-        ))
-        fig_stage.update_layout(
-            height=340,
-            margin=dict(l=10, r=10, t=20, b=20),
-            paper_bgcolor="#FFFFFF",
-            plot_bgcolor="#FFFFFF",
-            showlegend=False,
-            xaxis=dict(showgrid=False, linecolor="#E2E8F0"),
-            yaxis=dict(showgrid=True, gridcolor="#F1F5F9", linecolor="#E2E8F0"),
-        )
-        st.plotly_chart(fig_stage, width="stretch", config={"displayModeBar": False})
+            st.plotly_chart(fig_stage, width="stretch", config={"displayModeBar": False})
 
 
-# =========================================================
-# Talent Lead Gen Agent Control Center Page
-# =========================================================
+    # =========================================================
+    # Talent Lead Gen Agent Control Center Page
+    # =========================================================
 elif selected_page == "🎯 Talent Lead Gen":
     render_talent_lead_gen_dashboard(jobs_df=raw_jobs)
 
