@@ -1088,7 +1088,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "{{ $json.application_stage }}",
+                    "leftValue": "{{ $('Prepare Status Update').item.json.new_status }}",
                     "rightValue": "Shortlisted",
                     "operator": {
                       "type": "string",
@@ -1113,7 +1113,7 @@
                 "conditions": [
                   {
                     "id": "28323cb5-206a-494a-9835-ebf32c7f19e7",
-                    "leftValue": "{{ $json.application_stage }}",
+                    "leftValue": "{{ $('Prepare Status Update').item.json.new_status }}",
                     "rightValue": "Interview Scheduled",
                     "operator": {
                       "type": "string",
@@ -1138,7 +1138,7 @@
                 "conditions": [
                   {
                     "id": "73098c4e-faf6-41d7-9e8d-78693da34d1d",
-                    "leftValue": "{{ $json.application_stage }}",
+                    "leftValue": "{{ $('Prepare Status Update').item.json.new_status }}",
                     "rightValue": "Rejected",
                     "operator": {
                       "type": "string",
@@ -1163,7 +1163,7 @@
                 "conditions": [
                   {
                     "id": "58662ffa-16c1-493f-be0d-048472989f73",
-                    "leftValue": "{{ $json.application_stage }}",
+                    "leftValue": "{{ $('Prepare Status Update').item.json.new_status }}",
                     "rightValue": "Selected",
                     "operator": {
                       "type": "string",
@@ -1188,7 +1188,7 @@
                 "conditions": [
                   {
                     "id": "6206e9a0-3a7b-4cb2-b313-747398e40dc4",
-                    "leftValue": "{{ $json.application_stage }}",
+                    "leftValue": "{{ $('Prepare Status Update').item.json.new_status }}",
                     "rightValue": "Joined",
                     "operator": {
                       "type": "string",
