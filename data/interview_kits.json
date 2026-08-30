@@ -1,0 +1,314 @@
+{
+  "kit_bf87c5f4": {
+    "kit_id": "kit_bf87c5f4",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_530bdc",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_dfed78",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T17:25:21.944241+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T17:25:21.944311+00:00"
+  },
+  "kit_db51d108": {
+    "kit_id": "kit_db51d108",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_0858d8",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_7c714c",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T17:40:00.041388+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T17:40:00.041520+00:00"
+  },
+  "kit_4ed2fe97": {
+    "kit_id": "kit_4ed2fe97",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_1a66de",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_bce810",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T17:53:33.932242+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T17:53:33.932312+00:00"
+  },
+  "kit_9b5775bc": {
+    "kit_id": "kit_9b5775bc",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_9e0ada",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_724579",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T18:15:04.536710+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T18:15:04.536781+00:00"
+  },
+  "kit_4c0f0f67": {
+    "kit_id": "kit_4c0f0f67",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_fa77d7",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_ace18b",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T18:19:05.288571+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T18:19:05.288641+00:00"
+  },
+  "kit_4b97400e": {
+    "kit_id": "kit_4b97400e",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_789108",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_342ce6",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T19:25:06.431548+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T19:25:06.431618+00:00"
+  },
+  "kit_76bb8f38": {
+    "kit_id": "kit_76bb8f38",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_20f920",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_25ad61",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T19:47:39.052894+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T19:47:39.052965+00:00"
+  },
+  "kit_f8c8ff4f": {
+    "kit_id": "kit_f8c8ff4f",
+    "job_id": "job_lead_99",
+    "job_title": "Lead AI Engineer",
+    "candidate_id": "cand_123",
+    "interviewer_name": "Saurabh Shinde",
+    "total_questions": 2,
+    "ai_questions_count": 1,
+    "manual_questions_count": 1,
+    "max_possible_score": 10,
+    "questions": [
+      {
+        "id": "q_ai_982a09",
+        "origin": "AI_GROUNDED_STAR",
+        "question": "Tell me about a time you optimized an API endpoint under high throughput.",
+        "target_competency": "Performance Engineering",
+        "expected_answer_signals": [
+          "Profiling",
+          "Caching",
+          "Async I/O"
+        ],
+        "red_flags": [
+          "No metrics mentioned"
+        ],
+        "max_score": 5
+      },
+      {
+        "id": "q_man_a065ad",
+        "origin": "MANUAL_RECRUITER",
+        "question": "Describe your experience mentoring junior developers.",
+        "target_competency": "Leadership",
+        "expected_answer_signals": [],
+        "red_flags": [],
+        "max_score": 5,
+        "created_at": "2026-08-29T19:58:01.613409+00:00"
+      }
+    ],
+    "created_at": "2026-08-29T19:58:01.613482+00:00"
+  }
+}
