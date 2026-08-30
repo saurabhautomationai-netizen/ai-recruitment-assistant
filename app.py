@@ -5358,216 +5358,17 @@ elif selected_page == "AI Interview Copilot":
     from ui.views.view_interview_copilot import render_interview_copilot_workspace
     render_interview_copilot_workspace(candidates_df=raw_candidates, applications_df=raw_applications, jobs_df=raw_jobs, notes_df=get_recruiter_notes(), interviews_df=get_interviews())
 elif selected_page == "Resume Semantic Search":
-    render_semantic_candidate_search(raw_candidates, raw_jobs)
-
-
-# =========================================================
-# Bulk Import / Export page
-# =========================================================
+    from ui.views.view_semantic_search import render_ai_talent_search_workspace
+    render_ai_talent_search_workspace(candidates_df=raw_candidates, jobs_df=raw_jobs)
 elif selected_page == "Bulk Import / Export":
-    render_bulk_candidate_management(
-        raw_candidates,
-        raw_applications,
-        raw_jobs,
-    )
-
-
-# =========================================================
-# Communication History page
-# =========================================================
+    from ui.views.view_bulk_data import render_bulk_data_workspace
+    render_bulk_data_workspace(candidates_df=raw_candidates, applications_df=raw_applications, jobs_df=raw_jobs)
 elif selected_page == "Communication History":
-    st.markdown(
-        '<div class="main-title">Communication history</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div class="main-subtitle">'
-        "Review audited email and WhatsApp delivery attempts."
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    communication_entries = get_communication_history()
-    if not communication_entries:
-        st.info(
-            "No structured communication audit entries are available yet. "
-            "New delivery attempts will appear here."
-        )
-    else:
-        communication_frame = pd.DataFrame(communication_entries)
-        application_context: dict[str, dict[str, str]] = {}
-        candidate_names = {
-            str(row.get("id", "")): str(row.get("full_name", "Unknown candidate"))
-            for _, row in raw_candidates.iterrows()
-        }
-        job_titles = {
-            str(row.get("id", "")): str(row.get("title", "Unknown job"))
-            for _, row in raw_jobs.iterrows()
-        }
-        for _, row in raw_applications.iterrows():
-            application_context[str(row.get("id", ""))] = {
-                "Candidate": candidate_names.get(
-                    str(row.get("candidate_id", "")), "Unknown candidate"
-                ),
-                "Job": job_titles.get(
-                    str(row.get("job_id", "")), "Unknown job"
-                ),
-            }
-
-        communication_frame["Candidate"] = communication_frame.get(
-            "application_id", pd.Series("", index=communication_frame.index)
-        ).astype(str).map(
-            lambda value: application_context.get(value, {}).get(
-                "Candidate", "Unknown candidate"
-            )
-        )
-        communication_frame["Job"] = communication_frame.get(
-            "application_id", pd.Series("", index=communication_frame.index)
-        ).astype(str).map(
-            lambda value: application_context.get(value, {}).get(
-                "Job", "Unknown job"
-            )
-        )
-        communication_frame = communication_frame.rename(
-            columns={
-                "channel": "Channel",
-                "status": "Delivery status",
-                "attempts": "Retry count",
-                "timestamp": "Time sent",
-                "recruiter": "Recruiter",
-                "message_type": "Message type",
-                "recipient": "Recipient",
-                "status_code": "HTTP status",
-            }
-        )
-        if "Retry count" in communication_frame.columns:
-            communication_frame["Retry count"] = (
-                pd.to_numeric(
-                    communication_frame["Retry count"], errors="coerce"
-                )
-                .fillna(1)
-                .astype(int)
-                .sub(1)
-                .clip(lower=0)
-            )
-        channel_filter, status_filter = st.columns(2)
-        channels = sorted(
-            communication_frame.get(
-                "Channel", pd.Series(dtype="object")
-            ).dropna().astype(str).unique()
-        )
-        statuses = sorted(
-            communication_frame.get(
-                "Delivery status", pd.Series(dtype="object")
-            ).dropna().astype(str).unique()
-        )
-        selected_channel = channel_filter.selectbox(
-            "Channel", ["All"] + channels
-        )
-        selected_delivery_status = status_filter.selectbox(
-            "Delivery status", ["All"] + statuses
-        )
-        if selected_channel != "All":
-            communication_frame = communication_frame[
-                communication_frame["Channel"].eq(selected_channel)
-            ]
-        if selected_delivery_status != "All":
-            communication_frame = communication_frame[
-                communication_frame["Delivery status"].eq(
-                    selected_delivery_status
-                )
-            ]
-        display_columns = [
-            "Channel",
-            "Delivery status",
-            "Retry count",
-            "Time sent",
-            "Recruiter",
-            "Candidate",
-            "Job",
-            "Message type",
-            "Recipient",
-            "HTTP status",
-        ]
-        display_columns = [
-            column
-            for column in display_columns
-            if column in communication_frame.columns
-        ]
-        if communication_frame.empty:
-            st.info("No communications match the selected filters.")
-        else:
-            comm_rows_html = []
-            for _, c_row in communication_frame.head(25).iterrows():
-                channel = str(c_row.get("Channel", "Email")).strip().lower()
-                status = str(c_row.get("Delivery status", "Success")).strip()
-                cand = str(c_row.get("Candidate", "Candidate"))
-                job = str(c_row.get("Job", "Requisition"))
-                msg_type = str(c_row.get("Message type", "Notice"))
-                recipient = str(c_row.get("Recipient", ""))
-                time_sent = str(c_row.get("Time sent", ""))[:19].replace("T", " ")
-
-                ch_icon = "💬" if "whatsapp" in channel else "✉️"
-                ch_name = "WhatsApp" if "whatsapp" in channel else "Email"
-                ch_bg = "#dcfce7" if "whatsapp" in channel else "#e0e7ff"
-                ch_color = "#15803d" if "whatsapp" in channel else "#4338ca"
-
-                st_lower = status.lower()
-                if "success" in st_lower or "sent" in st_lower or "200" in st_lower:
-                    st_bg, st_color, st_icon = "#dcfce7", "#15803d", "✅"
-                elif "fail" in st_lower or "error" in st_lower:
-                    st_bg, st_color, st_icon = "#fee2e2", "#b91c1c", "❌"
-                else:
-                    st_bg, st_color, st_icon = "#fef3c7", "#b45309", "⏳"
-
-                row_html = (
-                    f'<div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; margin-bottom:8px; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">'
-                    f'<div style="display:flex; align-items:center; gap:12px; min-width:140px;">'
-                    f'<span style="background:{ch_bg}; color:{ch_color}; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:700;">{ch_icon} {ch_name}</span>'
-                    f'</div>'
-                    f'<div style="min-width:180px;">'
-                    f'<div style="font-weight:700; color:#0f172a; font-size:13px;">{cand}</div>'
-                    f'<div style="color:#64748b; font-size:11px;">{recipient} • {job}</div>'
-                    f'</div>'
-                    f'<div style="min-width:130px; text-align:center;">'
-                    f'<span style="background:#f8fafc; border:1px solid #e2e8f0; color:#334155; border-radius:8px; padding:3px 8px; font-size:11px; font-weight:600;">{msg_type}</span>'
-                    f'</div>'
-                    f'<div style="min-width:130px; color:#64748b; font-size:12px; font-family:monospace;">{time_sent}</div>'
-                    f'<div style="min-width:100px; text-align:center;">'
-                    f'<span style="background:{st_bg}; color:{st_color}; border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700;">{st_icon} {status}</span>'
-                    f'</div>'
-                    f'</div>'
-                )
-                comm_rows_html.append(row_html)
-
-            header_html = (
-                '<div style="display:flex; justify-content:space-between; padding:0 16px 10px 16px; font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">'
-                '<span style="min-width:140px;">Channel</span>'
-                '<span style="min-width:180px;">Candidate & Recipient</span>'
-                '<span style="min-width:130px; text-align:center;">Message Intent</span>'
-                '<span style="min-width:130px;">Time Sent</span>'
-                '<span style="min-width:100px; text-align:center;">Delivery</span>'
-                '</div>'
-            )
-            comm_container = f'<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:18px; padding:16px; margin-top:12px; box-shadow:0 4px 16px rgba(0,0,0,0.02);">{header_html}{"".join(comm_rows_html)}</div>'
-            st.markdown(comm_container, unsafe_allow_html=True)
-
-
-# =========================================================
-# AI Recruiter page
-# =========================================================
+    from ui.views.view_communications import render_communications_workspace
+    render_communications_workspace(raw_candidates_df=raw_candidates, raw_applications_df=raw_applications)
 elif selected_page == "AI Recruiter":
-    render_ai_recruiter_chat(
-        raw_candidates,
-        raw_applications,
-        raw_jobs,
-        get_interviews(),
-    )
-
-
-# =========================================================
-# Analytics page
-# =========================================================
+    from ui.views.view_ai_recruiter import render_ai_recruiter_workspace
+    render_ai_recruiter_workspace(candidates_df=raw_candidates, applications_df=raw_applications, jobs_df=raw_jobs, interviews_df=get_interviews())
 elif selected_page == "Analytics":
     st.markdown(
         '<div class="main-title">'
@@ -6091,9 +5892,8 @@ elif selected_page == "🎯 Talent Lead Gen":
 # Recruiter Portals & Social Integrations Page
 # =========================================================
 elif selected_page == "⚙️ Portals & Social Integrations":
-    from services.portal_integration_service import render_portal_and_social_integrations
-    render_portal_and_social_integrations(current_recruiter_email)
-
+    from ui.views.view_integrations import render_integrations_workspace
+    render_integrations_workspace()
 elif selected_page == "🌐 Public Careers Portal":
     jobs_list = raw_jobs.to_dict("records") if isinstance(raw_jobs, pd.DataFrame) else []
     render_public_careers_portal(jobs=jobs_list)
@@ -6106,10 +5906,9 @@ elif selected_page == "📝 Offer Letters & E-Sign":
     from ui.views.view_offers import render_offer_workspace
     render_offer_workspace(raw_applications_df=raw_applications, raw_candidates_df=raw_candidates, raw_jobs_df=raw_jobs, can_manage_offers=has_permission('candidate_write'))
 elif selected_page == "🔒 GDPR & Blind Hiring":
-    cands_list = raw_candidates.to_dict("records") if isinstance(raw_candidates, pd.DataFrame) else []
-    render_compliance_privacy(candidates=cands_list)
-
-
+    cands_list = raw_candidates.to_dict('records') if isinstance(raw_candidates, pd.DataFrame) else []
+    from ui.views.view_compliance import render_compliance_workspace
+    render_compliance_workspace(candidates_list=cands_list)
 # =========================================================
 # Temporary pages
 # =========================================================
