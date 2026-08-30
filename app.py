@@ -1251,475 +1251,478 @@ def show_skill_chips(value) -> None:
 # Overview page (JARVIS Recruitment Command Center)
 # =========================================================
 if selected_page == "Overview":
-    import plotly.graph_objects as go
-    import plotly.express as px
+    from ui.views.view_overview import render_hiring_overview
+    render_hiring_overview(raw_jobs=raw_jobs, raw_candidates=raw_candidates, raw_applications=raw_applications, raw_interviews=raw_interviews, can_manage_jobs=can_manage_jobs, can_manage_candidates=can_manage_candidates)
+    with st.expander('📈 Deep Telemetry, Conversion Funnels & Live Candidate Stream', expanded=False):
+        import plotly.graph_objects as go
+        import plotly.express as px
 
-    # ---------------------------------------------------------
-    # TOP HEADER & TIME RANGE SELECTION
-    # ---------------------------------------------------------
-    top_hdr_col, top_btn_col = st.columns([3.5, 1.2])
-    with top_hdr_col:
-        st.markdown('<div class="main-title" style="margin-bottom:2px;">Hiring Intelligence Command Center</div>', unsafe_allow_html=True)
-        st.caption("Live autonomous operations, AI fit telemetry & multi-channel pipeline intelligence.")
-    with top_btn_col:
-        if st.button("➕ Post New Job", type="primary", key="top_post_job_btn", use_container_width=True):
-            st.session_state["nav_override"] = "Jobs"
-            st.rerun()
+        # ---------------------------------------------------------
+        # TOP HEADER & TIME RANGE SELECTION
+        # ---------------------------------------------------------
+        top_hdr_col, top_btn_col = st.columns([3.5, 1.2])
+        with top_hdr_col:
+            st.markdown('<div class="main-title" style="margin-bottom:2px;">Hiring Intelligence Command Center</div>', unsafe_allow_html=True)
+            st.caption("Live autonomous operations, AI fit telemetry & multi-channel pipeline intelligence.")
+        with top_btn_col:
+            if st.button("➕ Post New Job", type="primary", key="top_post_job_btn", use_container_width=True):
+                st.session_state["nav_override"] = "Jobs"
+                st.rerun()
 
-    filter_col1, filter_col2 = st.columns([2.5, 2])
-    with filter_col1:
-        time_range = st.pills(
-            "Time Range",
-            ["7D", "30D", "90D", "1Y", "All Time"],
-            default="30D",
-            label_visibility="collapsed",
-            key="cmd_center_timerange",
-        )
-    with filter_col2:
-        overview_view_tab = st.pills(
-            "Overview View",
-            ["Executive Dashboard", "Interactive Pipeline Kanban", "AI Autonomy Matrix", "Recruiter Velocity", "Funnel Analytics"],
-            default="Executive Dashboard",
-            label_visibility="collapsed",
-            key="cmd_overview_subview",
-        )
-
-    st.write("")
-
-    if overview_view_tab == "Interactive Pipeline Kanban":
-        from components.candidate_kanban_board import render_candidate_kanban_board
-        render_candidate_kanban_board(candidates, raw_applications)
-    elif overview_view_tab == "AI Autonomy Matrix":
-        from components.recruitment_autonomy_matrix import render_recruitment_autonomy_matrix
-        render_recruitment_autonomy_matrix()
-
-    # ---------------------------------------------------------
-    # 1. JARVIS RECRUITMENT INTELLIGENCE & ACTION PANEL
-    # ---------------------------------------------------------
-    high_match_cands = raw_candidates.head(3) if not raw_candidates.empty else pd.DataFrame()
-    top_cand_names = ", ".join(high_match_cands["full_name"].tolist()) if not high_match_cands.empty and "full_name" in high_match_cands.columns else "Vihaan Chopra, Aarav Verma"
-
-    jarvis_banner_html = (
-        '<div style="background: linear-gradient(135deg, #162E20 0%, #1F4230 100%); border-radius: 20px; padding: 22px 26px; color: #FFFFFF; box-shadow: 0 4px 20px rgba(22,46,32,0.12); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08);">'
-        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
-        '<div style="display: flex; align-items: center; gap: 10px;">'
-        '<div style="width: 10px; height: 10px; border-radius: 50%; background: #10B981; box-shadow: 0 0 10px #10B981;"></div>'
-        '<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: #A3C2AE; text-transform: uppercase;">JARVIS LIVE RECRUITMENT INTELLIGENCE</span>'
-        '</div>'
-        f'<span style="background: rgba(16,185,129,0.18); color: #34D399; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 20px; border: 1px solid rgba(52,211,153,0.3);">Pipeline Health: Optimal ({time_range})</span>'
-        '</div>'
-        '<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: center;">'
-        '<div>'
-        f'<div style="font-size: 17px; font-weight: 750; color: #FFFFFF; line-height: 1.4; margin-bottom: 6px;">AI detected <span style="color:#34D399;">{min(total_candidates, 12)} top-tier candidates</span> matching active requisitions (>85% ATS match).</div>'
-        f'<div style="font-size: 13px; color: #D1D5DB; line-height: 1.5;"><b>Recommended Action:</b> Prioritize outreach to <span style="color:#F3F4F1; font-weight:600;">{top_cand_names}</span> for high-demand engineering & voice roles. Fast-tracking outreach increases offer acceptance rate by <b>34%</b>.</div>'
-        '</div>'
-        '<div style="display: flex; flex-direction: column; gap: 8px; justify-content: center;">'
-        '<div style="font-size: 12px; color: #94A3B8; font-weight: 600;">⚡ Instant Quick Actions:</div>'
-        '</div>'
-        '</div>'
-        '</div>'
-    )
-    st.markdown(jarvis_banner_html, unsafe_allow_html=True)
-
-    c_act1, c_act2, c_act3, c_act4 = st.columns(4)
-    with c_act1:
-        if st.button("📋 Review Top Candidates", key="jarvis_act_cands", type="primary", use_container_width=True):
-            st.session_state["nav_override"] = "Candidates"
-            st.rerun()
-    with c_act2:
-        if st.button("🎯 Source 30 Leads", key="jarvis_act_src", use_container_width=True):
-            st.session_state["nav_override"] = "🎯 Talent Lead Gen"
-            st.rerun()
-    with c_act3:
-        if st.button("📅 View Calendar & Interviews", key="jarvis_act_int", use_container_width=True):
-            st.session_state["nav_override"] = "Interviews"
-            st.rerun()
-    with c_act4:
-        if st.button("🤖 Launch AI Recruiter", key="jarvis_act_bot", use_container_width=True):
-            st.session_state["nav_override"] = "AI Recruiter"
-            st.rerun()
-
-    st.write("")
-
-    # ---------------------------------------------------------
-    # 2. REAL-TIME 5-METRIC EXECUTIVE KPI GRID
-    # ---------------------------------------------------------
-    kpi_col1, kpi_col2, kpi_col3, kpi_col4, kpi_col5 = st.columns(5)
-
-    # KPI 1: Total Talent Pool
-    with kpi_col1:
-        fig_bars = go.Figure(data=[
-            go.Bar(
-                x=[1, 2, 3, 4, 5, 6, 7],
-                y=[max(2, total_candidates // 6), max(4, total_candidates // 5), max(6, total_candidates // 4), total_candidates, max(5, int(total_candidates * 0.7)), max(3, int(total_candidates * 0.4)), max(4, int(total_candidates * 0.5))],
-                marker=dict(color=["#E5E7EB", "#E5E7EB", "#E5E7EB", "#162E20", "#D1D5DB", "#E5E7EB", "#E5E7EB"]),
-                width=0.45,
-            )
-        ])
-        fig_bars.update_layout(height=48, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(visible=False), yaxis=dict(visible=False))
-
-        with st.container(border=True):
-            st.caption("Total Talent Pool")
-            st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{total_candidates:,}</div>', unsafe_allow_html=True)
-            st.markdown('<span style="color:#15803D; font-size:11px; font-weight:700;">+12.4%</span> <span style="color:#64748B; font-size:10px;">vs last period</span>', unsafe_allow_html=True)
-            st.plotly_chart(fig_bars, config={"displayModeBar": False}, width="stretch")
-
-    # KPI 2: Active Open Requisitions
-    with kpi_col2:
-        with st.container(border=True):
-            st.caption("Open Requisitions")
-            st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{open_jobs_count}</div>', unsafe_allow_html=True)
-            st.markdown('<span style="color:#D97706; font-size:11px; font-weight:700;">3 Active</span> <span style="color:#64748B; font-size:10px;">need sourcing</span>', unsafe_allow_html=True)
-            st.progress(min(1.0, open_jobs_count / 25))
-
-    # KPI 3: Scheduled Interviews
-    with kpi_col3:
-        fig_line = go.Figure(data=[
-            go.Scatter(
-                x=[1, 2, 3, 4, 5, 6],
-                y=[max(1, interview_count // 4), max(2, interview_count // 3), max(3, interview_count // 2), max(2, int(interview_count * 0.8)), max(4, int(interview_count * 0.9)), interview_count],
-                mode="lines",
-                line=dict(color="#10B981", width=2.5, shape="spline"),
-                fill="tozeroy",
-                fillcolor="rgba(16, 185, 129, 0.1)",
-            )
-        ])
-        fig_line.update_layout(height=48, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(visible=False), yaxis=dict(visible=False))
-
-        with st.container(border=True):
-            st.caption("Interviews Scheduled")
-            st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{interview_count}</div>', unsafe_allow_html=True)
-            st.markdown('<span style="color:#15803D; font-size:11px; font-weight:700;">+8.2%</span> <span style="color:#64748B; font-size:10px;">this week</span>', unsafe_allow_html=True)
-            st.plotly_chart(fig_line, config={"displayModeBar": False}, width="stretch")
-
-    # KPI 4: Successful Hires & Conversion
-    with kpi_col4:
-        conv_rate = round((selected_count / max(total_applications, 1)) * 100, 1)
-        with st.container(border=True):
-            st.caption("Successful Hires")
-            st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{selected_count}</div>', unsafe_allow_html=True)
-            st.markdown(f'<span style="color:#15803D; font-size:11px; font-weight:700;">{conv_rate}%</span> <span style="color:#64748B; font-size:10px;">conversion</span>', unsafe_allow_html=True)
-            st.progress(min(1.0, selected_count / 15))
-
-    # KPI 5: Avg AI Match Score
-    with kpi_col5:
-        with st.container(border=True):
-            st.caption("Avg AI Match Fit")
-            st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{average_candidate_score}%</div>', unsafe_allow_html=True)
-            st.markdown(f'<span style="color:#2563EB; font-size:11px; font-weight:700;">{average_ats_score}% ATS</span> <span style="color:#64748B; font-size:10px;">compatibility</span>', unsafe_allow_html=True)
-            st.progress(min(1.0, average_candidate_score / 100.0))
-
-    st.write("")
-
-    # ---------------------------------------------------------
-    # 3. MULTI-DIMENSIONAL RECRUITMENT VISUALIZATIONS (60% / 40%)
-    # ---------------------------------------------------------
-    chart_col_left, chart_col_right = st.columns([1.6, 1.1])
-
-    # Left Column: Recruitment Velocity Spline & Interactive Funnel
-    with chart_col_left:
-        with st.container(border=True):
-            st.markdown('<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:750; font-size:16px; color:#162E20;">📈 Recruitment Velocity & Inflow Trajectory</span><span style="font-size:11px; color:#64748B; font-weight:600;">Multi-Series Real-Time Spline</span></div>', unsafe_allow_html=True)
-            
-            # Dates range based on timerange
-            n_periods = 7 if time_range == "7D" else (12 if time_range == "30D" else 16)
-            dates_seq = pd.date_range(end=datetime.now(), periods=n_periods, freq="D" if time_range == "7D" else "W").strftime("%d %b")
-            
-            # Dynamic series calculation from database
-            base_cand_inflow = [max(1, int(total_candidates * (i + 1) / (n_periods * 1.1))) for i in range(n_periods)]
-            base_int_inflow = [max(0, int(interview_count * (i + 1) / (n_periods * 1.2))) for i in range(n_periods)]
-            base_hires = [max(0, int(selected_count * (i + 1) / (n_periods * 1.3))) for i in range(n_periods)]
-
-            fig_velocity = go.Figure()
-            fig_velocity.add_trace(go.Scatter(
-                x=dates_seq,
-                y=base_cand_inflow,
-                mode="lines+markers",
-                name="Candidate Intake",
-                line=dict(color="#10B981", width=3, shape="spline"),
-                fill="tozeroy",
-                fillcolor="rgba(16, 185, 129, 0.10)",
-                hovertemplate="<b>%{x}</b><br>Candidates Inflow: %{y}<extra></extra>",
-            ))
-            fig_velocity.add_trace(go.Scatter(
-                x=dates_seq,
-                y=base_int_inflow,
-                mode="lines+markers",
-                name="Interviews",
-                line=dict(color="#162E20", width=2.5, dash="dot", shape="spline"),
-                hovertemplate="<b>%{x}</b><br>Interviews: %{y}<extra></extra>",
-            ))
-            fig_velocity.add_trace(go.Scatter(
-                x=dates_seq,
-                y=base_hires,
-                mode="lines+markers",
-                name="Offers / Hires",
-                line=dict(color="#F97316", width=2, shape="spline"),
-                hovertemplate="<b>%{x}</b><br>Offers: %{y}<extra></extra>",
-            ))
-            fig_velocity.update_layout(
-                height=260,
-                margin=dict(l=10, r=10, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
-                xaxis=dict(showgrid=False, linecolor="#E2E8F0"),
-                yaxis=dict(showgrid=True, gridcolor="#F1F5F9", linecolor="#E2E8F0"),
-            )
-            st.plotly_chart(fig_velocity, config={"displayModeBar": False}, width="stretch")
-
-        st.write("")
-
-        # Visual Recruitment Funnel Card
-        with st.container(border=True):
-            st.markdown('<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><span style="font-weight:750; font-size:16px; color:#162E20;">⚡ Conversion Funnel & Drop-Off Analytics</span><span style="font-size:11px; color:#10B981; font-weight:700;">Live Conversion Tracking</span></div>', unsafe_allow_html=True)
-            
-            f_applied = max(total_candidates, 51)
-            f_screen = max(total_applications, 38)
-            f_shortlist = max(24, int(f_applied * 0.47))
-            f_interview = max(interview_count, 11)
-            f_offer = max(selected_count, 8)
-            f_hired = selected_count
-
-            funnel_stages = [
-                {"stage": "1. Applied", "count": f_applied, "pct": 100, "drop": "-", "color": "#162E20"},
-                {"stage": "2. AI Screened", "count": f_screen, "pct": int((f_screen/f_applied)*100), "drop": f"{100-int((f_screen/f_applied)*100)}%", "color": "#1E3A8A"},
-                {"stage": "3. Shortlisted", "count": f_shortlist, "pct": int((f_shortlist/f_applied)*100), "drop": f"{int((f_screen/f_applied)*100)-int((f_shortlist/f_applied)*100)}%", "color": "#059669"},
-                {"stage": "4. Interview", "count": f_interview, "pct": int((f_interview/f_applied)*100), "drop": f"{int((f_shortlist/f_applied)*100)-int((f_interview/f_applied)*100)}%", "color": "#D97706"},
-                {"stage": "5. Hired", "count": f_hired, "pct": int((f_hired/f_applied)*100), "drop": f"{int((f_interview/f_applied)*100)-int((f_hired/f_applied)*100)}%", "color": "#10B981"},
-            ]
-
-            funnel_rows_html = []
-            for fs in funnel_stages:
-                funnel_rows_html.append(
-                    f'<div style="margin-bottom: 10px;">'
-                    f'<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">'
-                    f'<span style="font-weight:700; color:#1E293B;">{fs["stage"]} — <b>{fs["count"]} Candidates</b></span>'
-                    f'<span style="color:#64748B; font-size:11px;">{fs["pct"]}% conv. · Drop-off: <span style="color:#EF4444; font-weight:600;">{fs["drop"]}</span></span>'
-                    f'</div>'
-                    f'<div style="width:100%; height:8px; background:#F1F5F9; border-radius:10px; overflow:hidden;">'
-                    f'<div style="width:{fs["pct"]}%; height:100%; background:{fs["color"]}; border-radius:10px;"></div>'
-                    f'</div>'
-                    f'</div>'
-                )
-            st.markdown("".join(funnel_rows_html), unsafe_allow_html=True)
-
-    # Right Column: Source Distribution Donut & Top Roles Comparison Bar
-    with chart_col_right:
-        # Donut Breakdown
-        with st.container(border=True):
-            st.markdown('<div style="font-weight:750; font-size:15px; color:#162E20; margin-bottom:4px;">🍩 Candidate Channel Distribution</div>', unsafe_allow_html=True)
-            
-            src_labels = ["Naukri.com", "LinkedIn Recruiter", "Indeed", "Direct Form / QR", "Referrals"]
-            src_values = [max(8, int(total_candidates * 0.35)), max(6, int(total_candidates * 0.28)), max(5, int(total_candidates * 0.18)), max(4, int(total_candidates * 0.12)), max(2, int(total_candidates * 0.07))]
-            src_colors = ["#162E20", "#059669", "#10B981", "#84CC16", "#F97316"]
-
-            fig_donut = go.Figure(data=[go.Pie(
-                labels=src_labels,
-                values=src_values,
-                hole=0.62,
-                marker=dict(colors=src_colors, line=dict(color="#FFFFFF", width=2)),
-                textinfo="percent+label",
-                textposition="outside",
-                showlegend=False,
-            )])
-            fig_donut.update_layout(
-                height=230,
-                margin=dict(l=5, r=5, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                annotations=[dict(text=f"<b>{total_candidates}</b><br><span style='font-size:11px; color:#64748B;'>Total</span>", x=0.5, y=0.5, font_size=16, showarrow=False)],
-            )
-            st.plotly_chart(fig_donut, config={"displayModeBar": False}, width="stretch")
-
-        st.write("")
-
-        # Role Volume & Quality Bars
-        with st.container(border=True):
-            st.markdown('<div style="font-weight:750; font-size:15px; color:#162E20; margin-bottom:4px;">📊 Role Demand & Talent Quality</div>', unsafe_allow_html=True)
-            
-            job_names = raw_jobs["title"].head(4).tolist() if not raw_jobs.empty and "title" in raw_jobs.columns else ["Voice Executive", "AI Engineer", "DevOps", "Data Analyst"]
-            job_counts = [max(3, len(job_names) - i + 4) for i in range(len(job_names))]
-
-            fig_roles = go.Figure(data=[
-                go.Bar(
-                    x=job_counts,
-                    y=job_names,
-                    orientation="h",
-                    marker=dict(color=["#162E20", "#059669", "#10B981", "#84CC16"][:len(job_names)]),
-                    hovertemplate="<b>%{y}</b><br>Candidates: %{x}<extra></extra>",
-                )
-            ])
-            fig_roles.update_layout(
-                height=180,
-                margin=dict(l=0, r=10, t=5, b=5),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                xaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
-                yaxis=dict(autorange="reversed"),
-            )
-            st.plotly_chart(fig_roles, config={"displayModeBar": False}, width="stretch")
-
-    st.write("")
-
-    # ---------------------------------------------------------
-    # 4. NATURAL LANGUAGE AI EXPLORATION BAR ("Ask JARVIS")
-    # ---------------------------------------------------------
-    with st.container(border=True):
-        st.markdown('<div style="display:flex; align-items:center; gap:8px;"><span style="font-size:18px;">🧠</span><span style="font-size:15px; font-weight:750; color:#162E20;">Ask JARVIS Recruitment Intelligence</span></div>', unsafe_allow_html=True)
-        st.caption("Ask natural language queries across your live talent pool, requisition velocity, or candidate fit.")
-        
-        q_col1, q_col2 = st.columns([3.5, 1])
-        with q_col1:
-            jarvis_query = st.text_input(
-                "Search / Query",
-                placeholder="e.g., 'Show top candidates with >85% score in Pune' or 'Summarize pending interviews'",
+        filter_col1, filter_col2 = st.columns([2.5, 2])
+        with filter_col1:
+            time_range = st.pills(
+                "Time Range",
+                ["7D", "30D", "90D", "1Y", "All Time"],
+                default="30D",
                 label_visibility="collapsed",
-                key="jarvis_explore_input",
+                key="cmd_center_timerange",
             )
-        with q_col2:
-            query_submitted = st.button("⚡ Query JARVIS", type="primary", use_container_width=True)
+        with filter_col2:
+            overview_view_tab = st.pills(
+                "Overview View",
+                ["Executive Dashboard", "Interactive Pipeline Kanban", "AI Autonomy Matrix", "Recruiter Velocity", "Funnel Analytics"],
+                default="Executive Dashboard",
+                label_visibility="collapsed",
+                key="cmd_overview_subview",
+            )
 
-        # Preset query chips
-        preset_chips = ["Top Candidates (>85%)", "Interview Conversion Bottlenecks", "Voice Process Requisition Status", "Active Recruiters Summary"]
-        chosen_preset = st.pills("Quick Prompts", preset_chips, label_visibility="collapsed", key="jarvis_preset_pills")
+        st.write("")
 
-        active_q = jarvis_query or chosen_preset
-        if active_q:
-            with st.spinner("JARVIS is analyzing live candidate pool & telemetry..."):
-                st.markdown(
-                    f"""
-                    <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:14px; padding:14px 18px; margin-top:8px;">
-                        <div style="font-size:13px; font-weight:750; color:#166534; margin-bottom:4px;">💡 JARVIS Analysis for: "{active_q}"</div>
-                        <div style="font-size:13px; color:#1E293B; line-height:1.5;">
-                            • <b>Candidate Fit Vetting</b>: <b>{min(total_candidates, 12)} candidates</b> exceed the 85% ATS match benchmark across active jobs.<br>
-                            • <b>Pipeline Velocity</b>: Current interview stage conversion is performing at <b>{conv_rate}%</b> with <b>{interview_count}</b> active sessions.<br>
-                            • <b>Requisition Status</b>: <b>{open_jobs_count} open roles</b> active with healthy applicant intake.
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+        if overview_view_tab == "Interactive Pipeline Kanban":
+            from components.candidate_kanban_board import render_candidate_kanban_board
+            render_candidate_kanban_board(candidates, raw_applications)
+        elif overview_view_tab == "AI Autonomy Matrix":
+            from components.recruitment_autonomy_matrix import render_recruitment_autonomy_matrix
+            render_recruitment_autonomy_matrix()
 
-    st.write("")
+        # ---------------------------------------------------------
+        # 1. JARVIS RECRUITMENT INTELLIGENCE & ACTION PANEL
+        # ---------------------------------------------------------
+        high_match_cands = raw_candidates.head(3) if not raw_candidates.empty else pd.DataFrame()
+        top_cand_names = ", ".join(high_match_cands["full_name"].tolist()) if not high_match_cands.empty and "full_name" in high_match_cands.columns else "Vihaan Chopra, Aarav Verma"
 
-    # ---------------------------------------------------------
-    # AI SIGNAL & ANOMALY ALERTS STRIP (Screenshot 1 Pattern)
-    # ---------------------------------------------------------
-    signals_banner_html = """
-    <div style="background: #ffffff; border: 1px solid #e8eae6; border-radius: 18px; padding: 18px 22px; box-shadow: 0 2px 12px rgba(22, 46, 32, 0.03); margin-bottom: 22px;">
-        <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-            <span style="width: 8px; height: 8px; border-radius: 50%; background: #059669; display: inline-block;"></span>
-            AI Telemetry Signals & Pipeline Recommendations
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-            <div style="display: flex; gap: 12px; align-items: flex-start; border-right: 1px solid #f1f5f9; padding-right: 14px;">
-                <span style="font-size: 20px;">⚠️</span>
-                <div>
-                    <div style="font-size: 13px; font-weight: 750; color: #b45309;">3 Stalled in Interview Stage</div>
-                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">Awaiting interviewer scorecard > 4 days. Automated WhatsApp reminder dispatched.</div>
-                </div>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: flex-start; border-right: 1px solid #f1f5f9; padding-right: 14px;">
-                <span style="font-size: 20px;">⏳</span>
-                <div>
-                    <div style="font-size: 13px; font-weight: 750; color: #166534;">4 Fast-Track Candidates (>90%)</div>
-                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">High ATS match with active certifications. 1-click offer generation recommended.</div>
-                </div>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: flex-start;">
-                <span style="font-size: 20px;">💡</span>
-                <div>
-                    <div style="font-size: 13px; font-weight: 750; color: #1d4ed8;">Channel Conversion Velocity</div>
-                    <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">Careers Portal candidates convert 2.4x faster than third-party cold outbound.</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """
-    st.markdown(signals_banner_html, unsafe_allow_html=True)
-
-    # ---------------------------------------------------------
-    # 5. LIVE CANDIDATE STREAM & RECENT ACTIVITY
-    # ---------------------------------------------------------
-    st.markdown('<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><span style="font-size:18px; font-weight:800; color:#162E20;">⚡ Live Candidate Stream & Event Timeline</span><span style="font-size:12px; color:#10B981; font-weight:700;">● Live Stream Active</span></div>', unsafe_allow_html=True)
-
-    if raw_candidates.empty:
-        st.info("No live candidate activity recorded yet.")
-    else:
-        app_candidates = raw_candidates.set_index("id")["full_name"].to_dict() if "full_name" in raw_candidates.columns else {}
-        app_jobs = raw_jobs.set_index("id")["title"].to_dict() if (not raw_jobs.empty and "title" in raw_jobs.columns) else {}
-
-        stream_rows_html = []
-        if not raw_applications.empty:
-            for idx, a_row in raw_applications.head(6).iterrows():
-                cand_id = str(a_row.get("candidate_id", ""))
-                job_id = str(a_row.get("job_id", ""))
-                c_name = app_candidates.get(cand_id, f"Candidate #{idx+1}")
-                j_title = app_jobs.get(job_id, "Software Engineer")
-                stage = str(a_row.get("application_stage", "In Review"))
-                score = int(float(a_row.get("candidate_score", 85) or 85))
-                applied_date = str(a_row.get("applied_at", "24 Aug"))[:10]
-
-                initials = "".join([p[0].upper() for p in c_name.split()[:2]]) if c_name else "CD"
-
-                stage_lower = stage.lower()
-                if any(s in stage_lower for s in ("select", "hire", "accept")):
-                    s_bg, s_color = "#DCFCE7", "#15803D"
-                elif any(s in stage_lower for s in ("interview", "sched")):
-                    s_bg, s_color = "#E0E7FF", "#4338CA"
-                elif any(s in stage_lower for s in ("reject", "disqual")):
-                    s_bg, s_color = "#FEE2E2", "#B91C1C"
-                else:
-                    s_bg, s_color = "#FEF3C7", "#D97706"
-
-                row_h = (
-                    f'<div style="display:grid; grid-template-columns: 0.8fr 2fr 2fr 1.2fr 1.2fr 1.2fr; align-items:center; gap:16px; padding:14px 18px; border-bottom:1px solid #F1F5F9; font-size:13.5px;">'
-                    f'<div style="color:#64748B; font-weight:600;">{idx*3 + 2}m ago</div>'
-                    f'<div style="display:flex; align-items:center; gap:10px;"><div style="width:28px; height:28px; border-radius:50%; background:#162E20; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">{initials}</div><span style="font-weight:750; color:#162E20;">{c_name}</span></div>'
-                    f'<div style="color:#475467;">{j_title}</div>'
-                    f'<div><span style="background:#ECFDF5; color:#059669; font-weight:750; font-size:12px; padding:3px 10px; border-radius:8px;">{score}% FIT</span></div>'
-                    f'<div><span style="background:{s_bg}; color:{s_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:750; display:inline-block;">{stage}</span></div>'
-                    f'<div style="color:#64748B; font-size:12px; font-weight:600;">Pravin K.</div>'
-                    f'</div>'
-                )
-                stream_rows_html.append(row_h)
-        else:
-            for idx, c_row in raw_candidates.head(6).iterrows():
-                c_name = str(c_row.get("full_name", "Candidate"))
-                c_exp = str(c_row.get("years_experience", "3")) + " yrs"
-                c_status = str(c_row.get("status", "Active"))
-                initials = "".join([p[0].upper() for p in c_name.split()[:2]]) if c_name else "CD"
-
-                row_h = (
-                    f'<div style="display:grid; grid-template-columns: 0.8fr 2fr 2fr 1.2fr 1.2fr 1.2fr; align-items:center; gap:16px; padding:14px 18px; border-bottom:1px solid #F1F5F9; font-size:13.5px;">'
-                    f'<div style="color:#64748B; font-weight:600;">{idx*4 + 2}m ago</div>'
-                    f'<div style="display:flex; align-items:center; gap:10px;"><div style="width:28px; height:28px; border-radius:50%; background:#162E20; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">{initials}</div><span style="font-weight:750; color:#162E20;">{c_name}</span></div>'
-                    f'<div style="color:#475467;">Candidate Profile ({c_exp})</div>'
-                    f'<div><span style="background:#ECFDF5; color:#059669; font-weight:750; font-size:12px; padding:3px 10px; border-radius:8px;">88% FIT</span></div>'
-                    f'<div><span style="background:#DCFCE7; color:#15803D; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:750; display:inline-block;">{c_status}</span></div>'
-                    f'<div style="color:#64748B; font-size:12px; font-weight:600;">Saurabh K.</div>'
-                    f'</div>'
-                )
-                stream_rows_html.append(row_h)
-
-        header_stream_html = (
-            '<div style="display:grid; grid-template-columns: 0.8fr 2fr 2fr 1.2fr 1.2fr 1.2fr; gap:16px; padding:6px 18px 12px 18px; font-size:11px; font-weight:750; color:#94A3B8; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid #E2E8F0;">'
-            '<span>Timestamp</span>'
-            '<span>Candidate</span>'
-            '<span>Role</span>'
-            '<span>AI Score</span>'
-            '<span>Pipeline Stage</span>'
-            '<span>Recruiter</span>'
+        jarvis_banner_html = (
+            '<div style="background: linear-gradient(135deg, #162E20 0%, #1F4230 100%); border-radius: 20px; padding: 22px 26px; color: #FFFFFF; box-shadow: 0 4px 20px rgba(22,46,32,0.12); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08);">'
+            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
+            '<div style="display: flex; align-items: center; gap: 10px;">'
+            '<div style="width: 10px; height: 10px; border-radius: 50%; background: #10B981; box-shadow: 0 0 10px #10B981;"></div>'
+            '<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: #A3C2AE; text-transform: uppercase;">JARVIS LIVE RECRUITMENT INTELLIGENCE</span>'
+            '</div>'
+            f'<span style="background: rgba(16,185,129,0.18); color: #34D399; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 20px; border: 1px solid rgba(52,211,153,0.3);">Pipeline Health: Optimal ({time_range})</span>'
+            '</div>'
+            '<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: center;">'
+            '<div>'
+            f'<div style="font-size: 17px; font-weight: 750; color: #FFFFFF; line-height: 1.4; margin-bottom: 6px;">AI detected <span style="color:#34D399;">{min(total_candidates, 12)} top-tier candidates</span> matching active requisitions (>85% ATS match).</div>'
+            f'<div style="font-size: 13px; color: #D1D5DB; line-height: 1.5;"><b>Recommended Action:</b> Prioritize outreach to <span style="color:#F3F4F1; font-weight:600;">{top_cand_names}</span> for high-demand engineering & voice roles. Fast-tracking outreach increases offer acceptance rate by <b>34%</b>.</div>'
+            '</div>'
+            '<div style="display: flex; flex-direction: column; gap: 8px; justify-content: center;">'
+            '<div style="font-size: 12px; color: #94A3B8; font-weight: 600;">⚡ Instant Quick Actions:</div>'
+            '</div>'
+            '</div>'
             '</div>'
         )
-        stream_card_html = f'<div style="background:#ffffff; border:1px solid #E8EAE6; border-radius:20px; padding:12px 6px; box-shadow:0 2px 12px rgba(22,46,32,0.03);">{header_stream_html}{"".join(stream_rows_html)}</div>'
-        st.markdown(stream_card_html, unsafe_allow_html=True)
+        st.markdown(jarvis_banner_html, unsafe_allow_html=True)
+
+        c_act1, c_act2, c_act3, c_act4 = st.columns(4)
+        with c_act1:
+            if st.button("📋 Review Top Candidates", key="jarvis_act_cands", type="primary", use_container_width=True):
+                st.session_state["nav_override"] = "Candidates"
+                st.rerun()
+        with c_act2:
+            if st.button("🎯 Source 30 Leads", key="jarvis_act_src", use_container_width=True):
+                st.session_state["nav_override"] = "🎯 Talent Lead Gen"
+                st.rerun()
+        with c_act3:
+            if st.button("📅 View Calendar & Interviews", key="jarvis_act_int", use_container_width=True):
+                st.session_state["nav_override"] = "Interviews"
+                st.rerun()
+        with c_act4:
+            if st.button("🤖 Launch AI Recruiter", key="jarvis_act_bot", use_container_width=True):
+                st.session_state["nav_override"] = "AI Recruiter"
+                st.rerun()
+
+        st.write("")
+
+        # ---------------------------------------------------------
+        # 2. REAL-TIME 5-METRIC EXECUTIVE KPI GRID
+        # ---------------------------------------------------------
+        kpi_col1, kpi_col2, kpi_col3, kpi_col4, kpi_col5 = st.columns(5)
+
+        # KPI 1: Total Talent Pool
+        with kpi_col1:
+            fig_bars = go.Figure(data=[
+                go.Bar(
+                    x=[1, 2, 3, 4, 5, 6, 7],
+                    y=[max(2, total_candidates // 6), max(4, total_candidates // 5), max(6, total_candidates // 4), total_candidates, max(5, int(total_candidates * 0.7)), max(3, int(total_candidates * 0.4)), max(4, int(total_candidates * 0.5))],
+                    marker=dict(color=["#E5E7EB", "#E5E7EB", "#E5E7EB", "#162E20", "#D1D5DB", "#E5E7EB", "#E5E7EB"]),
+                    width=0.45,
+                )
+            ])
+            fig_bars.update_layout(height=48, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(visible=False), yaxis=dict(visible=False))
+
+            with st.container(border=True):
+                st.caption("Total Talent Pool")
+                st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{total_candidates:,}</div>', unsafe_allow_html=True)
+                st.markdown('<span style="color:#15803D; font-size:11px; font-weight:700;">+12.4%</span> <span style="color:#64748B; font-size:10px;">vs last period</span>', unsafe_allow_html=True)
+                st.plotly_chart(fig_bars, config={"displayModeBar": False}, width="stretch")
+
+        # KPI 2: Active Open Requisitions
+        with kpi_col2:
+            with st.container(border=True):
+                st.caption("Open Requisitions")
+                st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{open_jobs_count}</div>', unsafe_allow_html=True)
+                st.markdown('<span style="color:#D97706; font-size:11px; font-weight:700;">3 Active</span> <span style="color:#64748B; font-size:10px;">need sourcing</span>', unsafe_allow_html=True)
+                st.progress(min(1.0, open_jobs_count / 25))
+
+        # KPI 3: Scheduled Interviews
+        with kpi_col3:
+            fig_line = go.Figure(data=[
+                go.Scatter(
+                    x=[1, 2, 3, 4, 5, 6],
+                    y=[max(1, interview_count // 4), max(2, interview_count // 3), max(3, interview_count // 2), max(2, int(interview_count * 0.8)), max(4, int(interview_count * 0.9)), interview_count],
+                    mode="lines",
+                    line=dict(color="#10B981", width=2.5, shape="spline"),
+                    fill="tozeroy",
+                    fillcolor="rgba(16, 185, 129, 0.1)",
+                )
+            ])
+            fig_line.update_layout(height=48, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(visible=False), yaxis=dict(visible=False))
+
+            with st.container(border=True):
+                st.caption("Interviews Scheduled")
+                st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{interview_count}</div>', unsafe_allow_html=True)
+                st.markdown('<span style="color:#15803D; font-size:11px; font-weight:700;">+8.2%</span> <span style="color:#64748B; font-size:10px;">this week</span>', unsafe_allow_html=True)
+                st.plotly_chart(fig_line, config={"displayModeBar": False}, width="stretch")
+
+        # KPI 4: Successful Hires & Conversion
+        with kpi_col4:
+            conv_rate = round((selected_count / max(total_applications, 1)) * 100, 1)
+            with st.container(border=True):
+                st.caption("Successful Hires")
+                st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{selected_count}</div>', unsafe_allow_html=True)
+                st.markdown(f'<span style="color:#15803D; font-size:11px; font-weight:700;">{conv_rate}%</span> <span style="color:#64748B; font-size:10px;">conversion</span>', unsafe_allow_html=True)
+                st.progress(min(1.0, selected_count / 15))
+
+        # KPI 5: Avg AI Match Score
+        with kpi_col5:
+            with st.container(border=True):
+                st.caption("Avg AI Match Fit")
+                st.markdown(f'<div style="font-size:26px; font-weight:850; color:#162E20; line-height:1.1; margin-bottom:4px;">{average_candidate_score}%</div>', unsafe_allow_html=True)
+                st.markdown(f'<span style="color:#2563EB; font-size:11px; font-weight:700;">{average_ats_score}% ATS</span> <span style="color:#64748B; font-size:10px;">compatibility</span>', unsafe_allow_html=True)
+                st.progress(min(1.0, average_candidate_score / 100.0))
+
+        st.write("")
+
+        # ---------------------------------------------------------
+        # 3. MULTI-DIMENSIONAL RECRUITMENT VISUALIZATIONS (60% / 40%)
+        # ---------------------------------------------------------
+        chart_col_left, chart_col_right = st.columns([1.6, 1.1])
+
+        # Left Column: Recruitment Velocity Spline & Interactive Funnel
+        with chart_col_left:
+            with st.container(border=True):
+                st.markdown('<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:750; font-size:16px; color:#162E20;">📈 Recruitment Velocity & Inflow Trajectory</span><span style="font-size:11px; color:#64748B; font-weight:600;">Multi-Series Real-Time Spline</span></div>', unsafe_allow_html=True)
+            
+                # Dates range based on timerange
+                n_periods = 7 if time_range == "7D" else (12 if time_range == "30D" else 16)
+                dates_seq = pd.date_range(end=datetime.now(), periods=n_periods, freq="D" if time_range == "7D" else "W").strftime("%d %b")
+            
+                # Dynamic series calculation from database
+                base_cand_inflow = [max(1, int(total_candidates * (i + 1) / (n_periods * 1.1))) for i in range(n_periods)]
+                base_int_inflow = [max(0, int(interview_count * (i + 1) / (n_periods * 1.2))) for i in range(n_periods)]
+                base_hires = [max(0, int(selected_count * (i + 1) / (n_periods * 1.3))) for i in range(n_periods)]
+
+                fig_velocity = go.Figure()
+                fig_velocity.add_trace(go.Scatter(
+                    x=dates_seq,
+                    y=base_cand_inflow,
+                    mode="lines+markers",
+                    name="Candidate Intake",
+                    line=dict(color="#10B981", width=3, shape="spline"),
+                    fill="tozeroy",
+                    fillcolor="rgba(16, 185, 129, 0.10)",
+                    hovertemplate="<b>%{x}</b><br>Candidates Inflow: %{y}<extra></extra>",
+                ))
+                fig_velocity.add_trace(go.Scatter(
+                    x=dates_seq,
+                    y=base_int_inflow,
+                    mode="lines+markers",
+                    name="Interviews",
+                    line=dict(color="#162E20", width=2.5, dash="dot", shape="spline"),
+                    hovertemplate="<b>%{x}</b><br>Interviews: %{y}<extra></extra>",
+                ))
+                fig_velocity.add_trace(go.Scatter(
+                    x=dates_seq,
+                    y=base_hires,
+                    mode="lines+markers",
+                    name="Offers / Hires",
+                    line=dict(color="#F97316", width=2, shape="spline"),
+                    hovertemplate="<b>%{x}</b><br>Offers: %{y}<extra></extra>",
+                ))
+                fig_velocity.update_layout(
+                    height=260,
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
+                    xaxis=dict(showgrid=False, linecolor="#E2E8F0"),
+                    yaxis=dict(showgrid=True, gridcolor="#F1F5F9", linecolor="#E2E8F0"),
+                )
+                st.plotly_chart(fig_velocity, config={"displayModeBar": False}, width="stretch")
+
+            st.write("")
+
+            # Visual Recruitment Funnel Card
+            with st.container(border=True):
+                st.markdown('<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><span style="font-weight:750; font-size:16px; color:#162E20;">⚡ Conversion Funnel & Drop-Off Analytics</span><span style="font-size:11px; color:#10B981; font-weight:700;">Live Conversion Tracking</span></div>', unsafe_allow_html=True)
+            
+                f_applied = max(total_candidates, 51)
+                f_screen = max(total_applications, 38)
+                f_shortlist = max(24, int(f_applied * 0.47))
+                f_interview = max(interview_count, 11)
+                f_offer = max(selected_count, 8)
+                f_hired = selected_count
+
+                funnel_stages = [
+                    {"stage": "1. Applied", "count": f_applied, "pct": 100, "drop": "-", "color": "#162E20"},
+                    {"stage": "2. AI Screened", "count": f_screen, "pct": int((f_screen/f_applied)*100), "drop": f"{100-int((f_screen/f_applied)*100)}%", "color": "#1E3A8A"},
+                    {"stage": "3. Shortlisted", "count": f_shortlist, "pct": int((f_shortlist/f_applied)*100), "drop": f"{int((f_screen/f_applied)*100)-int((f_shortlist/f_applied)*100)}%", "color": "#059669"},
+                    {"stage": "4. Interview", "count": f_interview, "pct": int((f_interview/f_applied)*100), "drop": f"{int((f_shortlist/f_applied)*100)-int((f_interview/f_applied)*100)}%", "color": "#D97706"},
+                    {"stage": "5. Hired", "count": f_hired, "pct": int((f_hired/f_applied)*100), "drop": f"{int((f_interview/f_applied)*100)-int((f_hired/f_applied)*100)}%", "color": "#10B981"},
+                ]
+
+                funnel_rows_html = []
+                for fs in funnel_stages:
+                    funnel_rows_html.append(
+                        f'<div style="margin-bottom: 10px;">'
+                        f'<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">'
+                        f'<span style="font-weight:700; color:#1E293B;">{fs["stage"]} — <b>{fs["count"]} Candidates</b></span>'
+                        f'<span style="color:#64748B; font-size:11px;">{fs["pct"]}% conv. · Drop-off: <span style="color:#EF4444; font-weight:600;">{fs["drop"]}</span></span>'
+                        f'</div>'
+                        f'<div style="width:100%; height:8px; background:#F1F5F9; border-radius:10px; overflow:hidden;">'
+                        f'<div style="width:{fs["pct"]}%; height:100%; background:{fs["color"]}; border-radius:10px;"></div>'
+                        f'</div>'
+                        f'</div>'
+                    )
+                st.markdown("".join(funnel_rows_html), unsafe_allow_html=True)
+
+        # Right Column: Source Distribution Donut & Top Roles Comparison Bar
+        with chart_col_right:
+            # Donut Breakdown
+            with st.container(border=True):
+                st.markdown('<div style="font-weight:750; font-size:15px; color:#162E20; margin-bottom:4px;">🍩 Candidate Channel Distribution</div>', unsafe_allow_html=True)
+            
+                src_labels = ["Naukri.com", "LinkedIn Recruiter", "Indeed", "Direct Form / QR", "Referrals"]
+                src_values = [max(8, int(total_candidates * 0.35)), max(6, int(total_candidates * 0.28)), max(5, int(total_candidates * 0.18)), max(4, int(total_candidates * 0.12)), max(2, int(total_candidates * 0.07))]
+                src_colors = ["#162E20", "#059669", "#10B981", "#84CC16", "#F97316"]
+
+                fig_donut = go.Figure(data=[go.Pie(
+                    labels=src_labels,
+                    values=src_values,
+                    hole=0.62,
+                    marker=dict(colors=src_colors, line=dict(color="#FFFFFF", width=2)),
+                    textinfo="percent+label",
+                    textposition="outside",
+                    showlegend=False,
+                )])
+                fig_donut.update_layout(
+                    height=230,
+                    margin=dict(l=5, r=5, t=10, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    annotations=[dict(text=f"<b>{total_candidates}</b><br><span style='font-size:11px; color:#64748B;'>Total</span>", x=0.5, y=0.5, font_size=16, showarrow=False)],
+                )
+                st.plotly_chart(fig_donut, config={"displayModeBar": False}, width="stretch")
+
+            st.write("")
+
+            # Role Volume & Quality Bars
+            with st.container(border=True):
+                st.markdown('<div style="font-weight:750; font-size:15px; color:#162E20; margin-bottom:4px;">📊 Role Demand & Talent Quality</div>', unsafe_allow_html=True)
+            
+                job_names = raw_jobs["title"].head(4).tolist() if not raw_jobs.empty and "title" in raw_jobs.columns else ["Voice Executive", "AI Engineer", "DevOps", "Data Analyst"]
+                job_counts = [max(3, len(job_names) - i + 4) for i in range(len(job_names))]
+
+                fig_roles = go.Figure(data=[
+                    go.Bar(
+                        x=job_counts,
+                        y=job_names,
+                        orientation="h",
+                        marker=dict(color=["#162E20", "#059669", "#10B981", "#84CC16"][:len(job_names)]),
+                        hovertemplate="<b>%{y}</b><br>Candidates: %{x}<extra></extra>",
+                    )
+                ])
+                fig_roles.update_layout(
+                    height=180,
+                    margin=dict(l=0, r=10, t=5, b=5),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
+                    yaxis=dict(autorange="reversed"),
+                )
+                st.plotly_chart(fig_roles, config={"displayModeBar": False}, width="stretch")
+
+        st.write("")
+
+        # ---------------------------------------------------------
+        # 4. NATURAL LANGUAGE AI EXPLORATION BAR ("Ask JARVIS")
+        # ---------------------------------------------------------
+        with st.container(border=True):
+            st.markdown('<div style="display:flex; align-items:center; gap:8px;"><span style="font-size:18px;">🧠</span><span style="font-size:15px; font-weight:750; color:#162E20;">Ask JARVIS Recruitment Intelligence</span></div>', unsafe_allow_html=True)
+            st.caption("Ask natural language queries across your live talent pool, requisition velocity, or candidate fit.")
+        
+            q_col1, q_col2 = st.columns([3.5, 1])
+            with q_col1:
+                jarvis_query = st.text_input(
+                    "Search / Query",
+                    placeholder="e.g., 'Show top candidates with >85% score in Pune' or 'Summarize pending interviews'",
+                    label_visibility="collapsed",
+                    key="jarvis_explore_input",
+                )
+            with q_col2:
+                query_submitted = st.button("⚡ Query JARVIS", type="primary", use_container_width=True)
+
+            # Preset query chips
+            preset_chips = ["Top Candidates (>85%)", "Interview Conversion Bottlenecks", "Voice Process Requisition Status", "Active Recruiters Summary"]
+            chosen_preset = st.pills("Quick Prompts", preset_chips, label_visibility="collapsed", key="jarvis_preset_pills")
+
+            active_q = jarvis_query or chosen_preset
+            if active_q:
+                with st.spinner("JARVIS is analyzing live candidate pool & telemetry..."):
+                    st.markdown(
+                        f"""
+                        <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:14px; padding:14px 18px; margin-top:8px;">
+                            <div style="font-size:13px; font-weight:750; color:#166534; margin-bottom:4px;">💡 JARVIS Analysis for: "{active_q}"</div>
+                            <div style="font-size:13px; color:#1E293B; line-height:1.5;">
+                                • <b>Candidate Fit Vetting</b>: <b>{min(total_candidates, 12)} candidates</b> exceed the 85% ATS match benchmark across active jobs.<br>
+                                • <b>Pipeline Velocity</b>: Current interview stage conversion is performing at <b>{conv_rate}%</b> with <b>{interview_count}</b> active sessions.<br>
+                                • <b>Requisition Status</b>: <b>{open_jobs_count} open roles</b> active with healthy applicant intake.
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+        st.write("")
+
+        # ---------------------------------------------------------
+        # AI SIGNAL & ANOMALY ALERTS STRIP (Screenshot 1 Pattern)
+        # ---------------------------------------------------------
+        signals_banner_html = """
+        <div style="background: #ffffff; border: 1px solid #e8eae6; border-radius: 18px; padding: 18px 22px; box-shadow: 0 2px 12px rgba(22, 46, 32, 0.03); margin-bottom: 22px;">
+            <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #059669; display: inline-block;"></span>
+                AI Telemetry Signals & Pipeline Recommendations
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                <div style="display: flex; gap: 12px; align-items: flex-start; border-right: 1px solid #f1f5f9; padding-right: 14px;">
+                    <span style="font-size: 20px;">⚠️</span>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 750; color: #b45309;">3 Stalled in Interview Stage</div>
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">Awaiting interviewer scorecard > 4 days. Automated WhatsApp reminder dispatched.</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: flex-start; border-right: 1px solid #f1f5f9; padding-right: 14px;">
+                    <span style="font-size: 20px;">⏳</span>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 750; color: #166534;">4 Fast-Track Candidates (>90%)</div>
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">High ATS match with active certifications. 1-click offer generation recommended.</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: flex-start;">
+                    <span style="font-size: 20px;">💡</span>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 750; color: #1d4ed8;">Channel Conversion Velocity</div>
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">Careers Portal candidates convert 2.4x faster than third-party cold outbound.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+        st.markdown(signals_banner_html, unsafe_allow_html=True)
+
+        # ---------------------------------------------------------
+        # 5. LIVE CANDIDATE STREAM & RECENT ACTIVITY
+        # ---------------------------------------------------------
+        st.markdown('<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><span style="font-size:18px; font-weight:800; color:#162E20;">⚡ Live Candidate Stream & Event Timeline</span><span style="font-size:12px; color:#10B981; font-weight:700;">● Live Stream Active</span></div>', unsafe_allow_html=True)
+
+        if raw_candidates.empty:
+            st.info("No live candidate activity recorded yet.")
+        else:
+            app_candidates = raw_candidates.set_index("id")["full_name"].to_dict() if "full_name" in raw_candidates.columns else {}
+            app_jobs = raw_jobs.set_index("id")["title"].to_dict() if (not raw_jobs.empty and "title" in raw_jobs.columns) else {}
+
+            stream_rows_html = []
+            if not raw_applications.empty:
+                for idx, a_row in raw_applications.head(6).iterrows():
+                    cand_id = str(a_row.get("candidate_id", ""))
+                    job_id = str(a_row.get("job_id", ""))
+                    c_name = app_candidates.get(cand_id, f"Candidate #{idx+1}")
+                    j_title = app_jobs.get(job_id, "Software Engineer")
+                    stage = str(a_row.get("application_stage", "In Review"))
+                    score = int(float(a_row.get("candidate_score", 85) or 85))
+                    applied_date = str(a_row.get("applied_at", "24 Aug"))[:10]
+
+                    initials = "".join([p[0].upper() for p in c_name.split()[:2]]) if c_name else "CD"
+
+                    stage_lower = stage.lower()
+                    if any(s in stage_lower for s in ("select", "hire", "accept")):
+                        s_bg, s_color = "#DCFCE7", "#15803D"
+                    elif any(s in stage_lower for s in ("interview", "sched")):
+                        s_bg, s_color = "#E0E7FF", "#4338CA"
+                    elif any(s in stage_lower for s in ("reject", "disqual")):
+                        s_bg, s_color = "#FEE2E2", "#B91C1C"
+                    else:
+                        s_bg, s_color = "#FEF3C7", "#D97706"
+
+                    row_h = (
+                        f'<div style="display:grid; grid-template-columns: 0.8fr 2fr 2fr 1.2fr 1.2fr 1.2fr; align-items:center; gap:16px; padding:14px 18px; border-bottom:1px solid #F1F5F9; font-size:13.5px;">'
+                        f'<div style="color:#64748B; font-weight:600;">{idx*3 + 2}m ago</div>'
+                        f'<div style="display:flex; align-items:center; gap:10px;"><div style="width:28px; height:28px; border-radius:50%; background:#162E20; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">{initials}</div><span style="font-weight:750; color:#162E20;">{c_name}</span></div>'
+                        f'<div style="color:#475467;">{j_title}</div>'
+                        f'<div><span style="background:#ECFDF5; color:#059669; font-weight:750; font-size:12px; padding:3px 10px; border-radius:8px;">{score}% FIT</span></div>'
+                        f'<div><span style="background:{s_bg}; color:{s_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:750; display:inline-block;">{stage}</span></div>'
+                        f'<div style="color:#64748B; font-size:12px; font-weight:600;">Pravin K.</div>'
+                        f'</div>'
+                    )
+                    stream_rows_html.append(row_h)
+            else:
+                for idx, c_row in raw_candidates.head(6).iterrows():
+                    c_name = str(c_row.get("full_name", "Candidate"))
+                    c_exp = str(c_row.get("years_experience", "3")) + " yrs"
+                    c_status = str(c_row.get("status", "Active"))
+                    initials = "".join([p[0].upper() for p in c_name.split()[:2]]) if c_name else "CD"
+
+                    row_h = (
+                        f'<div style="display:grid; grid-template-columns: 0.8fr 2fr 2fr 1.2fr 1.2fr 1.2fr; align-items:center; gap:16px; padding:14px 18px; border-bottom:1px solid #F1F5F9; font-size:13.5px;">'
+                        f'<div style="color:#64748B; font-weight:600;">{idx*4 + 2}m ago</div>'
+                        f'<div style="display:flex; align-items:center; gap:10px;"><div style="width:28px; height:28px; border-radius:50%; background:#162E20; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">{initials}</div><span style="font-weight:750; color:#162E20;">{c_name}</span></div>'
+                        f'<div style="color:#475467;">Candidate Profile ({c_exp})</div>'
+                        f'<div><span style="background:#ECFDF5; color:#059669; font-weight:750; font-size:12px; padding:3px 10px; border-radius:8px;">88% FIT</span></div>'
+                        f'<div><span style="background:#DCFCE7; color:#15803D; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:750; display:inline-block;">{c_status}</span></div>'
+                        f'<div style="color:#64748B; font-size:12px; font-weight:600;">Saurabh K.</div>'
+                        f'</div>'
+                    )
+                    stream_rows_html.append(row_h)
+
+            header_stream_html = (
+                '<div style="display:grid; grid-template-columns: 0.8fr 2fr 2fr 1.2fr 1.2fr 1.2fr; gap:16px; padding:6px 18px 12px 18px; font-size:11px; font-weight:750; color:#94A3B8; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid #E2E8F0;">'
+                '<span>Timestamp</span>'
+                '<span>Candidate</span>'
+                '<span>Role</span>'
+                '<span>AI Score</span>'
+                '<span>Pipeline Stage</span>'
+                '<span>Recruiter</span>'
+                '</div>'
+            )
+            stream_card_html = f'<div style="background:#ffffff; border:1px solid #E8EAE6; border-radius:20px; padding:12px 6px; box-shadow:0 2px 12px rgba(22,46,32,0.03);">{header_stream_html}{"".join(stream_rows_html)}</div>'
+            st.markdown(stream_card_html, unsafe_allow_html=True)
 
 
-# =========================================================
-# Candidates page
-# =========================================================
+    # =========================================================
+    # Candidates page
+    # =========================================================
 elif selected_page == "Candidates":
     st.markdown(
         '<div class="main-title">Candidates</div>',
@@ -3479,898 +3482,662 @@ elif selected_page == "Candidates":
 # Applications page
 # =========================================================
 elif selected_page == "Applications":
-    st.markdown(
-        '<div class="main-title">'
-        "Applications"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="main-subtitle">'
-        "View live application records from Supabase."
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    if raw_applications.empty:
-        with st.container(border=True):
-            st.markdown("### 📨 No Applications in Your Pipeline Yet")
-            st.caption("Once you publish a job requisition and share your visual hiring posters or candidate intake forms, incoming applicants will appear here.")
-            if st.button("💼 Go to Jobs to Publish a Role", type="primary", key="empty_app_go_jobs"):
-                st.session_state["nav_override"] = "Jobs"
-                st.rerun()
-    else:
-        # Format human-readable application records
-        app_candidates = raw_candidates.set_index("id")["full_name"].to_dict() if (not raw_candidates.empty and "full_name" in raw_candidates.columns) else {}
-        app_jobs = raw_jobs.set_index("id")["title"].to_dict() if (not raw_jobs.empty and "title" in raw_jobs.columns) else {}
-
-        app_rows_html = []
-        for _, app_row in raw_applications.iterrows():
-            cand_id = str(app_row.get("candidate_id", ""))
-            job_id = str(app_row.get("job_id", ""))
-            cand_name = app_candidates.get(cand_id, "Candidate")
-            job_title = app_jobs.get(job_id, "Requisition")
-            stage = str(app_row.get("application_stage", "Applied"))
-            score = int(float(app_row.get("candidate_score", 70) or 70))
-            ats = int(float(app_row.get("ats_score", 75) or 75))
-            recom = str(app_row.get("recommendation", "Consider"))
-            applied_at = str(app_row.get("applied_at", ""))[:16]
-
-            initials = "".join([p[0].upper() for p in cand_name.split()[:2]]) if cand_name else "CD"
-
-            stage_lower = stage.lower()
-            if any(s in stage_lower for s in ("select", "hire", "join")):
-                badge_bg, badge_color = "#dcfce7", "#15803d"
-            elif any(s in stage_lower for s in ("interview", "sched")):
-                badge_bg, badge_color = "#e0e7ff", "#4338ca"
-            elif any(s in stage_lower for s in ("reject", "disqual")):
-                badge_bg, badge_color = "#fee2e2", "#b91c1c"
-            else:
-                badge_bg, badge_color = "#fef3c7", "#b45309"
-
-            row_html = (
-                f'<div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; margin-bottom:8px; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">'
-                f'<div style="display:flex; align-items:center; gap:12px; min-width:220px;">'
-                f'<div style="width:40px; height:40px; border-radius:12px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; border:1px solid #a7f3d0;">{initials}</div>'
-                f'<div><div style="font-weight:700; color:#0f172a; font-size:14px;">{cand_name}</div><div style="color:#64748b; font-size:12px;">{job_title}</div></div>'
-                f'</div>'
-                f'<div style="min-width:140px;">'
-                f'<div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:3px;"><span>Fit Score</span><strong style="color:#0f172a;">{score}%</strong></div>'
-                f'<div style="width:100%; height:6px; background:#f1f5f9; border-radius:10px; overflow:hidden;"><div style="width:{score}%; height:100%; background:linear-gradient(90deg, #10b981, #84cc16); border-radius:10px;"></div></div>'
-                f'</div>'
-                f'<div style="min-width:140px;">'
-                f'<div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:3px;"><span>ATS Match</span><strong style="color:#0f172a;">{ats}%</strong></div>'
-                f'<div style="width:100%; height:6px; background:#f1f5f9; border-radius:10px; overflow:hidden;"><div style="width:{ats}%; height:100%; background:linear-gradient(90deg, #059669, #10b981); border-radius:10px;"></div></div>'
-                f'</div>'
-                f'<div style="min-width:120px; text-align:center;"><span style="background:#f1f5f9; color:#0f172a; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:600;">{recom}</span></div>'
-                f'<div style="min-width:110px; text-align:center;"><span style="background:{badge_bg}; color:{badge_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; display:inline-block;">{stage}</span></div>'
-                f'</div>'
-            )
-            app_rows_html.append(row_html)
-
-        header_html = (
-            '<div style="display:flex; justify-content:space-between; padding:0 16px 10px 16px; font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">'
-            '<span style="min-width:220px;">Applicant & Applied Role</span>'
-            '<span style="min-width:140px;">AI Fit Score</span>'
-            '<span style="min-width:140px;">ATS Compatibility</span>'
-            '<span style="min-width:120px; text-align:center;">Recommendation</span>'
-            '<span style="min-width:110px; text-align:center;">Stage</span>'
-            '</div>'
-        )
-        table_container = f'<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:18px; padding:16px; margin-top:8px; box-shadow:0 4px 16px rgba(0,0,0,0.02);">{header_html}{"".join(app_rows_html)}</div>'
-        st.markdown(table_container, unsafe_allow_html=True)
-
-
-# =========================================================
-# Jobs page
-# =========================================================
-elif selected_page == "Jobs":
-    st.markdown(
-        '<div class="main-title">'
-        "Jobs"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="main-subtitle">'
-        "View open and closed jobs from Supabase."
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    job_success = st.session_state.pop("job_management_success", None)
-    if job_success:
-        st.success(job_success)
-
-    @st.dialog("➕ Post a New Job Requisition", width="large")
-    def create_new_job_dialog() -> None:
-        from services.industry_taxonomy import INDUSTRY_TAXONOMY
-        
-        st.markdown("##### 🏢 Select Pre-configured Role Template (Optional)")
-        template_map = {
-            "📞 BPO - International Voice Process (UK/US Shifts)": {
-                "title": "International Voice Process Executive", "dept": "BPO & Operations", "loc": "Pune, Maharashtra",
-                "exp": 2, "smin": 350000, "smax": 600000, "skills": "English Fluency, UK Accent, Customer Support, CRM, Active Listening",
-                "desc": "Handling inbound customer service queries for UK/US clients with rotational night shifts and cab facility."
-            },
-            "💬 BPO - Non-Voice (Chat & Email Support)": {
-                "title": "Non-Voice Support Associate (Email & Chat)", "dept": "BPO & Customer Support", "loc": "Pune, Maharashtra",
-                "exp": 1, "smin": 300000, "smax": 480000, "skills": "Written English, Live Chat Support, Zendesk, Email Handling, Typing 50+ WPM",
-                "desc": "Delivering empathetic, fast live chat and email support for global e-commerce and technology accounts."
-            },
-            "🧠 KPO - Senior Financial & Equity Research Analyst": {
-                "title": "Senior Financial & Market Research Analyst", "dept": "KPO & Research", "loc": "Mumbai / Pune",
-                "exp": 3, "smin": 700000, "smax": 1200000, "skills": "Financial Modeling, Equity Valuation, Secondary Research, Advanced Excel, Bloomberg",
-                "desc": "Building valuation models, conducting secondary market intelligence, and writing comprehensive equity research reports."
-            },
-            "🏥 Healthcare - Medical Billing & US Claims Specialist": {
-                "title": "Medical Billing & US Healthcare Claims Specialist", "dept": "Healthcare Operations", "loc": "Pune, Maharashtra",
-                "exp": 2, "smin": 400000, "smax": 750000, "skills": "US Healthcare, Medical Billing, HIPAA Compliance, Claims Adjudication, Denial Management",
-                "desc": "Managing end-to-end US healthcare claims processing, AR follow-up, and denial adjudication."
-            },
-            "🎯 Inside Sales - Business Development Specialist": {
-                "title": "Inside Sales & Business Development Specialist", "dept": "Inside Sales & Growth", "loc": "Pune / Bangalore",
-                "exp": 2, "smin": 450000, "smax": 900000, "skills": "B2B Sales, Cold Calling, Lead Qualification, HubSpot, Pipeline Management",
-                "desc": "Outbound discovery, qualified pipeline generation, and closing high-velocity B2B SaaS accounts."
-            },
-            "💻 IT Services - Python Fullstack Developer": {
-                "title": "Python Fullstack Software Engineer", "dept": "Engineering", "loc": "Pune / Remote",
-                "exp": 3, "smin": 800000, "smax": 1600000, "skills": "Python, FastAPI, React, PostgreSQL, Docker, REST APIs, Git",
-                "desc": "Designing and deploying high-performance scalable web applications and microservices."
-            },
-        }
-
-        preset_selection = st.selectbox(
-            "Quick Industry Template Preset",
-            ["-- Custom Job Requisition --"] + list(template_map.keys()),
-            index=1,
-            key="job_creation_preset_select",
+    from ui.views.view_applications import render_applications_workspace
+    render_applications_workspace(raw_applications_df=raw_applications, raw_candidates_df=raw_candidates, raw_jobs_df=raw_jobs, can_manage_candidates=can_manage_candidates)
+    with st.expander('📋 Legacy Application Stream View', expanded=False):
+        st.markdown(
+            '<div class="main-title">'
+            "Applications"
+            "</div>",
+            unsafe_allow_html=True,
         )
 
-        preset_data = template_map.get(preset_selection, {})
+        st.markdown(
+            '<div class="main-subtitle">'
+            "View live application records from Supabase."
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
-        with st.form("create_new_job_form"):
-            new_title = st.text_input("Job Title *", value=preset_data.get("title", ""), placeholder="e.g. International Voice Process Executive")
-            c_dept, c_loc = st.columns(2)
-            new_dept = c_dept.text_input("Department *", value=preset_data.get("dept", "Operations"), placeholder="e.g. BPO & Operations")
-            new_loc = c_loc.text_input("Location *", value=preset_data.get("loc", "Pune, Maharashtra"), placeholder="e.g. Pune / Remote")
-            
-            c_type, c_exp = st.columns(2)
-            new_emp_type = c_type.selectbox(
-                "Employment Type",
-                ["Full Time", "Part Time", "Contract", "Internship", "Remote"]
-            )
-            new_exp = c_exp.number_input("Experience Required (Years)", min_value=0, max_value=30, value=preset_data.get("exp", 2), step=1)
-            
-            c_smin, c_smax = st.columns(2)
-            new_smin = c_smin.number_input("Minimum Salary (INR)", min_value=0, value=preset_data.get("smin", 350000), step=25000)
-            new_smax = c_smax.number_input("Maximum Salary (INR)", min_value=0, value=preset_data.get("smax", 600000), step=25000)
-            
-            new_skills = st.text_input(
-                "Required Skills (comma separated)",
-                value=preset_data.get("skills", "English Fluency, Customer Care, Active Listening, UK Shifts"),
-                placeholder="e.g. English Fluency, CRM, Active Listening"
-            )
-            new_desc = st.text_area(
-                "Job Description",
-                value=preset_data.get("desc", ""),
-                placeholder="Provide responsibilities, requirements, shift details, and benefits..."
-            )
-            auto_source_toggle = st.checkbox(
-                "⚡ Automatically source 30 top candidates with Talent Lead Gen Agent upon publishing",
-                value=True,
-                key="create_job_auto_source_chk",
-            )
-            
-            submitted = st.form_submit_button(
-                "Publish Job Requisition",
-                type="primary",
-                width="stretch",
-                disabled=not can_manage_jobs,
-            )
-        if submitted:
-            if not new_title.strip():
-                st.error("Job title is required.")
-                return
-            if not new_dept.strip():
-                st.error("Department is required.")
-                return
-            try:
-                create_job({
-                    "title": new_title.strip(),
-                    "department": new_dept.strip(),
-                    "location": new_loc.strip() or "Remote",
-                    "employment_type": new_emp_type,
-                    "experience_required": new_exp,
-                    "min_experience": new_exp,
-                    "salary_min": new_smin,
-                    "salary_max": new_smax,
-                    "required_skills": [s.strip() for s in new_skills.split(",") if s.strip()],
-                    "job_description": new_desc.strip(),
-                    "status": "Open",
-                })
-            except Exception as error:
-                st.error(f"Could not publish job: {error}")
-            else:
-                get_jobs.clear()
-                created_job_rec = get_jobs()
-                new_job_id = "job_" + str(hash(new_title) % 100000)
-                if not created_job_rec.empty and "id" in created_job_rec.columns:
-                    new_job_id = str(created_job_rec.iloc[0]["id"])
-                
-                if auto_source_toggle:
-                    try:
-                        skills_arr = [s.strip() for s in new_skills.split(",") if s.strip()]
-                        DEFAULT_TALENT_CLIENT.trigger_sourcing(
-                            job_id=new_job_id,
-                            title=new_title.strip(),
-                            skills=skills_arr,
-                            location=new_loc.strip() or "Pune",
-                            target_count=30,
-                        )
-                        st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published & 30 candidates auto-sourced via Talent Lead Gen Agent!"
-                    except Exception as s_err:
-                        st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published! (Auto-sourcing note: {s_err})"
+        if raw_applications.empty:
+            with st.container(border=True):
+                st.markdown("### 📨 No Applications in Your Pipeline Yet")
+                st.caption("Once you publish a job requisition and share your visual hiring posters or candidate intake forms, incoming applicants will appear here.")
+                if st.button("💼 Go to Jobs to Publish a Role", type="primary", key="empty_app_go_jobs"):
+                    st.session_state["nav_override"] = "Jobs"
+                    st.rerun()
+        else:
+            # Format human-readable application records
+            app_candidates = raw_candidates.set_index("id")["full_name"].to_dict() if (not raw_candidates.empty and "full_name" in raw_candidates.columns) else {}
+            app_jobs = raw_jobs.set_index("id")["title"].to_dict() if (not raw_jobs.empty and "title" in raw_jobs.columns) else {}
+
+            app_rows_html = []
+            for _, app_row in raw_applications.iterrows():
+                cand_id = str(app_row.get("candidate_id", ""))
+                job_id = str(app_row.get("job_id", ""))
+                cand_name = app_candidates.get(cand_id, "Candidate")
+                job_title = app_jobs.get(job_id, "Requisition")
+                stage = str(app_row.get("application_stage", "Applied"))
+                score = int(float(app_row.get("candidate_score", 70) or 70))
+                ats = int(float(app_row.get("ats_score", 75) or 75))
+                recom = str(app_row.get("recommendation", "Consider"))
+                applied_at = str(app_row.get("applied_at", ""))[:16]
+
+                initials = "".join([p[0].upper() for p in cand_name.split()[:2]]) if cand_name else "CD"
+
+                stage_lower = stage.lower()
+                if any(s in stage_lower for s in ("select", "hire", "join")):
+                    badge_bg, badge_color = "#dcfce7", "#15803d"
+                elif any(s in stage_lower for s in ("interview", "sched")):
+                    badge_bg, badge_color = "#e0e7ff", "#4338ca"
+                elif any(s in stage_lower for s in ("reject", "disqual")):
+                    badge_bg, badge_color = "#fee2e2", "#b91c1c"
                 else:
-                    st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published successfully!"
-                st.rerun()
+                    badge_bg, badge_color = "#fef3c7", "#b45309"
 
-    col_left, col_right = st.columns([1, 1])
-    with col_left:
-        if st.button("➕ Post New Job Requisition", type="primary", key="post_new_job_btn", disabled=not can_manage_jobs):
-            create_new_job_dialog()
-    with col_right:
-        show_archived_jobs = st.toggle(
-            "Show archived jobs",
-            value=False,
-            key="show_archived_jobs",
-        )
-
-    if raw_jobs.empty:
-        with st.container(border=True):
-            st.markdown("### 💼 No Job Requisitions in Your Pipeline Yet")
-            st.caption("You haven't posted any jobs in your private workspace yet. Click **➕ Post New Job Requisition** above, or 1-click launch any standardized industry template below to immediately populate your pipeline and auto-source candidate leads:")
-            
-            col_launch1, col_launch2, col_launch3 = st.columns(3)
-            
-            with col_launch1:
-                with st.container(border=True):
-                    st.markdown("#### 📞 International Voice (BPO)")
-                    st.caption("📍 Pune, Maharashtra • ⏳ 2 yrs • 💰 ₹3.5L - ₹6L")
-                    st.markdown("**Skills:** `English Fluency`, `UK Accent`, `CRM`")
-                    if st.button("🚀 Launch Role & Source Leads", key="launch_preset_bpo", type="primary", use_container_width=True):
-                        try:
-                            create_job({
-                                "title": "International Voice Process Executive",
-                                "department": "BPO & Operations",
-                                "location": "Pune, Maharashtra, India",
-                                "employment_type": "Full Time",
-                                "experience_required": 2,
-                                "min_experience": 2,
-                                "salary_min": 350000,
-                                "salary_max": 600000,
-                                "required_skills": ["English Fluency", "UK Accent", "Customer Support", "CRM", "Active Listening"],
-                                "job_description": "Managing inbound customer inquiries for UK/US clients with rotational night shifts.",
-                                "status": "Open",
-                            })
-                            get_jobs.clear()
-                            st.session_state["job_management_success"] = "🎉 International Voice Process Executive published! Sourcing leads..."
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-
-            with col_launch2:
-                with st.container(border=True):
-                    st.markdown("#### 🧠 Equity Research (KPO)")
-                    st.caption("📍 Mumbai / Pune • ⏳ 3 yrs • 💰 ₹7.5L - ₹13L")
-                    st.markdown("**Skills:** `DCF Valuation`, `Excel`, `Bloomberg`")
-                    if st.button("🚀 Launch Role & Source Leads", key="launch_preset_kpo", type="primary", use_container_width=True):
-                        try:
-                            create_job({
-                                "title": "Senior Financial & Equity Research Analyst",
-                                "department": "KPO & Equity Research",
-                                "location": "Mumbai / Pune, India",
-                                "employment_type": "Full Time",
-                                "experience_required": 3,
-                                "min_experience": 3,
-                                "salary_min": 750000,
-                                "salary_max": 1300000,
-                                "required_skills": ["Financial Modeling", "DCF Valuation", "Advanced Excel", "Secondary Research", "Bloomberg"],
-                                "job_description": "Conducting comprehensive fundamental equity analysis and forecasting.",
-                                "status": "Open",
-                            })
-                            get_jobs.clear()
-                            st.session_state["job_management_success"] = "🎉 Senior Financial Analyst published! Sourcing leads..."
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-
-            with col_launch3:
-                with st.container(border=True):
-                    st.markdown("#### 🏥 Healthcare Medical Billing")
-                    st.caption("📍 Pune, Maharashtra • ⏳ 2 yrs • 💰 ₹4L - ₹7.5L")
-                    st.markdown("**Skills:** `US Healthcare`, `ICD-10`, `Claims`")
-                    if st.button("🚀 Launch Role & Source Leads", key="launch_preset_health", type="primary", use_container_width=True):
-                        try:
-                            create_job({
-                                "title": "Medical Billing & US Healthcare Claims Specialist",
-                                "department": "Healthcare Operations",
-                                "location": "Pune, Maharashtra, India",
-                                "employment_type": "Full Time",
-                                "experience_required": 2,
-                                "min_experience": 2,
-                                "salary_min": 400000,
-                                "salary_max": 750000,
-                                "required_skills": ["US Healthcare", "Medical Billing", "HIPAA Compliance", "Claims Adjudication", "Denial Management"],
-                                "job_description": "Managing revenue cycle management (RCM) and claims adjudication.",
-                                "status": "Open",
-                            })
-                            get_jobs.clear()
-                            st.session_state["job_management_success"] = "🎉 Medical Billing Specialist published! Sourcing leads..."
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-    else:
-        with st.popover("Saved job bookmarks", icon=":material/bookmarks:"):
-            if st.button(
-                "Load job bookmarks", key="load_job_bookmarks",
-                disabled=not has_permission("ai"),
-            ):
-                loaded_job_bookmarks, bookmark_storage = list_bookmarks("job")
-                st.session_state["ai_job_bookmarks"] = {
-                    str(bookmark.get("job_id", "")): bookmark
-                    for bookmark in loaded_job_bookmarks
-                    if bookmark.get("job_id")
-                }
-                st.session_state["job_bookmark_storage"] = bookmark_storage
-            bookmarks_to_show = st.session_state.get("ai_job_bookmarks", {})
-            if not bookmarks_to_show:
-                st.caption("No job bookmarks loaded.")
-            for bookmarked_job_id in bookmarks_to_show:
-                title_rows = raw_jobs[
-                    raw_jobs["id"].astype(str).eq(bookmarked_job_id)
-                ]
-                st.write(
-                    title_rows.iloc[0].get("title", bookmarked_job_id)
-                    if not title_rows.empty else bookmarked_job_id
+                row_html = (
+                    f'<div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; margin-bottom:8px; background:#ffffff; border:1px solid #f1f5f9; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.02);">'
+                    f'<div style="display:flex; align-items:center; gap:12px; min-width:220px;">'
+                    f'<div style="width:40px; height:40px; border-radius:12px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; border:1px solid #a7f3d0;">{initials}</div>'
+                    f'<div><div style="font-weight:700; color:#0f172a; font-size:14px;">{cand_name}</div><div style="color:#64748b; font-size:12px;">{job_title}</div></div>'
+                    f'</div>'
+                    f'<div style="min-width:140px;">'
+                    f'<div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:3px;"><span>Fit Score</span><strong style="color:#0f172a;">{score}%</strong></div>'
+                    f'<div style="width:100%; height:6px; background:#f1f5f9; border-radius:10px; overflow:hidden;"><div style="width:{score}%; height:100%; background:linear-gradient(90deg, #10b981, #84cc16); border-radius:10px;"></div></div>'
+                    f'</div>'
+                    f'<div style="min-width:140px;">'
+                    f'<div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:3px;"><span>ATS Match</span><strong style="color:#0f172a;">{ats}%</strong></div>'
+                    f'<div style="width:100%; height:6px; background:#f1f5f9; border-radius:10px; overflow:hidden;"><div style="width:{ats}%; height:100%; background:linear-gradient(90deg, #059669, #10b981); border-radius:10px;"></div></div>'
+                    f'</div>'
+                    f'<div style="min-width:120px; text-align:center;"><span style="background:#f1f5f9; color:#0f172a; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:600;">{recom}</span></div>'
+                    f'<div style="min-width:110px; text-align:center;"><span style="background:{badge_bg}; color:{badge_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; display:inline-block;">{stage}</span></div>'
+                    f'</div>'
                 )
-        jobs_view = raw_jobs.copy()
-        if "status" in jobs_view.columns and not show_archived_jobs:
-            jobs_view = jobs_view[
-                ~jobs_view["status"]
-                .fillna("")
-                .astype(str)
-                .str.casefold()
-                .eq("archived")
-            ]
+                app_rows_html.append(row_html)
 
-        search_job = st.text_input(
-            "Search jobs",
-            placeholder="Search by title, department, location or status",
+            header_html = (
+                '<div style="display:flex; justify-content:space-between; padding:0 16px 10px 16px; font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">'
+                '<span style="min-width:220px;">Applicant & Applied Role</span>'
+                '<span style="min-width:140px;">AI Fit Score</span>'
+                '<span style="min-width:140px;">ATS Compatibility</span>'
+                '<span style="min-width:120px; text-align:center;">Recommendation</span>'
+                '<span style="min-width:110px; text-align:center;">Stage</span>'
+                '</div>'
+            )
+            table_container = f'<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:18px; padding:16px; margin-top:8px; box-shadow:0 4px 16px rgba(0,0,0,0.02);">{header_html}{"".join(app_rows_html)}</div>'
+            st.markdown(table_container, unsafe_allow_html=True)
+
+
+    # =========================================================
+    # Jobs page
+    # =========================================================
+elif selected_page == "Jobs":
+    from ui.views.view_jobs import render_jobs_workspace
+    render_jobs_workspace(raw_jobs_df=raw_jobs, raw_candidates_df=raw_candidates, raw_applications_df=raw_applications, can_manage_jobs=can_manage_jobs)
+    with st.expander('🛠️ Extended Syndication & Poster Production Tools', expanded=False):
+        st.markdown(
+            '<div class="main-title">'
+            "Jobs"
+            "</div>",
+            unsafe_allow_html=True,
         )
-        if search_job:
-            jobs_view = jobs_view[
-                jobs_view.astype(str).apply(
-                    lambda row: row.str.contains(
-                        search_job.strip(), case=False, regex=False
-                    ).any(),
-                    axis=1,
+
+        st.markdown(
+            '<div class="main-subtitle">'
+            "View open and closed jobs from Supabase."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        job_success = st.session_state.pop("job_management_success", None)
+        if job_success:
+            st.success(job_success)
+
+        @st.dialog("➕ Post a New Job Requisition", width="large")
+        def create_new_job_dialog() -> None:
+            from services.industry_taxonomy import INDUSTRY_TAXONOMY
+        
+            st.markdown("##### 🏢 Select Pre-configured Role Template (Optional)")
+            template_map = {
+                "📞 BPO - International Voice Process (UK/US Shifts)": {
+                    "title": "International Voice Process Executive", "dept": "BPO & Operations", "loc": "Pune, Maharashtra",
+                    "exp": 2, "smin": 350000, "smax": 600000, "skills": "English Fluency, UK Accent, Customer Support, CRM, Active Listening",
+                    "desc": "Handling inbound customer service queries for UK/US clients with rotational night shifts and cab facility."
+                },
+                "💬 BPO - Non-Voice (Chat & Email Support)": {
+                    "title": "Non-Voice Support Associate (Email & Chat)", "dept": "BPO & Customer Support", "loc": "Pune, Maharashtra",
+                    "exp": 1, "smin": 300000, "smax": 480000, "skills": "Written English, Live Chat Support, Zendesk, Email Handling, Typing 50+ WPM",
+                    "desc": "Delivering empathetic, fast live chat and email support for global e-commerce and technology accounts."
+                },
+                "🧠 KPO - Senior Financial & Equity Research Analyst": {
+                    "title": "Senior Financial & Market Research Analyst", "dept": "KPO & Research", "loc": "Mumbai / Pune",
+                    "exp": 3, "smin": 700000, "smax": 1200000, "skills": "Financial Modeling, Equity Valuation, Secondary Research, Advanced Excel, Bloomberg",
+                    "desc": "Building valuation models, conducting secondary market intelligence, and writing comprehensive equity research reports."
+                },
+                "🏥 Healthcare - Medical Billing & US Claims Specialist": {
+                    "title": "Medical Billing & US Healthcare Claims Specialist", "dept": "Healthcare Operations", "loc": "Pune, Maharashtra",
+                    "exp": 2, "smin": 400000, "smax": 750000, "skills": "US Healthcare, Medical Billing, HIPAA Compliance, Claims Adjudication, Denial Management",
+                    "desc": "Managing end-to-end US healthcare claims processing, AR follow-up, and denial adjudication."
+                },
+                "🎯 Inside Sales - Business Development Specialist": {
+                    "title": "Inside Sales & Business Development Specialist", "dept": "Inside Sales & Growth", "loc": "Pune / Bangalore",
+                    "exp": 2, "smin": 450000, "smax": 900000, "skills": "B2B Sales, Cold Calling, Lead Qualification, HubSpot, Pipeline Management",
+                    "desc": "Outbound discovery, qualified pipeline generation, and closing high-velocity B2B SaaS accounts."
+                },
+                "💻 IT Services - Python Fullstack Developer": {
+                    "title": "Python Fullstack Software Engineer", "dept": "Engineering", "loc": "Pune / Remote",
+                    "exp": 3, "smin": 800000, "smax": 1600000, "skills": "Python, FastAPI, React, PostgreSQL, Docker, REST APIs, Git",
+                    "desc": "Designing and deploying high-performance scalable web applications and microservices."
+                },
+            }
+
+            preset_selection = st.selectbox(
+                "Quick Industry Template Preset",
+                ["-- Custom Job Requisition --"] + list(template_map.keys()),
+                index=1,
+                key="job_creation_preset_select",
+            )
+
+            preset_data = template_map.get(preset_selection, {})
+
+            with st.form("create_new_job_form"):
+                new_title = st.text_input("Job Title *", value=preset_data.get("title", ""), placeholder="e.g. International Voice Process Executive")
+                c_dept, c_loc = st.columns(2)
+                new_dept = c_dept.text_input("Department *", value=preset_data.get("dept", "Operations"), placeholder="e.g. BPO & Operations")
+                new_loc = c_loc.text_input("Location *", value=preset_data.get("loc", "Pune, Maharashtra"), placeholder="e.g. Pune / Remote")
+            
+                c_type, c_exp = st.columns(2)
+                new_emp_type = c_type.selectbox(
+                    "Employment Type",
+                    ["Full Time", "Part Time", "Contract", "Internship", "Remote"]
                 )
-            ]
-        if jobs_view.empty:
-            st.info("No jobs created yet in your active pipeline.")
-            if st.button("➕ Create Your First Job Requisition", type="primary", key="empty_post_job_btn", disabled=not can_manage_jobs):
-                create_new_job_dialog()
-            st.stop()
-
-        # Render visual Lodgify Job Cards
-        job_rows_html = []
-        for _, job_row in jobs_view.iterrows():
-            j_id = str(job_row.get("id", ""))
-            j_title = str(job_row.get("title", "Untitled Job"))
-            j_dept = str(job_row.get("department", "General"))
-            j_loc = str(job_row.get("location", "Remote"))
-            j_exp = str(job_row.get("experience_required", job_row.get("min_experience", "2+"))) + " Yrs"
-            j_status = str(job_row.get("status", "Open")).strip()
-
-            initials = "".join([p[0].upper() for p in j_title.split()[:2]]) if j_title else "JB"
-            status_bg = "#dcfce7" if j_status.lower() == "open" else "#fee2e2"
-            status_color = "#15803d" if j_status.lower() == "open" else "#b91c1c"
-
-            row_html = (
-                f'<div style="display:grid; grid-template-columns: 3.5fr 1.2fr 1fr; align-items:center; gap:16px; padding:14px 18px; margin-bottom:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 2px 6px rgba(15,23,42,0.02); transition:all 0.15s ease;" onmouseover="this.style.borderColor=\'#10b981\'; this.style.boxShadow=\'0 4px 14px rgba(16,185,129,0.08)\';" onmouseout="this.style.borderColor=\'#e2e8f0\'; this.style.boxShadow=\'0 2px 6px rgba(15,23,42,0.02)\';">'
-                f'<div style="display:flex; align-items:center; gap:14px;">'
-                f'<div style="width:42px; height:42px; min-width:42px; border-radius:12px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-weight:750; font-size:14px; border:1px solid #a7f3d0;">{initials}</div>'
-                f'<div style="overflow:hidden;"><div style="font-weight:750; color:#0f172a; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{j_title}</div><div style="color:#64748b; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{j_dept} • 📍 {j_loc}</div></div>'
-                f'</div>'
-                f'<div><span style="background:#f8fafc; border:1px solid #e2e8f0; color:#475467; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:600; white-space:nowrap;">⏳ {j_exp}</span></div>'
-                f'<div style="text-align:right;"><span style="background:{status_bg}; color:{status_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; display:inline-block;">{j_status}</span></div>'
-                f'</div>'
-            )
-            job_rows_html.append(row_html)
-
-        header_html = (
-            '<div style="display:grid; grid-template-columns: 3.5fr 1.2fr 1fr; gap:16px; padding:4px 18px 10px 18px; font-size:11px; font-weight:750; color:#64748b; text-transform:uppercase; letter-spacing:0.06em;">'
-            '<span>Requisition Title & Location</span>'
-            '<span>Experience Required</span>'
-            '<span style="text-align:right;">Status</span>'
-            '</div>'
-        )
-        jobs_container = f'<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:18px; padding:14px; margin-top:8px; margin-bottom:16px; box-shadow:0 4px 16px rgba(0,0,0,0.02);">{header_html}{"".join(job_rows_html)}</div>'
-        st.markdown(jobs_container, unsafe_allow_html=True)
-
-        job_options = {
-            (
-                f"{safe_value(row, 'title', 'Untitled job')} — "
-                f"{safe_value(row, 'status', 'Unknown')}"
-            ): str(row.get("id", ""))
-            for _, row in jobs_view.iterrows()
-        }
-        selected_job_label = st.selectbox(
-            "Manage job",
-            list(job_options),
-        )
-        managed_job_id = job_options[selected_job_label]
-        managed_job = jobs_view[
-            jobs_view["id"].astype(str).eq(managed_job_id)
-        ].iloc[0]
-        managed_job_status = safe_value(
-            managed_job, "status", "Open"
-        ).strip()
-
-        with st.container(border=True):
-            st.markdown(
-                f"#### {safe_value(managed_job, 'title', 'Untitled job')}"
-            )
-            st.caption(
-                f"{safe_value(managed_job, 'department')} · "
-                f"{safe_value(managed_job, 'location')} · "
-                f"{managed_job_status}"
-            )
-
-            @st.dialog("Edit job", icon=":material/edit:")
-            def edit_job_dialog() -> None:
-                with st.form(f"edit_job_{managed_job_id}"):
-                    job_title = st.text_input(
-                        "Title", value=safe_value(managed_job, "title", "")
-                    )
-                    job_department = st.text_input(
-                        "Department",
-                        value=safe_value(managed_job, "department", ""),
-                    )
-                    job_location = st.text_input(
-                        "Location",
-                        value=safe_value(managed_job, "location", ""),
-                    )
-                    job_description = st.text_area(
-                        "Description",
-                        value=safe_value(managed_job, "description", ""),
-                    )
-                    job_edit_submitted = st.form_submit_button(
-                        "Save job", type="primary", width="stretch",
-                        disabled=not can_manage_jobs,
-                    )
-                if job_edit_submitted:
-                    if not job_title.strip():
-                        st.error("Job title is required.")
-                        return
-                    try:
-                        job_updates = {"title": job_title.strip()}
-                        optional_job_updates = {
-                            "department": job_department.strip(),
-                            "location": job_location.strip(),
-                            "description": job_description.strip(),
-                        }
-                        job_updates.update(
-                            {
-                                field: value
-                                for field, value in optional_job_updates.items()
-                                if field in managed_job.index
-                            }
-                        )
-                        update_job(
-                            managed_job_id,
-                            job_updates,
-                        )
-                    except Exception as error:
-                        st.error(f"Could not update the job: {error}")
-                    else:
-                        get_jobs.clear()
-                        st.session_state["job_management_success"] = (
-                            "Job updated."
-                        )
-                        st.rerun()
-
-            def change_job_status(status: str, message: str) -> None:
-                try:
-                    update_job(managed_job_id, {"status": status})
-                except Exception as error:
-                    st.error(f"Could not update the job: {error}")
+                new_exp = c_exp.number_input("Experience Required (Years)", min_value=0, max_value=30, value=preset_data.get("exp", 2), step=1)
+            
+                c_smin, c_smax = st.columns(2)
+                new_smin = c_smin.number_input("Minimum Salary (INR)", min_value=0, value=preset_data.get("smin", 350000), step=25000)
+                new_smax = c_smax.number_input("Maximum Salary (INR)", min_value=0, value=preset_data.get("smax", 600000), step=25000)
+            
+                new_skills = st.text_input(
+                    "Required Skills (comma separated)",
+                    value=preset_data.get("skills", "English Fluency, Customer Care, Active Listening, UK Shifts"),
+                    placeholder="e.g. English Fluency, CRM, Active Listening"
+                )
+                new_desc = st.text_area(
+                    "Job Description",
+                    value=preset_data.get("desc", ""),
+                    placeholder="Provide responsibilities, requirements, shift details, and benefits..."
+                )
+                auto_source_toggle = st.checkbox(
+                    "⚡ Automatically source 30 top candidates with Talent Lead Gen Agent upon publishing",
+                    value=True,
+                    key="create_job_auto_source_chk",
+                )
+            
+                submitted = st.form_submit_button(
+                    "Publish Job Requisition",
+                    type="primary",
+                    width="stretch",
+                    disabled=not can_manage_jobs,
+                )
+            if submitted:
+                if not new_title.strip():
+                    st.error("Job title is required.")
                     return
-                get_jobs.clear()
-                st.session_state["job_management_success"] = message
-                st.rerun()
+                if not new_dept.strip():
+                    st.error("Department is required.")
+                    return
+                try:
+                    create_job({
+                        "title": new_title.strip(),
+                        "department": new_dept.strip(),
+                        "location": new_loc.strip() or "Remote",
+                        "employment_type": new_emp_type,
+                        "experience_required": new_exp,
+                        "min_experience": new_exp,
+                        "salary_min": new_smin,
+                        "salary_max": new_smax,
+                        "required_skills": [s.strip() for s in new_skills.split(",") if s.strip()],
+                        "job_description": new_desc.strip(),
+                        "status": "Open",
+                    })
+                except Exception as error:
+                    st.error(f"Could not publish job: {error}")
+                else:
+                    get_jobs.clear()
+                    created_job_rec = get_jobs()
+                    new_job_id = "job_" + str(hash(new_title) % 100000)
+                    if not created_job_rec.empty and "id" in created_job_rec.columns:
+                        new_job_id = str(created_job_rec.iloc[0]["id"])
+                
+                    if auto_source_toggle:
+                        try:
+                            skills_arr = [s.strip() for s in new_skills.split(",") if s.strip()]
+                            DEFAULT_TALENT_CLIENT.trigger_sourcing(
+                                job_id=new_job_id,
+                                title=new_title.strip(),
+                                skills=skills_arr,
+                                location=new_loc.strip() or "Pune",
+                                target_count=30,
+                            )
+                            st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published & 30 candidates auto-sourced via Talent Lead Gen Agent!"
+                        except Exception as s_err:
+                            st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published! (Auto-sourcing note: {s_err})"
+                    else:
+                        st.session_state["job_management_success"] = f"Job '{new_title.strip()}' published successfully!"
+                    st.rerun()
 
-            with st.container(horizontal=True):
-                job_bookmarks = st.session_state.setdefault(
-                    "ai_job_bookmarks", {}
-                )
-                job_is_bookmarked = managed_job_id in job_bookmarks
+        col_left, col_right = st.columns([1, 1])
+        with col_left:
+            if st.button("➕ Post New Job Requisition", type="primary", key="post_new_job_btn", disabled=not can_manage_jobs):
+                create_new_job_dialog()
+        with col_right:
+            show_archived_jobs = st.toggle(
+                "Show archived jobs",
+                value=False,
+                key="show_archived_jobs",
+            )
+
+        if raw_jobs.empty:
+            with st.container(border=True):
+                st.markdown("### 💼 No Job Requisitions in Your Pipeline Yet")
+                st.caption("You haven't posted any jobs in your private workspace yet. Click **➕ Post New Job Requisition** above, or 1-click launch any standardized industry template below to immediately populate your pipeline and auto-source candidate leads:")
+            
+                col_launch1, col_launch2, col_launch3 = st.columns(3)
+            
+                with col_launch1:
+                    with st.container(border=True):
+                        st.markdown("#### 📞 International Voice (BPO)")
+                        st.caption("📍 Pune, Maharashtra • ⏳ 2 yrs • 💰 ₹3.5L - ₹6L")
+                        st.markdown("**Skills:** `English Fluency`, `UK Accent`, `CRM`")
+                        if st.button("🚀 Launch Role & Source Leads", key="launch_preset_bpo", type="primary", use_container_width=True):
+                            try:
+                                create_job({
+                                    "title": "International Voice Process Executive",
+                                    "department": "BPO & Operations",
+                                    "location": "Pune, Maharashtra, India",
+                                    "employment_type": "Full Time",
+                                    "experience_required": 2,
+                                    "min_experience": 2,
+                                    "salary_min": 350000,
+                                    "salary_max": 600000,
+                                    "required_skills": ["English Fluency", "UK Accent", "Customer Support", "CRM", "Active Listening"],
+                                    "job_description": "Managing inbound customer inquiries for UK/US clients with rotational night shifts.",
+                                    "status": "Open",
+                                })
+                                get_jobs.clear()
+                                st.session_state["job_management_success"] = "🎉 International Voice Process Executive published! Sourcing leads..."
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error: {e}")
+
+                with col_launch2:
+                    with st.container(border=True):
+                        st.markdown("#### 🧠 Equity Research (KPO)")
+                        st.caption("📍 Mumbai / Pune • ⏳ 3 yrs • 💰 ₹7.5L - ₹13L")
+                        st.markdown("**Skills:** `DCF Valuation`, `Excel`, `Bloomberg`")
+                        if st.button("🚀 Launch Role & Source Leads", key="launch_preset_kpo", type="primary", use_container_width=True):
+                            try:
+                                create_job({
+                                    "title": "Senior Financial & Equity Research Analyst",
+                                    "department": "KPO & Equity Research",
+                                    "location": "Mumbai / Pune, India",
+                                    "employment_type": "Full Time",
+                                    "experience_required": 3,
+                                    "min_experience": 3,
+                                    "salary_min": 750000,
+                                    "salary_max": 1300000,
+                                    "required_skills": ["Financial Modeling", "DCF Valuation", "Advanced Excel", "Secondary Research", "Bloomberg"],
+                                    "job_description": "Conducting comprehensive fundamental equity analysis and forecasting.",
+                                    "status": "Open",
+                                })
+                                get_jobs.clear()
+                                st.session_state["job_management_success"] = "🎉 Senior Financial Analyst published! Sourcing leads..."
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error: {e}")
+
+                with col_launch3:
+                    with st.container(border=True):
+                        st.markdown("#### 🏥 Healthcare Medical Billing")
+                        st.caption("📍 Pune, Maharashtra • ⏳ 2 yrs • 💰 ₹4L - ₹7.5L")
+                        st.markdown("**Skills:** `US Healthcare`, `ICD-10`, `Claims`")
+                        if st.button("🚀 Launch Role & Source Leads", key="launch_preset_health", type="primary", use_container_width=True):
+                            try:
+                                create_job({
+                                    "title": "Medical Billing & US Healthcare Claims Specialist",
+                                    "department": "Healthcare Operations",
+                                    "location": "Pune, Maharashtra, India",
+                                    "employment_type": "Full Time",
+                                    "experience_required": 2,
+                                    "min_experience": 2,
+                                    "salary_min": 400000,
+                                    "salary_max": 750000,
+                                    "required_skills": ["US Healthcare", "Medical Billing", "HIPAA Compliance", "Claims Adjudication", "Denial Management"],
+                                    "job_description": "Managing revenue cycle management (RCM) and claims adjudication.",
+                                    "status": "Open",
+                                })
+                                get_jobs.clear()
+                                st.session_state["job_management_success"] = "🎉 Medical Billing Specialist published! Sourcing leads..."
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error: {e}")
+        else:
+            with st.popover("Saved job bookmarks", icon=":material/bookmarks:"):
                 if st.button(
-                    "Remove bookmark" if job_is_bookmarked else "Bookmark job",
-                    icon=(
-                        ":material/bookmark_remove:"
-                        if job_is_bookmarked
-                        else ":material/bookmark_add:"
-                    ),
-                    key=f"bookmark_job_{managed_job_id}",
+                    "Load job bookmarks", key="load_job_bookmarks",
                     disabled=not has_permission("ai"),
                 ):
-                    saved, storage = toggle_bookmark(
-                        "job",
-                        managed_job_id,
-                        {"Job": safe_value(managed_job, "title", "Untitled job")},
-                    )
-                    if storage == "database":
-                        if saved:
-                            job_bookmarks[managed_job_id] = {
-                                "Job": safe_value(managed_job, "title", "Untitled job")
-                            }
-                        else:
-                            job_bookmarks.pop(managed_job_id, None)
-                    st.rerun()
-                @st.dialog("📢 Share & Social Media Posts", width="large")
-                def share_job_dialog() -> None:
-                    job_title = safe_value(managed_job, "title", "Open Role")
-                    job_dept = safe_value(managed_job, "department", "General")
-                    job_loc = safe_value(managed_job, "location", "Remote / Hybrid")
-                    job_exp = safe_value(managed_job, "experience_required", "")
-                    try:
-                        exp_num = int(float(job_exp))
-                        exp_text = f"{exp_num} years"
-                    except Exception:
-                        exp_text = f"{job_exp} years" if job_exp and str(job_exp).strip() not in {"None", ""} else "Experienced"
-                    
-                    skills_raw = safe_value(managed_job, "required_skills", "")
-                    if isinstance(skills_raw, dict):
-                        skills_list = skills_raw.get("skills", [])
-                    elif isinstance(skills_raw, (list, tuple)):
-                        skills_list = [str(x).strip() for x in skills_raw if str(x).strip()]
-                    elif isinstance(skills_raw, str) and skills_raw.strip():
-                        try:
-                            import ast
-                            parsed = ast.literal_eval(skills_raw)
-                            if isinstance(parsed, dict):
-                                skills_list = parsed.get("skills", [])
-                            elif isinstance(parsed, (list, tuple)):
-                                skills_list = list(parsed)
-                            else:
-                                skills_list = [str(parsed)]
-                        except Exception:
-                            clean_str = skills_raw.strip("[]'\" ")
-                            skills_list = [s.strip(" '\"") for s in clean_str.split(",") if s.strip(" '\"")]
-                    else:
-                        skills_list = []
-                    skills_str = ", ".join([str(s) for s in skills_list[:5]]) if skills_list else "Relevant domain expertise"
-                    
-                    with st.expander("🏢 Agency & Recruiter Custom Branding", expanded=False):
-                        st.caption("Customize your agency or individual recruiter details across all posts & generated posters:")
-                        col_b1, col_b2, col_b3 = st.columns(3)
-                        current_user_email = str(st.session_state.get("auth_user", {}).get("email", ""))
-                        default_hr = current_user_email.split("@")[0].replace(".", " ").title() if current_user_email else "HR Team"
-                        agency_name = col_b1.text_input(
-                            "Agency / Company Name",
-                            value="Netizen Recruitment",
-                            key=f"share_agency_{managed_job_id}",
-                        )
-                        recruiter_name = col_b2.text_input(
-                            "Recruiter Name",
-                            value=default_hr,
-                            key=f"share_hr_name_{managed_job_id}",
-                        )
-                        recruiter_phone = col_b3.text_input(
-                            "HR Phone / WhatsApp Contact",
-                            value="+91 98765 43210",
-                            key=f"share_hr_phone_{managed_job_id}",
-                        )
-
-                    app_link = st.text_input(
-                        "Candidate Application Link (included in all 5 formats below)",
-                        value="https://saurabhautomation7596.app.n8n.cloud/form/b34bc21c-4b57-4147-9759-994fa51752b0",
-                        key=f"share_app_link_{managed_job_id}",
-                        help="Enter your live n8n candidate intake form link or your company careers link."
-                    )
-                    
-                    wa_status = (
-                        f"🚀 *WE'RE HIRING: {job_title}!*\n"
-                        f"🏢 {agency_name} | 📍 {job_loc} | 💼 {exp_text}\n"
-                        f"🛠️ Tech Stack: {skills_str}\n\n"
-                        f"✨ Fast-track AI screening · Great compensation\n"
-                        f"📲 *Apply directly here:*\n"
-                        f"👉 {app_link}\n\n"
-                        f"*(Or contact {recruiter_name}: {recruiter_phone})*"
-                    )
-                    
-                    wa_direct = (
-                        f"Hey! 👋\n"
-                        f"Our team at *{agency_name}* is actively looking for a talented *{job_title}* ({job_dept}) to join us.\n\n"
-                        f"*Key Highlights:*\n"
-                        f"• Role: {job_title}\n"
-                        f"• Location: {job_loc}\n"
-                        f"• Experience: {exp_text}\n"
-                        f"• Core Stack: {skills_str}\n\n"
-                        f"If you or someone in your network might be a great fit, review the role and upload a resume here:\n"
-                        f"🔗 {app_link}\n\n"
-                        f"Best regards,\n"
-                        f"*{recruiter_name}* ({agency_name})\n"
-                        f"📞 {recruiter_phone}"
-                    )
-                    
-                    linkedin_post = (
-                        f"Are you ready to make a high-impact contribution? 🚀\n\n"
-                        f"We at **{agency_name}** are officially hiring a **{job_title}** to join our {job_dept} team!\n\n"
-                        f"🔍 **What We're Looking For:**\n"
-                        f"• {exp_text} of proven hands-on experience\n"
-                        f"• Expertise in: {skills_str}\n"
-                        f"• Strong problem-solving abilities and passion for high-quality delivery\n\n"
-                        f"💡 **Why Join Us?**\n"
-                        f"✅ Work on modern, cutting-edge systems\n"
-                        f"✅ Fast-paced, collaborative growth culture\n"
-                        f"✅ Flexible work environment ({job_loc})\n\n"
-                        f"📥 **How to Apply:**\n"
-                        f"Skip traditional lengthy application processes — upload your resume directly through our fast-track portal:\n"
-                        f"🔗 {app_link}\n\n"
-                        f"Feel free to repost ♻️ or reach out directly to {recruiter_name} ({recruiter_phone})!\n\n"
-                        f"#Hiring #{''.join(job_title.split())} #Careers #JobOpening #{''.join(job_dept.split())} #Jobs"
-                    )
-                    
-                    email_copy = (
-                        f"Subject: We're Hiring: {job_title} Opportunity\n\n"
-                        f"Hi [Candidate Name],\n\n"
-                        f"We came across your background and wanted to reach out from {agency_name} regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
-                        f"Role Details:\n"
-                        f"• Position: {job_title}\n"
-                        f"• Location: {job_loc}\n"
-                        f"• Experience: {exp_text}\n"
-                        f"• Key Skills: {skills_str}\n\n"
-                        f"You can review the full requisition and submit your resume directly here:\n"
-                        f"👉 {app_link}\n\n"
-                        f"Best regards,\n"
-                        f"{recruiter_name}\n"
-                        f"Talent Acquisition Team | {agency_name}\n"
-                        f"📞 {recruiter_phone}"
-                    )
-                    
-                    insta_copy = (
-                        f"🔥 WE'RE HIRING 🔥\n"
-                        f"✨ Role: {job_title}\n"
-                        f"🏢 {agency_name}\n"
-                        f"📍 {job_loc} · {exp_text}\n"
-                        f"⚡ Skills: {skills_str}\n\n"
-                        f"🔗 Tap link in bio / QR sticker to apply in 60s!\n"
-                        f"{app_link}"
-                    )
-                    
-                    import urllib.parse
-                    encoded_wa_status = urllib.parse.quote(wa_status)
-                    encoded_wa_direct = urllib.parse.quote(wa_direct)
-                    encoded_email_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
-                    encoded_email_body = urllib.parse.quote(email_copy)
-                    encoded_li_url = urllib.parse.quote(app_link)
-
-                    # Pre-generate poster bytes so all social tabs have the image ready
-                    import importlib
-                    import services.poster_service as ps
-                    importlib.reload(ps)
-                    sal_min = safe_value(managed_job, "salary_min", "")
-                    sal_max = safe_value(managed_job, "salary_max", "")
-                    sal_display = f"₹{sal_min} - ₹{sal_max}" if sal_min and sal_max else ""
-                    
-                    theme_map = {
-                        "Royal Blue (Corporate)": "blue",
-                        "Teal & Gold (Modern)": "teal",
-                        "Vibrant Orange (Bold)": "orange",
-                        "Dark Tech (Cyberpunk)": "dark_tech",
-                        "Purple Gradient (Executive)": "purple",
+                    loaded_job_bookmarks, bookmark_storage = list_bookmarks("job")
+                    st.session_state["ai_job_bookmarks"] = {
+                        str(bookmark.get("job_id", "")): bookmark
+                        for bookmark in loaded_job_bookmarks
+                        if bookmark.get("job_id")
                     }
-                    selected_theme_label = st.session_state.get(f"poster_theme_select_{managed_job_id}", "Royal Blue (Corporate)")
-                    chosen_theme = theme_map.get(selected_theme_label, "blue")
-                    
-                    poster_bytes = ps.generate_job_banner_image(
-                        job_title=job_title,
-                        department=job_dept,
-                        location=job_loc,
-                        experience=exp_text,
-                        skills=skills_list,
-                        salary=sal_display,
-                        app_link=app_link,
-                        company_name=agency_name,
-                        recruiter_contact=f"{recruiter_name} ({recruiter_phone})",
-                        theme=chosen_theme,
+                    st.session_state["job_bookmark_storage"] = bookmark_storage
+                bookmarks_to_show = st.session_state.get("ai_job_bookmarks", {})
+                if not bookmarks_to_show:
+                    st.caption("No job bookmarks loaded.")
+                for bookmarked_job_id in bookmarks_to_show:
+                    title_rows = raw_jobs[
+                        raw_jobs["id"].astype(str).eq(bookmarked_job_id)
+                    ]
+                    st.write(
+                        title_rows.iloc[0].get("title", bookmarked_job_id)
+                        if not title_rows.empty else bookmarked_job_id
                     )
+            jobs_view = raw_jobs.copy()
+            if "status" in jobs_view.columns and not show_archived_jobs:
+                jobs_view = jobs_view[
+                    ~jobs_view["status"]
+                    .fillna("")
+                    .astype(str)
+                    .str.casefold()
+                    .eq("archived")
+                ]
 
-                    t1, t2, t3, t4, t5, t6, t7 = st.tabs([
-                        "📱 WhatsApp Status",
-                        "💬 WhatsApp Message",
-                        "💼 LinkedIn Post",
-                        "📧 Candidate Email",
-                        "📸 Instagram Post",
-                        "🎨 Visual Hiring Poster",
-                        "🏢 Job Boards (Naukri / Indeed / LinkedIn / GitHub / Foundit)"
-                    ])
-                    with t1:
-                        c_t1_l, c_t1_r = st.columns([1.5, 1])
-                        with c_t1_l:
-                            st.caption("WhatsApp Status copy:")
-                            edited_wa_status = st.text_area(
-                                "WhatsApp Status Text",
-                                value=wa_status,
-                                height=180,
-                                key=f"edit_wa_status_{managed_job_id}",
-                                label_visibility="collapsed",
-                            )
-                            st.link_button(
-                                "📲 Open WhatsApp Web / App",
-                                f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_status)}",
-                                type="primary",
-                                use_container_width=True,
-                            )
-                        with c_t1_r:
-                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
-                            st.download_button(
-                                "📥 Download Poster Image",
-                                data=poster_bytes,
-                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
-                                mime="image/png",
-                                key=f"dl_wa_status_{managed_job_id}",
-                                use_container_width=True,
-                            )
+            search_job = st.text_input(
+                "Search jobs",
+                placeholder="Search by title, department, location or status",
+            )
+            if search_job:
+                jobs_view = jobs_view[
+                    jobs_view.astype(str).apply(
+                        lambda row: row.str.contains(
+                            search_job.strip(), case=False, regex=False
+                        ).any(),
+                        axis=1,
+                    )
+                ]
+            if jobs_view.empty:
+                st.info("No jobs created yet in your active pipeline.")
+                if st.button("➕ Create Your First Job Requisition", type="primary", key="empty_post_job_btn", disabled=not can_manage_jobs):
+                    create_new_job_dialog()
+                st.stop()
 
-                    with t2:
-                        c_t2_l, c_t2_r = st.columns([1.5, 1])
-                        with c_t2_l:
-                            st.caption("WhatsApp chat message:")
-                            edited_wa_direct = st.text_area(
-                                "WhatsApp Message Text",
-                                value=wa_direct,
-                                height=180,
-                                key=f"edit_wa_direct_{managed_job_id}",
-                                label_visibility="collapsed",
-                            )
-                            c_wa1, c_wa2 = st.columns([1, 1])
-                            with c_wa1:
-                                st.link_button(
-                                    "💬 Open WhatsApp",
-                                    f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
-                                    use_container_width=True,
-                                )
-                            with c_wa2:
-                                if st.button("🚀 1-Click Broadcast (n8n)", key=f"auto_wa_{managed_job_id}", type="primary", use_container_width=True):
-                                    with st.spinner("Dispatching broadcast..."):
-                                        from services.social_service import auto_publish_social_post
-                                        res = auto_publish_social_post(
-                                            channel="whatsapp",
-                                            job_id=managed_job_id,
-                                            job_title=job_title,
-                                            caption=edited_wa_direct,
-                                            app_link=app_link,
-                                            image_bytes=poster_bytes,
-                                            agency_name=agency_name,
-                                            recruiter_name=recruiter_name,
-                                            recruiter_contact=recruiter_phone,
-                                        )
-                                        if res.get("success"):
-                                            st.success(f"✅ {res.get('message')}")
-                                        else:
-                                            st.error(f"❌ {res.get('message')}")
-                        with c_t2_r:
-                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
-                            st.download_button(
-                                "📥 Download Poster Image",
-                                data=poster_bytes,
-                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
-                                mime="image/png",
-                                key=f"dl_wa_direct_{managed_job_id}",
-                                use_container_width=True,
-                            )
+            # Render visual Lodgify Job Cards
+            job_rows_html = []
+            for _, job_row in jobs_view.iterrows():
+                j_id = str(job_row.get("id", ""))
+                j_title = str(job_row.get("title", "Untitled Job"))
+                j_dept = str(job_row.get("department", "General"))
+                j_loc = str(job_row.get("location", "Remote"))
+                j_exp = str(job_row.get("experience_required", job_row.get("min_experience", "2+"))) + " Yrs"
+                j_status = str(job_row.get("status", "Open")).strip()
 
-                    with t3:
-                        c_t3_l, c_t3_r = st.columns([1.5, 1])
-                        with c_t3_l:
-                            st.caption("LinkedIn Post text:")
-                            edited_li_post = st.text_area(
-                                "LinkedIn Post Text",
-                                value=linkedin_post,
-                                height=220,
-                                key=f"edit_li_post_{managed_job_id}",
-                                label_visibility="collapsed",
-                            )
-                            c_li1, c_li2 = st.columns([1, 1])
-                            with c_li1:
-                                st.link_button(
-                                    "💼 Share on LinkedIn",
-                                    f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
-                                    use_container_width=True,
-                                )
-                            with c_li2:
-                                if st.button("🚀 1-Click Auto-Post (n8n)", key=f"auto_li_{managed_job_id}", type="primary", use_container_width=True):
-                                    with st.spinner("Publishing post + poster to LinkedIn..."):
-                                        from services.social_service import auto_publish_social_post
-                                        res = auto_publish_social_post(
-                                            channel="linkedin",
-                                            job_id=managed_job_id,
-                                            job_title=job_title,
-                                            caption=edited_li_post,
-                                            app_link=app_link,
-                                            image_bytes=poster_bytes,
-                                            agency_name=agency_name,
-                                            recruiter_name=recruiter_name,
-                                            recruiter_contact=recruiter_phone,
-                                        )
-                                        if res.get("success"):
-                                            st.success(f"✅ {res.get('message')}")
-                                        else:
-                                            st.error(f"❌ {res.get('message')}")
-                        with c_t3_r:
-                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
-                            st.download_button(
-                                "📥 Download Poster for LinkedIn",
-                                data=poster_bytes,
-                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
-                                mime="image/png",
-                                key=f"dl_li_{managed_job_id}",
-                                use_container_width=True,
-                            )
+                initials = "".join([p[0].upper() for p in j_title.split()[:2]]) if j_title else "JB"
+                status_bg = "#dcfce7" if j_status.lower() == "open" else "#fee2e2"
+                status_color = "#15803d" if j_status.lower() == "open" else "#b91c1c"
 
-                    with t4:
-                        st.markdown("##### 👥 Select Candidate(s) from Database")
-                        
-                        cand_df = get_candidates()
-                        cand_options = {}
-                        cand_name_map = {}
-                        if not cand_df.empty and "email" in cand_df.columns:
-                            for _, row in cand_df.iterrows():
-                                c_email = str(row.get("email", "")).strip()
-                                c_name = str(row.get("full_name", "Candidate")).strip()
-                                if c_email and c_email.lower() != "none":
-                                    label = f"{c_name} — {c_email}"
-                                    cand_options[label] = c_email
-                                    cand_name_map[label] = c_name
+                row_html = (
+                    f'<div style="display:grid; grid-template-columns: 3.5fr 1.2fr 1fr; align-items:center; gap:16px; padding:14px 18px; margin-bottom:8px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 2px 6px rgba(15,23,42,0.02); transition:all 0.15s ease;" onmouseover="this.style.borderColor=\'#10b981\'; this.style.boxShadow=\'0 4px 14px rgba(16,185,129,0.08)\';" onmouseout="this.style.borderColor=\'#e2e8f0\'; this.style.boxShadow=\'0 2px 6px rgba(15,23,42,0.02)\';">'
+                    f'<div style="display:flex; align-items:center; gap:14px;">'
+                    f'<div style="width:42px; height:42px; min-width:42px; border-radius:12px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-weight:750; font-size:14px; border:1px solid #a7f3d0;">{initials}</div>'
+                    f'<div style="overflow:hidden;"><div style="font-weight:750; color:#0f172a; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{j_title}</div><div style="color:#64748b; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{j_dept} • 📍 {j_loc}</div></div>'
+                    f'</div>'
+                    f'<div><span style="background:#f8fafc; border:1px solid #e2e8f0; color:#475467; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:600; white-space:nowrap;">⏳ {j_exp}</span></div>'
+                    f'<div style="text-align:right;"><span style="background:{status_bg}; color:{status_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; display:inline-block;">{j_status}</span></div>'
+                    f'</div>'
+                )
+                job_rows_html.append(row_html)
 
-                        selected_cand_labels = st.multiselect(
-                            "Choose candidate(s) to email this job opening:",
-                            options=list(cand_options.keys()),
-                            default=list(cand_options.keys())[:1] if cand_options else [],
-                            placeholder="Search by candidate name or email...",
-                            key=f"share_email_recipients_{managed_job_id}",
+            header_html = (
+                '<div style="display:grid; grid-template-columns: 3.5fr 1.2fr 1fr; gap:16px; padding:4px 18px 10px 18px; font-size:11px; font-weight:750; color:#64748b; text-transform:uppercase; letter-spacing:0.06em;">'
+                '<span>Requisition Title & Location</span>'
+                '<span>Experience Required</span>'
+                '<span style="text-align:right;">Status</span>'
+                '</div>'
+            )
+            jobs_container = f'<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:18px; padding:14px; margin-top:8px; margin-bottom:16px; box-shadow:0 4px 16px rgba(0,0,0,0.02);">{header_html}{"".join(job_rows_html)}</div>'
+            st.markdown(jobs_container, unsafe_allow_html=True)
+
+            job_options = {
+                (
+                    f"{safe_value(row, 'title', 'Untitled job')} — "
+                    f"{safe_value(row, 'status', 'Unknown')}"
+                ): str(row.get("id", ""))
+                for _, row in jobs_view.iterrows()
+            }
+            selected_job_label = st.selectbox(
+                "Manage job",
+                list(job_options),
+            )
+            managed_job_id = job_options[selected_job_label]
+            managed_job = jobs_view[
+                jobs_view["id"].astype(str).eq(managed_job_id)
+            ].iloc[0]
+            managed_job_status = safe_value(
+                managed_job, "status", "Open"
+            ).strip()
+
+            with st.container(border=True):
+                st.markdown(
+                    f"#### {safe_value(managed_job, 'title', 'Untitled job')}"
+                )
+                st.caption(
+                    f"{safe_value(managed_job, 'department')} · "
+                    f"{safe_value(managed_job, 'location')} · "
+                    f"{managed_job_status}"
+                )
+
+                @st.dialog("Edit job", icon=":material/edit:")
+                def edit_job_dialog() -> None:
+                    with st.form(f"edit_job_{managed_job_id}"):
+                        job_title = st.text_input(
+                            "Title", value=safe_value(managed_job, "title", "")
                         )
-
-                        if len(selected_cand_labels) == 1:
-                            target_label = selected_cand_labels[0]
-                            recipient_email = cand_options[target_label]
-                            cand_first_name = cand_name_map[target_label].split()[0]
-                            greeting = f"Hi {cand_first_name},"
-                            mail_to_param = recipient_email
-                            mail_bcc_param = ""
-                            st.caption(f"🎯 Personalizing email for **{cand_name_map[target_label]}** (`{recipient_email}`)")
-                        elif len(selected_cand_labels) > 1:
-                            target_emails = [cand_options[lbl] for lbl in selected_cand_labels]
-                            recipient_email = ""
-                            greeting = "Hi Candidate,"
-                            mail_to_param = ""
-                            mail_bcc_param = ",".join(target_emails)
-                            st.caption(f"👥 Bulk emailing **{len(selected_cand_labels)} candidates** via BCC privacy guard.")
+                        job_department = st.text_input(
+                            "Department",
+                            value=safe_value(managed_job, "department", ""),
+                        )
+                        job_location = st.text_input(
+                            "Location",
+                            value=safe_value(managed_job, "location", ""),
+                        )
+                        job_description = st.text_area(
+                            "Description",
+                            value=safe_value(managed_job, "description", ""),
+                        )
+                        job_edit_submitted = st.form_submit_button(
+                            "Save job", type="primary", width="stretch",
+                            disabled=not can_manage_jobs,
+                        )
+                    if job_edit_submitted:
+                        if not job_title.strip():
+                            st.error("Job title is required.")
+                            return
+                        try:
+                            job_updates = {"title": job_title.strip()}
+                            optional_job_updates = {
+                                "department": job_department.strip(),
+                                "location": job_location.strip(),
+                                "description": job_description.strip(),
+                            }
+                            job_updates.update(
+                                {
+                                    field: value
+                                    for field, value in optional_job_updates.items()
+                                    if field in managed_job.index
+                                }
+                            )
+                            update_job(
+                                managed_job_id,
+                                job_updates,
+                            )
+                        except Exception as error:
+                            st.error(f"Could not update the job: {error}")
                         else:
-                            greeting = "Hi [Candidate Name],"
-                            mail_to_param = ""
-                            mail_bcc_param = ""
-                            st.caption("ℹ️ No specific candidate selected. Showing generic template:")
+                            get_jobs.clear()
+                            st.session_state["job_management_success"] = (
+                                "Job updated."
+                            )
+                            st.rerun()
 
-                        personalized_email_copy = (
+                def change_job_status(status: str, message: str) -> None:
+                    try:
+                        update_job(managed_job_id, {"status": status})
+                    except Exception as error:
+                        st.error(f"Could not update the job: {error}")
+                        return
+                    get_jobs.clear()
+                    st.session_state["job_management_success"] = message
+                    st.rerun()
+
+                with st.container(horizontal=True):
+                    job_bookmarks = st.session_state.setdefault(
+                        "ai_job_bookmarks", {}
+                    )
+                    job_is_bookmarked = managed_job_id in job_bookmarks
+                    if st.button(
+                        "Remove bookmark" if job_is_bookmarked else "Bookmark job",
+                        icon=(
+                            ":material/bookmark_remove:"
+                            if job_is_bookmarked
+                            else ":material/bookmark_add:"
+                        ),
+                        key=f"bookmark_job_{managed_job_id}",
+                        disabled=not has_permission("ai"),
+                    ):
+                        saved, storage = toggle_bookmark(
+                            "job",
+                            managed_job_id,
+                            {"Job": safe_value(managed_job, "title", "Untitled job")},
+                        )
+                        if storage == "database":
+                            if saved:
+                                job_bookmarks[managed_job_id] = {
+                                    "Job": safe_value(managed_job, "title", "Untitled job")
+                                }
+                            else:
+                                job_bookmarks.pop(managed_job_id, None)
+                        st.rerun()
+                    @st.dialog("📢 Share & Social Media Posts", width="large")
+                    def share_job_dialog() -> None:
+                        job_title = safe_value(managed_job, "title", "Open Role")
+                        job_dept = safe_value(managed_job, "department", "General")
+                        job_loc = safe_value(managed_job, "location", "Remote / Hybrid")
+                        job_exp = safe_value(managed_job, "experience_required", "")
+                        try:
+                            exp_num = int(float(job_exp))
+                            exp_text = f"{exp_num} years"
+                        except Exception:
+                            exp_text = f"{job_exp} years" if job_exp and str(job_exp).strip() not in {"None", ""} else "Experienced"
+                    
+                        skills_raw = safe_value(managed_job, "required_skills", "")
+                        if isinstance(skills_raw, dict):
+                            skills_list = skills_raw.get("skills", [])
+                        elif isinstance(skills_raw, (list, tuple)):
+                            skills_list = [str(x).strip() for x in skills_raw if str(x).strip()]
+                        elif isinstance(skills_raw, str) and skills_raw.strip():
+                            try:
+                                import ast
+                                parsed = ast.literal_eval(skills_raw)
+                                if isinstance(parsed, dict):
+                                    skills_list = parsed.get("skills", [])
+                                elif isinstance(parsed, (list, tuple)):
+                                    skills_list = list(parsed)
+                                else:
+                                    skills_list = [str(parsed)]
+                            except Exception:
+                                clean_str = skills_raw.strip("[]'\" ")
+                                skills_list = [s.strip(" '\"") for s in clean_str.split(",") if s.strip(" '\"")]
+                        else:
+                            skills_list = []
+                        skills_str = ", ".join([str(s) for s in skills_list[:5]]) if skills_list else "Relevant domain expertise"
+                    
+                        with st.expander("🏢 Agency & Recruiter Custom Branding", expanded=False):
+                            st.caption("Customize your agency or individual recruiter details across all posts & generated posters:")
+                            col_b1, col_b2, col_b3 = st.columns(3)
+                            current_user_email = str(st.session_state.get("auth_user", {}).get("email", ""))
+                            default_hr = current_user_email.split("@")[0].replace(".", " ").title() if current_user_email else "HR Team"
+                            agency_name = col_b1.text_input(
+                                "Agency / Company Name",
+                                value="Netizen Recruitment",
+                                key=f"share_agency_{managed_job_id}",
+                            )
+                            recruiter_name = col_b2.text_input(
+                                "Recruiter Name",
+                                value=default_hr,
+                                key=f"share_hr_name_{managed_job_id}",
+                            )
+                            recruiter_phone = col_b3.text_input(
+                                "HR Phone / WhatsApp Contact",
+                                value="+91 98765 43210",
+                                key=f"share_hr_phone_{managed_job_id}",
+                            )
+
+                        app_link = st.text_input(
+                            "Candidate Application Link (included in all 5 formats below)",
+                            value="https://saurabhautomation7596.app.n8n.cloud/form/b34bc21c-4b57-4147-9759-994fa51752b0",
+                            key=f"share_app_link_{managed_job_id}",
+                            help="Enter your live n8n candidate intake form link or your company careers link."
+                        )
+                    
+                        wa_status = (
+                            f"🚀 *WE'RE HIRING: {job_title}!*\n"
+                            f"🏢 {agency_name} | 📍 {job_loc} | 💼 {exp_text}\n"
+                            f"🛠️ Tech Stack: {skills_str}\n\n"
+                            f"✨ Fast-track AI screening · Great compensation\n"
+                            f"📲 *Apply directly here:*\n"
+                            f"👉 {app_link}\n\n"
+                            f"*(Or contact {recruiter_name}: {recruiter_phone})*"
+                        )
+                    
+                        wa_direct = (
+                            f"Hey! 👋\n"
+                            f"Our team at *{agency_name}* is actively looking for a talented *{job_title}* ({job_dept}) to join us.\n\n"
+                            f"*Key Highlights:*\n"
+                            f"• Role: {job_title}\n"
+                            f"• Location: {job_loc}\n"
+                            f"• Experience: {exp_text}\n"
+                            f"• Core Stack: {skills_str}\n\n"
+                            f"If you or someone in your network might be a great fit, review the role and upload a resume here:\n"
+                            f"🔗 {app_link}\n\n"
+                            f"Best regards,\n"
+                            f"*{recruiter_name}* ({agency_name})\n"
+                            f"📞 {recruiter_phone}"
+                        )
+                    
+                        linkedin_post = (
+                            f"Are you ready to make a high-impact contribution? 🚀\n\n"
+                            f"We at **{agency_name}** are officially hiring a **{job_title}** to join our {job_dept} team!\n\n"
+                            f"🔍 **What We're Looking For:**\n"
+                            f"• {exp_text} of proven hands-on experience\n"
+                            f"• Expertise in: {skills_str}\n"
+                            f"• Strong problem-solving abilities and passion for high-quality delivery\n\n"
+                            f"💡 **Why Join Us?**\n"
+                            f"✅ Work on modern, cutting-edge systems\n"
+                            f"✅ Fast-paced, collaborative growth culture\n"
+                            f"✅ Flexible work environment ({job_loc})\n\n"
+                            f"📥 **How to Apply:**\n"
+                            f"Skip traditional lengthy application processes — upload your resume directly through our fast-track portal:\n"
+                            f"🔗 {app_link}\n\n"
+                            f"Feel free to repost ♻️ or reach out directly to {recruiter_name} ({recruiter_phone})!\n\n"
+                            f"#Hiring #{''.join(job_title.split())} #Careers #JobOpening #{''.join(job_dept.split())} #Jobs"
+                        )
+                    
+                        email_copy = (
                             f"Subject: We're Hiring: {job_title} Opportunity\n\n"
-                            f"{greeting}\n\n"
+                            f"Hi [Candidate Name],\n\n"
                             f"We came across your background and wanted to reach out from {agency_name} regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
                             f"Role Details:\n"
                             f"• Position: {job_title}\n"
@@ -4384,415 +4151,657 @@ elif selected_page == "Jobs":
                             f"Talent Acquisition Team | {agency_name}\n"
                             f"📞 {recruiter_phone}"
                         )
+                    
+                        insta_copy = (
+                            f"🔥 WE'RE HIRING 🔥\n"
+                            f"✨ Role: {job_title}\n"
+                            f"🏢 {agency_name}\n"
+                            f"📍 {job_loc} · {exp_text}\n"
+                            f"⚡ Skills: {skills_str}\n\n"
+                            f"🔗 Tap link in bio / QR sticker to apply in 60s!\n"
+                            f"{app_link}"
+                        )
+                    
+                        import urllib.parse
+                        encoded_wa_status = urllib.parse.quote(wa_status)
+                        encoded_wa_direct = urllib.parse.quote(wa_direct)
+                        encoded_email_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
+                        encoded_email_body = urllib.parse.quote(email_copy)
+                        encoded_li_url = urllib.parse.quote(app_link)
 
-                        edited_email_copy = st.text_area(
-                            "Email Body",
-                            value=personalized_email_copy,
-                            height=220,
-                            key=f"edit_email_copy_{managed_job_id}",
-                            label_visibility="collapsed",
+                        # Pre-generate poster bytes so all social tabs have the image ready
+                        import importlib
+                        import services.poster_service as ps
+                        importlib.reload(ps)
+                        sal_min = safe_value(managed_job, "salary_min", "")
+                        sal_max = safe_value(managed_job, "salary_max", "")
+                        sal_display = f"₹{sal_min} - ₹{sal_max}" if sal_min and sal_max else ""
+                    
+                        theme_map = {
+                            "Royal Blue (Corporate)": "blue",
+                            "Teal & Gold (Modern)": "teal",
+                            "Vibrant Orange (Bold)": "orange",
+                            "Dark Tech (Cyberpunk)": "dark_tech",
+                            "Purple Gradient (Executive)": "purple",
+                        }
+                        selected_theme_label = st.session_state.get(f"poster_theme_select_{managed_job_id}", "Royal Blue (Corporate)")
+                        chosen_theme = theme_map.get(selected_theme_label, "blue")
+                    
+                        poster_bytes = ps.generate_job_banner_image(
+                            job_title=job_title,
+                            department=job_dept,
+                            location=job_loc,
+                            experience=exp_text,
+                            skills=skills_list,
+                            salary=sal_display,
+                            app_link=app_link,
+                            company_name=agency_name,
+                            recruiter_contact=f"{recruiter_name} ({recruiter_phone})",
+                            theme=chosen_theme,
                         )
 
-                        encoded_pers_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
-                        encoded_pers_body = urllib.parse.quote(edited_email_copy)
-                        
-                        gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&su={encoded_pers_subj}&body={encoded_pers_body}"
-                        if mail_to_param:
-                            gmail_url += f"&to={urllib.parse.quote(mail_to_param)}"
-                        if mail_bcc_param:
-                            gmail_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
-
-                        outlook_url = f"https://outlook.live.com/mail/0/deeplink/compose?subject={encoded_pers_subj}&body={encoded_pers_body}"
-                        if mail_to_param:
-                            outlook_url += f"&to={urllib.parse.quote(mail_to_param)}"
-                        if mail_bcc_param:
-                            outlook_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
-
-                        c_mail1, c_mail2 = st.columns([1.5, 1])
-                        with c_mail1:
-                            st.link_button(
-                                "📧 Open in Gmail (Default)",
-                                gmail_url,
-                                type="primary",
-                                use_container_width=True,
-                            )
-                        with c_mail2:
-                            st.link_button(
-                                "✉️ Open in Outlook",
-                                outlook_url,
-                                use_container_width=True,
-                            )
-                    with t5:
-                        c_t5_l, c_t5_r = st.columns([1.5, 1])
-                        with c_t5_l:
-                            st.caption("Instagram caption:")
-                            edited_insta_copy = st.text_area(
-                                "Instagram Post / Story Caption",
-                                value=insta_copy,
-                                height=180,
-                                key=f"edit_insta_copy_{managed_job_id}",
-                                label_visibility="collapsed",
-                            )
-                            c_ig1, c_ig2 = st.columns([1, 1])
-                            with c_ig1:
+                        t1, t2, t3, t4, t5, t6, t7 = st.tabs([
+                            "📱 WhatsApp Status",
+                            "💬 WhatsApp Message",
+                            "💼 LinkedIn Post",
+                            "📧 Candidate Email",
+                            "📸 Instagram Post",
+                            "🎨 Visual Hiring Poster",
+                            "🏢 Job Boards (Naukri / Indeed / LinkedIn / GitHub / Foundit)"
+                        ])
+                        with t1:
+                            c_t1_l, c_t1_r = st.columns([1.5, 1])
+                            with c_t1_l:
+                                st.caption("WhatsApp Status copy:")
+                                edited_wa_status = st.text_area(
+                                    "WhatsApp Status Text",
+                                    value=wa_status,
+                                    height=180,
+                                    key=f"edit_wa_status_{managed_job_id}",
+                                    label_visibility="collapsed",
+                                )
                                 st.link_button(
-                                    "📸 Open Instagram",
-                                    "https://www.instagram.com/",
+                                    "📲 Open WhatsApp Web / App",
+                                    f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_status)}",
+                                    type="primary",
                                     use_container_width=True,
                                 )
-                            with c_ig2:
-                                if st.button("🚀 1-Click Auto-Post (Meta)", key=f"auto_ig_{managed_job_id}", type="primary", use_container_width=True):
-                                    with st.spinner("Publishing post + poster to Instagram..."):
-                                        from services.social_service import auto_publish_social_post
-                                        res = auto_publish_social_post(
-                                            channel="instagram",
-                                            job_id=managed_job_id,
-                                            job_title=job_title,
-                                            caption=edited_insta_copy,
-                                            app_link=app_link,
-                                            image_bytes=poster_bytes,
-                                            agency_name=agency_name,
-                                            recruiter_name=recruiter_name,
-                                            recruiter_contact=recruiter_phone,
-                                        )
-                                        if res.get("success"):
-                                            st.success(f"✅ {res.get('message')}")
-                                        else:
-                                            st.error(f"❌ {res.get('message')}")
-                        with c_t5_r:
-                            st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
-                            st.download_button(
-                                "📥 Download Poster for Instagram",
-                                data=poster_bytes,
-                                file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
-                                mime="image/png",
-                                key=f"dl_ig_{managed_job_id}",
-                                use_container_width=True,
+                            with c_t1_r:
+                                st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                                st.download_button(
+                                    "📥 Download Poster Image",
+                                    data=poster_bytes,
+                                    file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                    mime="image/png",
+                                    key=f"dl_wa_status_{managed_job_id}",
+                                    use_container_width=True,
+                                )
+
+                        with t2:
+                            c_t2_l, c_t2_r = st.columns([1.5, 1])
+                            with c_t2_l:
+                                st.caption("WhatsApp chat message:")
+                                edited_wa_direct = st.text_area(
+                                    "WhatsApp Message Text",
+                                    value=wa_direct,
+                                    height=180,
+                                    key=f"edit_wa_direct_{managed_job_id}",
+                                    label_visibility="collapsed",
+                                )
+                                c_wa1, c_wa2 = st.columns([1, 1])
+                                with c_wa1:
+                                    st.link_button(
+                                        "💬 Open WhatsApp",
+                                        f"https://api.whatsapp.com/send?text={urllib.parse.quote(edited_wa_direct)}",
+                                        use_container_width=True,
+                                    )
+                                with c_wa2:
+                                    if st.button("🚀 1-Click Broadcast (n8n)", key=f"auto_wa_{managed_job_id}", type="primary", use_container_width=True):
+                                        with st.spinner("Dispatching broadcast..."):
+                                            from services.social_service import auto_publish_social_post
+                                            res = auto_publish_social_post(
+                                                channel="whatsapp",
+                                                job_id=managed_job_id,
+                                                job_title=job_title,
+                                                caption=edited_wa_direct,
+                                                app_link=app_link,
+                                                image_bytes=poster_bytes,
+                                                agency_name=agency_name,
+                                                recruiter_name=recruiter_name,
+                                                recruiter_contact=recruiter_phone,
+                                            )
+                                            if res.get("success"):
+                                                st.success(f"✅ {res.get('message')}")
+                                            else:
+                                                st.error(f"❌ {res.get('message')}")
+                            with c_t2_r:
+                                st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                                st.download_button(
+                                    "📥 Download Poster Image",
+                                    data=poster_bytes,
+                                    file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                    mime="image/png",
+                                    key=f"dl_wa_direct_{managed_job_id}",
+                                    use_container_width=True,
+                                )
+
+                        with t3:
+                            c_t3_l, c_t3_r = st.columns([1.5, 1])
+                            with c_t3_l:
+                                st.caption("LinkedIn Post text:")
+                                edited_li_post = st.text_area(
+                                    "LinkedIn Post Text",
+                                    value=linkedin_post,
+                                    height=220,
+                                    key=f"edit_li_post_{managed_job_id}",
+                                    label_visibility="collapsed",
+                                )
+                                c_li1, c_li2 = st.columns([1, 1])
+                                with c_li1:
+                                    st.link_button(
+                                        "💼 Share on LinkedIn",
+                                        f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_li_url}",
+                                        use_container_width=True,
+                                    )
+                                with c_li2:
+                                    if st.button("🚀 1-Click Auto-Post (n8n)", key=f"auto_li_{managed_job_id}", type="primary", use_container_width=True):
+                                        with st.spinner("Publishing post + poster to LinkedIn..."):
+                                            from services.social_service import auto_publish_social_post
+                                            res = auto_publish_social_post(
+                                                channel="linkedin",
+                                                job_id=managed_job_id,
+                                                job_title=job_title,
+                                                caption=edited_li_post,
+                                                app_link=app_link,
+                                                image_bytes=poster_bytes,
+                                                agency_name=agency_name,
+                                                recruiter_name=recruiter_name,
+                                                recruiter_contact=recruiter_phone,
+                                            )
+                                            if res.get("success"):
+                                                st.success(f"✅ {res.get('message')}")
+                                            else:
+                                                st.error(f"❌ {res.get('message')}")
+                            with c_t3_r:
+                                st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                                st.download_button(
+                                    "📥 Download Poster for LinkedIn",
+                                    data=poster_bytes,
+                                    file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                    mime="image/png",
+                                    key=f"dl_li_{managed_job_id}",
+                                    use_container_width=True,
+                                )
+
+                        with t4:
+                            st.markdown("##### 👥 Select Candidate(s) from Database")
+                        
+                            cand_df = get_candidates()
+                            cand_options = {}
+                            cand_name_map = {}
+                            if not cand_df.empty and "email" in cand_df.columns:
+                                for _, row in cand_df.iterrows():
+                                    c_email = str(row.get("email", "")).strip()
+                                    c_name = str(row.get("full_name", "Candidate")).strip()
+                                    if c_email and c_email.lower() != "none":
+                                        label = f"{c_name} — {c_email}"
+                                        cand_options[label] = c_email
+                                        cand_name_map[label] = c_name
+
+                            selected_cand_labels = st.multiselect(
+                                "Choose candidate(s) to email this job opening:",
+                                options=list(cand_options.keys()),
+                                default=list(cand_options.keys())[:1] if cand_options else [],
+                                placeholder="Search by candidate name or email...",
+                                key=f"share_email_recipients_{managed_job_id}",
                             )
 
-                    with t6:
-                        st.markdown("#### 🎨 Live AI Creative Studio & Poster Customizer")
-                        st.caption("Customize your visual theme with AI prompts or fine-tune any section. The poster & QR code update live!")
-                        
-                        col_editor, col_preview = st.columns([1.2, 1.3])
-                        with col_editor:
-                            # 1. Section Switcher (Only one section open at a time)
-                            active_section = st.radio(
-                                "Customizer Section:",
-                                options=[
-                                    "🎭 AI Theme & Styling",
-                                    "✍️ Header & Role Title",
-                                    "📍 Location & Compensation",
-                                    "💼 Specification Pills",
-                                    "🌟 Perks, Helpline & QR",
-                                ],
-                                horizontal=True,
-                                key=f"active_customizer_section_{managed_job_id}",
+                            if len(selected_cand_labels) == 1:
+                                target_label = selected_cand_labels[0]
+                                recipient_email = cand_options[target_label]
+                                cand_first_name = cand_name_map[target_label].split()[0]
+                                greeting = f"Hi {cand_first_name},"
+                                mail_to_param = recipient_email
+                                mail_bcc_param = ""
+                                st.caption(f"🎯 Personalizing email for **{cand_name_map[target_label]}** (`{recipient_email}`)")
+                            elif len(selected_cand_labels) > 1:
+                                target_emails = [cand_options[lbl] for lbl in selected_cand_labels]
+                                recipient_email = ""
+                                greeting = "Hi Candidate,"
+                                mail_to_param = ""
+                                mail_bcc_param = ",".join(target_emails)
+                                st.caption(f"👥 Bulk emailing **{len(selected_cand_labels)} candidates** via BCC privacy guard.")
+                            else:
+                                greeting = "Hi [Candidate Name],"
+                                mail_to_param = ""
+                                mail_bcc_param = ""
+                                st.caption("ℹ️ No specific candidate selected. Showing generic template:")
+
+                            personalized_email_copy = (
+                                f"Subject: We're Hiring: {job_title} Opportunity\n\n"
+                                f"{greeting}\n\n"
+                                f"We came across your background and wanted to reach out from {agency_name} regarding an exciting open role for a {job_title} on our {job_dept} team.\n\n"
+                                f"Role Details:\n"
+                                f"• Position: {job_title}\n"
+                                f"• Location: {job_loc}\n"
+                                f"• Experience: {exp_text}\n"
+                                f"• Key Skills: {skills_str}\n\n"
+                                f"You can review the full requisition and submit your resume directly here:\n"
+                                f"👉 {app_link}\n\n"
+                                f"Best regards,\n"
+                                f"{recruiter_name}\n"
+                                f"Talent Acquisition Team | {agency_name}\n"
+                                f"📞 {recruiter_phone}"
+                            )
+
+                            edited_email_copy = st.text_area(
+                                "Email Body",
+                                value=personalized_email_copy,
+                                height=220,
+                                key=f"edit_email_copy_{managed_job_id}",
                                 label_visibility="collapsed",
                             )
 
-                            # Default values initialization
-                            if f"poster_hdr_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"poster_hdr_{managed_job_id}"] = "WE ARE HIRING!"
-                            if f"poster_role_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"poster_role_{managed_job_id}"] = job_title
-                            if f"poster_subtag_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"poster_subtag_{managed_job_id}"] = "Join a High-Growth Team • Build Your Career • Fast-Track AI Screening!"
+                            encoded_pers_subj = urllib.parse.quote(f"We're Hiring: {job_title} Opportunity")
+                            encoded_pers_body = urllib.parse.quote(edited_email_copy)
+                        
+                            gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&su={encoded_pers_subj}&body={encoded_pers_body}"
+                            if mail_to_param:
+                                gmail_url += f"&to={urllib.parse.quote(mail_to_param)}"
+                            if mail_bcc_param:
+                                gmail_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
 
-                            if f"b1_t_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"b1_t_{managed_job_id}"] = "LOCATION & TYPE"
-                            if f"b1_v_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"b1_v_{managed_job_id}"] = job_loc
-                            if f"b1_s_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"b1_s_{managed_job_id}"] = f"Department: {job_dept}"
+                            outlook_url = f"https://outlook.live.com/mail/0/deeplink/compose?subject={encoded_pers_subj}&body={encoded_pers_body}"
+                            if mail_to_param:
+                                outlook_url += f"&to={urllib.parse.quote(mail_to_param)}"
+                            if mail_bcc_param:
+                                outlook_url += f"&bcc={urllib.parse.quote(mail_bcc_param)}"
 
-                            if f"b2_t_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"b2_t_{managed_job_id}"] = "COMPENSATION"
-                            if f"b2_v_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"b2_v_{managed_job_id}"] = sal_display if sal_display else "₹12 - 18 LPA"
-                            if f"b2_s_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"b2_s_{managed_job_id}"] = "Performance-based growth"
-
-                            if f"p1_t_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"p1_t_{managed_job_id}"] = "EXPERIENCE"
-                            if f"p1_v_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"p1_v_{managed_job_id}"] = exp_text
-
-                            if f"p2_t_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"p2_t_{managed_job_id}"] = "AVAILABILITY"
-                            if f"p2_v_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"p2_v_{managed_job_id}"] = "Immediate / 30 Days"
-
-                            if f"p3_t_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"p3_t_{managed_job_id}"] = "KEY TECH STACK"
-                            if f"p3_v_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"p3_v_{managed_job_id}"] = ", ".join(skills_list[:3]) if skills_list else "Domain Skills"
-
-                            if f"why_join_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"why_join_{managed_job_id}"] = "• High Career Growth • Meritocracy • Global Impact"
-                            if f"hr_ct_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"hr_ct_{managed_job_id}"] = f"{recruiter_name} ({recruiter_phone})"
-                            if f"qr_url_{managed_job_id}" not in st.session_state:
-                                st.session_state[f"qr_url_{managed_job_id}"] = app_link
-
-                            # Display ONLY the single selected section
-                            if active_section == "🎭 AI Theme & Styling":
-                                st.markdown("##### 🎭 AI Theme & Style Generator")
-                                ai_prompt_input = st.text_input(
-                                    "Describe your theme vibe or aesthetic:",
-                                    placeholder="e.g. Funky Synthwave, Luxury Gold & Black, Cyberpunk Neon, Modern Slate, Warm Sunset",
-                                    key=f"ai_theme_prompt_box_{managed_job_id}",
+                            c_mail1, c_mail2 = st.columns([1.5, 1])
+                            with c_mail1:
+                                st.link_button(
+                                    "📧 Open in Gmail (Default)",
+                                    gmail_url,
+                                    type="primary",
+                                    use_container_width=True,
                                 )
-                                c_ai_btn1, c_ai_btn2 = st.columns([1, 1])
-                                with c_ai_btn1:
-                                    if st.button("✨ Apply AI Theme", key=f"btn_apply_ai_theme_{managed_job_id}", type="primary", use_container_width=True):
-                                        if ai_prompt_input.strip():
-                                            new_pal = ps.generate_ai_palette(ai_prompt_input.strip())
-                                            st.session_state[f"custom_ai_palette_{managed_job_id}"] = new_pal
-                                            st.success(f"Applied: {new_pal.get('name')}")
-                                with c_ai_btn2:
-                                    if st.button("↺ Reset to Standard Theme", key=f"btn_reset_theme_{managed_job_id}", use_container_width=True):
-                                        st.session_state.pop(f"custom_ai_palette_{managed_job_id}", None)
-
-                                st.markdown("---")
-                                st.caption("Or choose from preset corporate themes:")
-                                selected_theme_label = st.selectbox(
-                                    "Preset Themes",
-                                    options=list(theme_map.keys()),
-                                    index=0,
-                                    key=f"poster_theme_select_{managed_job_id}",
+                            with c_mail2:
+                                st.link_button(
+                                    "✉️ Open in Outlook",
+                                    outlook_url,
+                                    use_container_width=True,
                                 )
-                                chosen_theme = theme_map[selected_theme_label]
+                        with t5:
+                            c_t5_l, c_t5_r = st.columns([1.5, 1])
+                            with c_t5_l:
+                                st.caption("Instagram caption:")
+                                edited_insta_copy = st.text_area(
+                                    "Instagram Post / Story Caption",
+                                    value=insta_copy,
+                                    height=180,
+                                    key=f"edit_insta_copy_{managed_job_id}",
+                                    label_visibility="collapsed",
+                                )
+                                c_ig1, c_ig2 = st.columns([1, 1])
+                                with c_ig1:
+                                    st.link_button(
+                                        "📸 Open Instagram",
+                                        "https://www.instagram.com/",
+                                        use_container_width=True,
+                                    )
+                                with c_ig2:
+                                    if st.button("🚀 1-Click Auto-Post (Meta)", key=f"auto_ig_{managed_job_id}", type="primary", use_container_width=True):
+                                        with st.spinner("Publishing post + poster to Instagram..."):
+                                            from services.social_service import auto_publish_social_post
+                                            res = auto_publish_social_post(
+                                                channel="instagram",
+                                                job_id=managed_job_id,
+                                                job_title=job_title,
+                                                caption=edited_insta_copy,
+                                                app_link=app_link,
+                                                image_bytes=poster_bytes,
+                                                agency_name=agency_name,
+                                                recruiter_name=recruiter_name,
+                                                recruiter_contact=recruiter_phone,
+                                            )
+                                            if res.get("success"):
+                                                st.success(f"✅ {res.get('message')}")
+                                            else:
+                                                st.error(f"❌ {res.get('message')}")
+                            with c_t5_r:
+                                st.image(poster_bytes, caption="Poster Attachment", use_container_width=True)
+                                st.download_button(
+                                    "📥 Download Poster for Instagram",
+                                    data=poster_bytes,
+                                    file_name=f"Hiring_{job_title.replace(' ', '_')}.png",
+                                    mime="image/png",
+                                    key=f"dl_ig_{managed_job_id}",
+                                    use_container_width=True,
+                                )
 
-                            elif active_section == "✍️ Header & Role Title":
-                                st.markdown("##### ✍️ Header & Role Spotlight")
-                                st.text_input("Header Tagline", key=f"poster_hdr_{managed_job_id}")
-                                st.text_input("Role Spotlight Title", key=f"poster_role_{managed_job_id}")
-                                st.text_input("Subtitle Tagline", key=f"poster_subtag_{managed_job_id}")
+                        with t6:
+                            st.markdown("#### 🎨 Live AI Creative Studio & Poster Customizer")
+                            st.caption("Customize your visual theme with AI prompts or fine-tune any section. The poster & QR code update live!")
+                        
+                            col_editor, col_preview = st.columns([1.2, 1.3])
+                            with col_editor:
+                                # 1. Section Switcher (Only one section open at a time)
+                                active_section = st.radio(
+                                    "Customizer Section:",
+                                    options=[
+                                        "🎭 AI Theme & Styling",
+                                        "✍️ Header & Role Title",
+                                        "📍 Location & Compensation",
+                                        "💼 Specification Pills",
+                                        "🌟 Perks, Helpline & QR",
+                                    ],
+                                    horizontal=True,
+                                    key=f"active_customizer_section_{managed_job_id}",
+                                    label_visibility="collapsed",
+                                )
 
-                            elif active_section == "📍 Location & Compensation":
-                                st.markdown("##### 📍 Highlight Badges")
-                                st.text_input("Badge 1 Title", key=f"b1_t_{managed_job_id}")
-                                st.text_input("Badge 1 Value (Location)", key=f"b1_v_{managed_job_id}")
-                                st.text_input("Badge 1 Subtext", key=f"b1_s_{managed_job_id}")
-                                st.text_input("Badge 2 Title", key=f"b2_t_{managed_job_id}")
-                                st.text_input("Badge 2 Value (Package)", key=f"b2_v_{managed_job_id}")
-                                st.text_input("Badge 2 Subtext", key=f"b2_s_{managed_job_id}")
+                                # Default values initialization
+                                if f"poster_hdr_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"poster_hdr_{managed_job_id}"] = "WE ARE HIRING!"
+                                if f"poster_role_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"poster_role_{managed_job_id}"] = job_title
+                                if f"poster_subtag_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"poster_subtag_{managed_job_id}"] = "Join a High-Growth Team • Build Your Career • Fast-Track AI Screening!"
 
-                            elif active_section == "💼 Specification Pills":
-                                st.markdown("##### 💼 Role Specification Pills")
-                                st.text_input("Pill 1 Title", key=f"p1_t_{managed_job_id}")
-                                st.text_input("Pill 1 Value (Experience)", key=f"p1_v_{managed_job_id}")
-                                st.text_input("Pill 2 Title", key=f"p2_t_{managed_job_id}")
-                                st.text_input("Pill 2 Value (Notice Period)", key=f"p2_v_{managed_job_id}")
-                                st.text_input("Pill 3 Title", key=f"p3_t_{managed_job_id}")
-                                st.text_input("Pill 3 Value (Key Skills)", key=f"p3_v_{managed_job_id}")
+                                if f"b1_t_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"b1_t_{managed_job_id}"] = "LOCATION & TYPE"
+                                if f"b1_v_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"b1_v_{managed_job_id}"] = job_loc
+                                if f"b1_s_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"b1_s_{managed_job_id}"] = f"Department: {job_dept}"
 
-                            elif active_section == "🌟 Perks, Helpline & QR":
-                                st.markdown("##### 🌟 Perks, Helpline & QR Target")
-                                st.text_input("Why Join Us Perks", key=f"why_join_{managed_job_id}")
-                                st.text_input("HR Helpline Contact", key=f"hr_ct_{managed_job_id}")
-                                st.text_input("QR Code Application URL", key=f"qr_url_{managed_job_id}")
+                                if f"b2_t_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"b2_t_{managed_job_id}"] = "COMPENSATION"
+                                if f"b2_v_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"b2_v_{managed_job_id}"] = sal_display if sal_display else "₹12 - 18 LPA"
+                                if f"b2_s_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"b2_s_{managed_job_id}"] = "Performance-based growth"
 
-                        # Check for AI custom palette
-                        active_palette = st.session_state.get(f"custom_ai_palette_{managed_job_id}", None)
-                        current_theme = chosen_theme if 'chosen_theme' in locals() else "blue"
+                                if f"p1_t_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"p1_t_{managed_job_id}"] = "EXPERIENCE"
+                                if f"p1_v_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"p1_v_{managed_job_id}"] = exp_text
 
-                        # Generate dynamic poster with all customized fields
-                        live_poster_bytes = ps.generate_job_banner_image(
-                            job_title=st.session_state[f"poster_role_{managed_job_id}"],
-                            department=job_dept,
-                            location=st.session_state[f"b1_v_{managed_job_id}"],
-                            experience=st.session_state[f"p1_v_{managed_job_id}"],
-                            skills=skills_list,
-                            salary=st.session_state[f"b2_v_{managed_job_id}"],
-                            app_link=st.session_state[f"qr_url_{managed_job_id}"],
-                            company_name=agency_name,
-                            recruiter_contact=st.session_state[f"hr_ct_{managed_job_id}"],
-                            theme=current_theme,
-                            custom_palette=active_palette,
-                            header_tagline=st.session_state[f"poster_hdr_{managed_job_id}"],
-                            sub_tagline=st.session_state[f"poster_subtag_{managed_job_id}"],
-                            badge1_title=st.session_state[f"b1_t_{managed_job_id}"],
-                            badge1_value=st.session_state[f"b1_v_{managed_job_id}"],
-                            badge1_sub=st.session_state[f"b1_s_{managed_job_id}"],
-                            badge2_title=st.session_state[f"b2_t_{managed_job_id}"],
-                            badge2_value=st.session_state[f"b2_v_{managed_job_id}"],
-                            badge2_sub=st.session_state[f"b2_s_{managed_job_id}"],
-                            pill1_title=st.session_state[f"p1_t_{managed_job_id}"],
-                            pill1_value=st.session_state[f"p1_v_{managed_job_id}"],
-                            pill2_title=st.session_state[f"p2_t_{managed_job_id}"],
-                            pill2_value=st.session_state[f"p2_v_{managed_job_id}"],
-                            pill3_title=st.session_state[f"p3_t_{managed_job_id}"],
-                            pill3_value=st.session_state[f"p3_v_{managed_job_id}"],
-                            why_join_us=st.session_state[f"why_join_{managed_job_id}"],
-                        )
+                                if f"p2_t_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"p2_t_{managed_job_id}"] = "AVAILABILITY"
+                                if f"p2_v_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"p2_v_{managed_job_id}"] = "Immediate / 30 Days"
 
-                        with col_preview:
-                            theme_name_display = active_palette.get("name") if active_palette else "Custom Studio Theme"
-                            st.image(live_poster_bytes, caption=f"Hiring Poster ({theme_name_display}) - 1080x1080", use_container_width=True)
-                            st.download_button(
-                                "📥 Download High-Res Custom Poster (PNG)",
-                                data=live_poster_bytes,
-                                file_name=f"Hiring_{st.session_state[f'poster_role_{managed_job_id}'].replace(' ', '_')}.png",
-                                mime="image/png",
-                                type="primary",
-                                use_container_width=True,
+                                if f"p3_t_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"p3_t_{managed_job_id}"] = "KEY TECH STACK"
+                                if f"p3_v_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"p3_v_{managed_job_id}"] = ", ".join(skills_list[:3]) if skills_list else "Domain Skills"
+
+                                if f"why_join_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"why_join_{managed_job_id}"] = "• High Career Growth • Meritocracy • Global Impact"
+                                if f"hr_ct_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"hr_ct_{managed_job_id}"] = f"{recruiter_name} ({recruiter_phone})"
+                                if f"qr_url_{managed_job_id}" not in st.session_state:
+                                    st.session_state[f"qr_url_{managed_job_id}"] = app_link
+
+                                # Display ONLY the single selected section
+                                if active_section == "🎭 AI Theme & Styling":
+                                    st.markdown("##### 🎭 AI Theme & Style Generator")
+                                    ai_prompt_input = st.text_input(
+                                        "Describe your theme vibe or aesthetic:",
+                                        placeholder="e.g. Funky Synthwave, Luxury Gold & Black, Cyberpunk Neon, Modern Slate, Warm Sunset",
+                                        key=f"ai_theme_prompt_box_{managed_job_id}",
+                                    )
+                                    c_ai_btn1, c_ai_btn2 = st.columns([1, 1])
+                                    with c_ai_btn1:
+                                        if st.button("✨ Apply AI Theme", key=f"btn_apply_ai_theme_{managed_job_id}", type="primary", use_container_width=True):
+                                            if ai_prompt_input.strip():
+                                                new_pal = ps.generate_ai_palette(ai_prompt_input.strip())
+                                                st.session_state[f"custom_ai_palette_{managed_job_id}"] = new_pal
+                                                st.success(f"Applied: {new_pal.get('name')}")
+                                    with c_ai_btn2:
+                                        if st.button("↺ Reset to Standard Theme", key=f"btn_reset_theme_{managed_job_id}", use_container_width=True):
+                                            st.session_state.pop(f"custom_ai_palette_{managed_job_id}", None)
+
+                                    st.markdown("---")
+                                    st.caption("Or choose from preset corporate themes:")
+                                    selected_theme_label = st.selectbox(
+                                        "Preset Themes",
+                                        options=list(theme_map.keys()),
+                                        index=0,
+                                        key=f"poster_theme_select_{managed_job_id}",
+                                    )
+                                    chosen_theme = theme_map[selected_theme_label]
+
+                                elif active_section == "✍️ Header & Role Title":
+                                    st.markdown("##### ✍️ Header & Role Spotlight")
+                                    st.text_input("Header Tagline", key=f"poster_hdr_{managed_job_id}")
+                                    st.text_input("Role Spotlight Title", key=f"poster_role_{managed_job_id}")
+                                    st.text_input("Subtitle Tagline", key=f"poster_subtag_{managed_job_id}")
+
+                                elif active_section == "📍 Location & Compensation":
+                                    st.markdown("##### 📍 Highlight Badges")
+                                    st.text_input("Badge 1 Title", key=f"b1_t_{managed_job_id}")
+                                    st.text_input("Badge 1 Value (Location)", key=f"b1_v_{managed_job_id}")
+                                    st.text_input("Badge 1 Subtext", key=f"b1_s_{managed_job_id}")
+                                    st.text_input("Badge 2 Title", key=f"b2_t_{managed_job_id}")
+                                    st.text_input("Badge 2 Value (Package)", key=f"b2_v_{managed_job_id}")
+                                    st.text_input("Badge 2 Subtext", key=f"b2_s_{managed_job_id}")
+
+                                elif active_section == "💼 Specification Pills":
+                                    st.markdown("##### 💼 Role Specification Pills")
+                                    st.text_input("Pill 1 Title", key=f"p1_t_{managed_job_id}")
+                                    st.text_input("Pill 1 Value (Experience)", key=f"p1_v_{managed_job_id}")
+                                    st.text_input("Pill 2 Title", key=f"p2_t_{managed_job_id}")
+                                    st.text_input("Pill 2 Value (Notice Period)", key=f"p2_v_{managed_job_id}")
+                                    st.text_input("Pill 3 Title", key=f"p3_t_{managed_job_id}")
+                                    st.text_input("Pill 3 Value (Key Skills)", key=f"p3_v_{managed_job_id}")
+
+                                elif active_section == "🌟 Perks, Helpline & QR":
+                                    st.markdown("##### 🌟 Perks, Helpline & QR Target")
+                                    st.text_input("Why Join Us Perks", key=f"why_join_{managed_job_id}")
+                                    st.text_input("HR Helpline Contact", key=f"hr_ct_{managed_job_id}")
+                                    st.text_input("QR Code Application URL", key=f"qr_url_{managed_job_id}")
+
+                            # Check for AI custom palette
+                            active_palette = st.session_state.get(f"custom_ai_palette_{managed_job_id}", None)
+                            current_theme = chosen_theme if 'chosen_theme' in locals() else "blue"
+
+                            # Generate dynamic poster with all customized fields
+                            live_poster_bytes = ps.generate_job_banner_image(
+                                job_title=st.session_state[f"poster_role_{managed_job_id}"],
+                                department=job_dept,
+                                location=st.session_state[f"b1_v_{managed_job_id}"],
+                                experience=st.session_state[f"p1_v_{managed_job_id}"],
+                                skills=skills_list,
+                                salary=st.session_state[f"b2_v_{managed_job_id}"],
+                                app_link=st.session_state[f"qr_url_{managed_job_id}"],
+                                company_name=agency_name,
+                                recruiter_contact=st.session_state[f"hr_ct_{managed_job_id}"],
+                                theme=current_theme,
+                                custom_palette=active_palette,
+                                header_tagline=st.session_state[f"poster_hdr_{managed_job_id}"],
+                                sub_tagline=st.session_state[f"poster_subtag_{managed_job_id}"],
+                                badge1_title=st.session_state[f"b1_t_{managed_job_id}"],
+                                badge1_value=st.session_state[f"b1_v_{managed_job_id}"],
+                                badge1_sub=st.session_state[f"b1_s_{managed_job_id}"],
+                                badge2_title=st.session_state[f"b2_t_{managed_job_id}"],
+                                badge2_value=st.session_state[f"b2_v_{managed_job_id}"],
+                                badge2_sub=st.session_state[f"b2_s_{managed_job_id}"],
+                                pill1_title=st.session_state[f"p1_t_{managed_job_id}"],
+                                pill1_value=st.session_state[f"p1_v_{managed_job_id}"],
+                                pill2_title=st.session_state[f"p2_t_{managed_job_id}"],
+                                pill2_value=st.session_state[f"p2_v_{managed_job_id}"],
+                                pill3_title=st.session_state[f"p3_t_{managed_job_id}"],
+                                pill3_value=st.session_state[f"p3_v_{managed_job_id}"],
+                                why_join_us=st.session_state[f"why_join_{managed_job_id}"],
                             )
-                            st.info("💡 **Live Scannable QR Code**: Point your phone camera at the QR code to test instant redirection to your candidate intake form!")
 
-                    with t7:
-                        st.markdown("#### 🏢 Multi-Platform Job Posting & Syndication")
-                        st.caption("Post across **Naukri, Indeed, LinkedIn Jobs, GitHub Careers & Foundit**, or syndicate via standard ATS XML Feed:")
-                        
-                        from services.job_feed_service import generate_indeed_xml_feed
-                        
-                        p_tab_naukri, p_tab_indeed, p_tab_linkedin, p_tab_github, p_tab_foundit, p_tab_xml = st.tabs([
-                            "🇮🇳 Naukri.com",
-                            "🌐 Indeed",
-                            "💼 LinkedIn Jobs",
-                            "💻 GitHub Careers",
-                            "🎯 Foundit",
-                            "📡 Automated XML Feed"
-                        ])
-                        
-                        with p_tab_naukri:
-                            st.markdown("##### 🇮🇳 Naukri.com Recruiter Post")
-                            naukri_desc = f"Role: {job_title}\nDepartment: {job_dept}\nLocation: {job_loc}\nExperience: {exp_text}\nKey Skills: {skills_str}\nSalary: {sal_display or 'Competitive'}\n\nApply Online: {app_link}\nContact: {recruiter_name} ({recruiter_phone})"
-                            st.text_area("Naukri Post Text", value=naukri_desc, height=150, key=f"naukri_post_txt_{managed_job_id}")
-                            st.link_button("🚀 Open Naukri Recruiter Job Posting Page", "https://recruiter.naukri.com/post-job", type="primary", use_container_width=True)
-
-                        with p_tab_indeed:
-                            st.markdown("##### 🌐 Indeed for Employers")
-                            indeed_desc = f"Position: {job_title}\nLocation: {job_loc}\nJob Type: Full-time\nRequired Experience: {exp_text}\nSkills: {skills_str}\n\nJob Description:\n{safe_value(managed_job, 'description', '')}\n\nApply here: {app_link}"
-                            st.text_area("Indeed Post Text", value=indeed_desc, height=150, key=f"indeed_post_txt_{managed_job_id}")
-                            st.link_button("🚀 Open Indeed Employer Posting Page", "https://employers.indeed.com/p#post-job", type="primary", use_container_width=True)
-
-                        with p_tab_linkedin:
-                            st.markdown("##### 💼 LinkedIn Talent Solutions & Job Post")
-                            li_job_desc = f"We are hiring a {job_title} at {agency_name}!\n\n📍 Location: {job_loc}\n⏳ Experience: {exp_text}\n🛠️ Skills: {skills_str}\n💰 Compensation: {sal_display or 'Industry Standard'}\n\nDirect Application Form: {app_link}\nRecruiter: {recruiter_name}"
-                            st.text_area("LinkedIn Job Details", value=li_job_desc, height=150, key=f"li_job_txt_{managed_job_id}")
-                            st.link_button("🚀 Post Job on LinkedIn Talent", "https://www.linkedin.com/talent/post-a-job", type="primary", use_container_width=True)
-
-                        with p_tab_github:
-                            st.markdown("##### 💻 GitHub Discussions / Developer Hiring Board")
-                            github_md = f"### We are hiring: {job_title}\n\n- **Department**: `{job_dept}`\n- **Location**: `{job_loc}`\n- **Experience**: `{exp_text}`\n- **Key Tech Stack**: `{skills_str}`\n\n#### Job Description\n{safe_value(managed_job, 'description', 'Join our engineering and automation team!')}\n\n👉 **[Click Here to Apply Directly]({app_link})**"
-                            st.text_area("GitHub Markdown Template", value=github_md, height=150, key=f"gh_job_txt_{managed_job_id}")
-                            st.link_button("🚀 Open GitHub Discussions / Job Template", "https://github.com", use_container_width=True)
-
-                        with p_tab_foundit:
-                            st.markdown("##### 🎯 Foundit.in (Monster Employer)")
-                            st.link_button("🚀 Open Foundit Employer Portal", "https://employer.foundit.in/job-posting", type="primary", use_container_width=True)
-
-                        with p_tab_xml:
-                            st.markdown("##### 📡 Automated ATS XML Feed (Indeed / Google for Jobs / Glassdoor)")
-                            st.caption("Copy this feed URL into your employer account on Indeed, Foundit, or Google for automatic hourly sync:")
-                            xml_feed_str = generate_indeed_xml_feed(raw_jobs, company_name=agency_name, base_app_url=app_link)
-                            st.code(f"{app_link}/jobs_feed.xml", language="text")
-                            st.download_button(
-                                "📥 Download XML Feed File (jobs_feed.xml)",
-                                data=xml_feed_str,
-                                file_name="jobs_feed.xml",
-                                mime="application/xml",
-                                key=f"dl_xml_feed_{managed_job_id}",
-                                use_container_width=True,
-                            )
-
-                if st.button(
-                    "⚡ Auto-Source Leads (30 Candidates)",
-                    icon=":material/bolt:",
-                    key=f"auto_source_job_{managed_job_id}",
-                    type="primary",
-                ):
-                    with st.spinner("Talent Lead Gen Agent is sourcing 30 qualified candidates across channels..."):
-                        try:
-                            req_skills_raw = safe_value(managed_job, "required_skills", [])
-                            if isinstance(req_skills_raw, list):
-                                req_skills_list = req_skills_raw
-                            else:
-                                req_skills_list = [s.strip() for s in str(req_skills_raw).split(",") if s.strip()]
-                            
-                            try:
-                                src_res = DEFAULT_TALENT_CLIENT.trigger_sourcing(
-                                    job_id=managed_job_id,
-                                    title=safe_value(managed_job, "title", "Open Role"),
-                                    skills=req_skills_list,
-                                    location=safe_value(managed_job, "location", "Pune"),
-                                    target_count=30,
+                            with col_preview:
+                                theme_name_display = active_palette.get("name") if active_palette else "Custom Studio Theme"
+                                st.image(live_poster_bytes, caption=f"Hiring Poster ({theme_name_display}) - 1080x1080", use_container_width=True)
+                                st.download_button(
+                                    "📥 Download High-Res Custom Poster (PNG)",
+                                    data=live_poster_bytes,
+                                    file_name=f"Hiring_{st.session_state[f'poster_role_{managed_job_id}'].replace(' ', '_')}.png",
+                                    mime="image/png",
+                                    type="primary",
+                                    use_container_width=True,
                                 )
-                            except Exception:
-                                from lead_gen_core.orchestrator import DEFAULT_ORCHESTRATOR
-                                src_res = DEFAULT_ORCHESTRATOR.execute_sourcing_pipeline(
-                                    job_id=str(managed_job_id),
-                                    title=safe_value(managed_job, "title", "Open Role"),
-                                    skills=req_skills_list,
-                                    location=safe_value(managed_job, "location", "Pune"),
-                                    target_count=30,
+                                st.info("💡 **Live Scannable QR Code**: Point your phone camera at the QR code to test instant redirection to your candidate intake form!")
+
+                        with t7:
+                            st.markdown("#### 🏢 Multi-Platform Job Posting & Syndication")
+                            st.caption("Post across **Naukri, Indeed, LinkedIn Jobs, GitHub Careers & Foundit**, or syndicate via standard ATS XML Feed:")
+                        
+                            from services.job_feed_service import generate_indeed_xml_feed
+                        
+                            p_tab_naukri, p_tab_indeed, p_tab_linkedin, p_tab_github, p_tab_foundit, p_tab_xml = st.tabs([
+                                "🇮🇳 Naukri.com",
+                                "🌐 Indeed",
+                                "💼 LinkedIn Jobs",
+                                "💻 GitHub Careers",
+                                "🎯 Foundit",
+                                "📡 Automated XML Feed"
+                            ])
+                        
+                            with p_tab_naukri:
+                                st.markdown("##### 🇮🇳 Naukri.com Recruiter Post")
+                                naukri_desc = f"Role: {job_title}\nDepartment: {job_dept}\nLocation: {job_loc}\nExperience: {exp_text}\nKey Skills: {skills_str}\nSalary: {sal_display or 'Competitive'}\n\nApply Online: {app_link}\nContact: {recruiter_name} ({recruiter_phone})"
+                                st.text_area("Naukri Post Text", value=naukri_desc, height=150, key=f"naukri_post_txt_{managed_job_id}")
+                                st.link_button("🚀 Open Naukri Recruiter Job Posting Page", "https://recruiter.naukri.com/post-job", type="primary", use_container_width=True)
+
+                            with p_tab_indeed:
+                                st.markdown("##### 🌐 Indeed for Employers")
+                                indeed_desc = f"Position: {job_title}\nLocation: {job_loc}\nJob Type: Full-time\nRequired Experience: {exp_text}\nSkills: {skills_str}\n\nJob Description:\n{safe_value(managed_job, 'description', '')}\n\nApply here: {app_link}"
+                                st.text_area("Indeed Post Text", value=indeed_desc, height=150, key=f"indeed_post_txt_{managed_job_id}")
+                                st.link_button("🚀 Open Indeed Employer Posting Page", "https://employers.indeed.com/p#post-job", type="primary", use_container_width=True)
+
+                            with p_tab_linkedin:
+                                st.markdown("##### 💼 LinkedIn Talent Solutions & Job Post")
+                                li_job_desc = f"We are hiring a {job_title} at {agency_name}!\n\n📍 Location: {job_loc}\n⏳ Experience: {exp_text}\n🛠️ Skills: {skills_str}\n💰 Compensation: {sal_display or 'Industry Standard'}\n\nDirect Application Form: {app_link}\nRecruiter: {recruiter_name}"
+                                st.text_area("LinkedIn Job Details", value=li_job_desc, height=150, key=f"li_job_txt_{managed_job_id}")
+                                st.link_button("🚀 Post Job on LinkedIn Talent", "https://www.linkedin.com/talent/post-a-job", type="primary", use_container_width=True)
+
+                            with p_tab_github:
+                                st.markdown("##### 💻 GitHub Discussions / Developer Hiring Board")
+                                github_md = f"### We are hiring: {job_title}\n\n- **Department**: `{job_dept}`\n- **Location**: `{job_loc}`\n- **Experience**: `{exp_text}`\n- **Key Tech Stack**: `{skills_str}`\n\n#### Job Description\n{safe_value(managed_job, 'description', 'Join our engineering and automation team!')}\n\n👉 **[Click Here to Apply Directly]({app_link})**"
+                                st.text_area("GitHub Markdown Template", value=github_md, height=150, key=f"gh_job_txt_{managed_job_id}")
+                                st.link_button("🚀 Open GitHub Discussions / Job Template", "https://github.com", use_container_width=True)
+
+                            with p_tab_foundit:
+                                st.markdown("##### 🎯 Foundit.in (Monster Employer)")
+                                st.link_button("🚀 Open Foundit Employer Portal", "https://employer.foundit.in/job-posting", type="primary", use_container_width=True)
+
+                            with p_tab_xml:
+                                st.markdown("##### 📡 Automated ATS XML Feed (Indeed / Google for Jobs / Glassdoor)")
+                                st.caption("Copy this feed URL into your employer account on Indeed, Foundit, or Google for automatic hourly sync:")
+                                xml_feed_str = generate_indeed_xml_feed(raw_jobs, company_name=agency_name, base_app_url=app_link)
+                                st.code(f"{app_link}/jobs_feed.xml", language="text")
+                                st.download_button(
+                                    "📥 Download XML Feed File (jobs_feed.xml)",
+                                    data=xml_feed_str,
+                                    file_name="jobs_feed.xml",
+                                    mime="application/xml",
+                                    key=f"dl_xml_feed_{managed_job_id}",
+                                    use_container_width=True,
                                 )
-                                # Cache in client
-                                DEFAULT_TALENT_CLIENT._cached_leads[str(managed_job_id)] = src_res.get("candidates", [])
-                                DEFAULT_TALENT_CLIENT._last_job = safe_value(managed_job, "title", "Open Role")
 
-                            st.session_state["last_sourcing_result"] = src_res
-                            st.session_state["job_management_success"] = f"🎉 Successfully sourced {src_res.get('sourced_count', 30)} candidates for '{safe_value(managed_job, 'title')}'! Check '🎯 Talent Lead Gen' to view."
-                            st.rerun()
-                        except Exception as src_err:
-                            st.error(f"Sourcing failed: {src_err}")
-
-                if st.button(
-                    "Share & Social posts",
-                    icon=":material/share:",
-                    key=f"share_job_button_{managed_job_id}",
-                ):
-                    share_job_dialog()
-                if st.button(
-                    "Edit job",
-                    icon=":material/edit:",
-                    key=f"edit_job_button_{managed_job_id}",
-                    disabled=not can_manage_jobs,
-                ):
-                    edit_job_dialog()
-                normalized_job_status = managed_job_status.casefold()
-                if normalized_job_status == "archived":
                     if st.button(
-                        "Reopen job",
-                        icon=":material/replay:",
-                        key=f"reopen_archived_job_{managed_job_id}",
+                        "⚡ Auto-Source Leads (30 Candidates)",
+                        icon=":material/bolt:",
+                        key=f"auto_source_job_{managed_job_id}",
+                        type="primary",
+                    ):
+                        with st.spinner("Talent Lead Gen Agent is sourcing 30 qualified candidates across channels..."):
+                            try:
+                                req_skills_raw = safe_value(managed_job, "required_skills", [])
+                                if isinstance(req_skills_raw, list):
+                                    req_skills_list = req_skills_raw
+                                else:
+                                    req_skills_list = [s.strip() for s in str(req_skills_raw).split(",") if s.strip()]
+                            
+                                try:
+                                    src_res = DEFAULT_TALENT_CLIENT.trigger_sourcing(
+                                        job_id=managed_job_id,
+                                        title=safe_value(managed_job, "title", "Open Role"),
+                                        skills=req_skills_list,
+                                        location=safe_value(managed_job, "location", "Pune"),
+                                        target_count=30,
+                                    )
+                                except Exception:
+                                    from lead_gen_core.orchestrator import DEFAULT_ORCHESTRATOR
+                                    src_res = DEFAULT_ORCHESTRATOR.execute_sourcing_pipeline(
+                                        job_id=str(managed_job_id),
+                                        title=safe_value(managed_job, "title", "Open Role"),
+                                        skills=req_skills_list,
+                                        location=safe_value(managed_job, "location", "Pune"),
+                                        target_count=30,
+                                    )
+                                    # Cache in client
+                                    DEFAULT_TALENT_CLIENT._cached_leads[str(managed_job_id)] = src_res.get("candidates", [])
+                                    DEFAULT_TALENT_CLIENT._last_job = safe_value(managed_job, "title", "Open Role")
+
+                                st.session_state["last_sourcing_result"] = src_res
+                                st.session_state["job_management_success"] = f"🎉 Successfully sourced {src_res.get('sourced_count', 30)} candidates for '{safe_value(managed_job, 'title')}'! Check '🎯 Talent Lead Gen' to view."
+                                st.rerun()
+                            except Exception as src_err:
+                                st.error(f"Sourcing failed: {src_err}")
+
+                    if st.button(
+                        "Share & Social posts",
+                        icon=":material/share:",
+                        key=f"share_job_button_{managed_job_id}",
+                    ):
+                        share_job_dialog()
+                    if st.button(
+                        "Edit job",
+                        icon=":material/edit:",
+                        key=f"edit_job_button_{managed_job_id}",
                         disabled=not can_manage_jobs,
                     ):
-                        change_job_status("Open", "Job reopened.")
-                else:
-                    if normalized_job_status != "closed" and st.button(
-                        "Close job",
-                        icon=":material/event_busy:",
-                        key=f"close_job_{managed_job_id}",
-                        disabled=not can_manage_jobs,
-                    ):
-                        change_job_status("Closed", "Job closed.")
-                    if normalized_job_status == "closed" and st.button(
-                        "Reopen job",
-                        icon=":material/replay:",
-                        key=f"reopen_job_{managed_job_id}",
-                        disabled=not can_manage_jobs,
-                    ):
-                        change_job_status("Open", "Job reopened.")
-                    with st.popover(
-                        "Archive job",
-                        icon=":material/archive:",
-                    ):
-                        st.warning("Archive this job? No data will be deleted.")
+                        edit_job_dialog()
+                    normalized_job_status = managed_job_status.casefold()
+                    if normalized_job_status == "archived":
                         if st.button(
-                            "Confirm archive",
-                            type="primary",
-                            key=f"archive_job_{managed_job_id}",
+                            "Reopen job",
+                            icon=":material/replay:",
+                            key=f"reopen_archived_job_{managed_job_id}",
                             disabled=not can_manage_jobs,
                         ):
-                            change_job_status("Archived", "Job archived.")
+                            change_job_status("Open", "Job reopened.")
+                    else:
+                        if normalized_job_status != "closed" and st.button(
+                            "Close job",
+                            icon=":material/event_busy:",
+                            key=f"close_job_{managed_job_id}",
+                            disabled=not can_manage_jobs,
+                        ):
+                            change_job_status("Closed", "Job closed.")
+                        if normalized_job_status == "closed" and st.button(
+                            "Reopen job",
+                            icon=":material/replay:",
+                            key=f"reopen_job_{managed_job_id}",
+                            disabled=not can_manage_jobs,
+                        ):
+                            change_job_status("Open", "Job reopened.")
+                        with st.popover(
+                            "Archive job",
+                            icon=":material/archive:",
+                        ):
+                            st.warning("Archive this job? No data will be deleted.")
+                            if st.button(
+                                "Confirm archive",
+                                type="primary",
+                                key=f"archive_job_{managed_job_id}",
+                                disabled=not can_manage_jobs,
+                            ):
+                                change_job_status("Archived", "Job archived.")
 
 
-# =========================================================
-# Interviews page
-# =========================================================
+    # =========================================================
+    # Interviews page
+    # =========================================================
 elif selected_page == "Interviews":
     st.markdown(
         '<div class="main-title">'
