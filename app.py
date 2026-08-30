@@ -4803,567 +4803,560 @@ elif selected_page == "Jobs":
     # Interviews page
     # =========================================================
 elif selected_page == "Interviews":
-    st.markdown(
-        '<div class="main-title">'
-        "Interview Management"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="main-subtitle">'
-        "Review scheduled interviews, update outcomes and record feedback."
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    interview_action_message = st.session_state.pop(
-        "interview_management_success",
-        None,
-    )
-
-    if interview_action_message:
-        st.success(interview_action_message)
-
-    all_interviews = get_interviews()
-
-    if all_interviews.empty:
-        st.info("No interviews are available.")
-    else:
-        def safe_identifier(value) -> str:
-            """Return a safe identifier string for local joins."""
-
-            if value is None or isinstance(
-                value,
-                (dict, list, tuple, set),
-            ):
-                return ""
-
-            try:
-                if pd.isna(value):
-                    return ""
-            except (TypeError, ValueError):
-                return ""
-
-            return str(value).strip()
-
-        applications_by_id = {}
-
-        if (
-            not raw_applications.empty
-            and "id" in raw_applications.columns
-        ):
-            for _, application_row in raw_applications.iterrows():
-                application_id = safe_identifier(
-                    application_row.get("id")
-                )
-
-                if application_id:
-                    applications_by_id[application_id] = {
-                        "candidate_id": safe_identifier(
-                            application_row.get("candidate_id")
-                        ),
-                        "job_id": safe_identifier(
-                            application_row.get("job_id")
-                        ),
-                    }
-
-        candidate_names_by_id = {}
-
-        if (
-            not raw_candidates.empty
-            and "id" in raw_candidates.columns
-        ):
-            for _, candidate_row in raw_candidates.iterrows():
-                candidate_id = safe_identifier(
-                    candidate_row.get("id")
-                )
-                candidate_name = candidate_row.get("full_name")
-
-                if candidate_id:
-                    candidate_names_by_id[candidate_id] = (
-                        str(candidate_name).strip()
-                        if candidate_name is not None
-                        and str(candidate_name).strip()
-                        else "Unknown Candidate"
-                    )
-
-        job_titles_by_id = {}
-
-        if (
-            not raw_jobs.empty
-            and "id" in raw_jobs.columns
-        ):
-            for _, job_row in raw_jobs.iterrows():
-                job_id = safe_identifier(job_row.get("id"))
-                job_title = job_row.get("title")
-
-                if job_id:
-                    job_titles_by_id[job_id] = (
-                        str(job_title).strip()
-                        if job_title is not None
-                        and str(job_title).strip()
-                        else "Unknown Job"
-                    )
-
-        managed_interviews = all_interviews.copy()
-        managed_interviews["_interview_id"] = (
-            managed_interviews.get(
-                "id",
-                pd.Series("", index=managed_interviews.index),
-            ).apply(safe_identifier)
-        )
-        managed_interviews["_application_id"] = (
-            managed_interviews.get(
-                "application_id",
-                pd.Series("", index=managed_interviews.index),
-            ).apply(safe_identifier)
+    from ui.views.view_interviews import render_interview_workspace
+    render_interview_workspace(raw_interviews_df=raw_interviews, raw_candidates_df=raw_candidates, raw_applications_df=raw_applications, raw_jobs_df=raw_jobs, can_manage_interviews=has_permission('interview_write'))
+    with st.expander('📋 Legacy Interview Directory & Details', expanded=False):
+        st.markdown(
+            '<div class="main-title">'
+            "Interview Management"
+            "</div>",
+            unsafe_allow_html=True,
         )
 
-        def related_value(
-            application_id: str,
-            relationship: str,
-        ) -> str:
-            """Resolve a candidate or job through an application."""
-
-            application = applications_by_id.get(
-                application_id,
-                {},
-            )
-
-            if relationship == "candidate":
-                return candidate_names_by_id.get(
-                    application.get("candidate_id", ""),
-                    "Unknown Candidate",
-                )
-
-            return job_titles_by_id.get(
-                application.get("job_id", ""),
-                "Unknown Job",
-            )
-
-        managed_interviews["Candidate"] = managed_interviews[
-            "_application_id"
-        ].apply(lambda value: related_value(value, "candidate"))
-        managed_interviews["Job"] = managed_interviews[
-            "_application_id"
-        ].apply(lambda value: related_value(value, "job"))
-        managed_interviews["Interviewer"] = managed_interviews.get(
-            "interviewer",
-            pd.Series("", index=managed_interviews.index),
-        ).fillna("").astype(str).str.strip()
-        managed_interviews["Status"] = managed_interviews.get(
-            "status",
-            pd.Series("", index=managed_interviews.index),
-        ).fillna("").astype(str).str.strip()
-        managed_interviews["_scheduled_for"] = parse_interview_datetime_series(
-            managed_interviews.get(
-                "interview_date",
-                pd.Series(None, index=managed_interviews.index),
-            )
-        )
-        managed_interviews["_interview_day"] = managed_interviews[
-            "_scheduled_for"
-        ].dt.date
-
-        status_options = sorted(
-            value
-            for value in managed_interviews["Status"].unique()
-            if value
-        )
-        interviewer_options = sorted(
-            value
-            for value in managed_interviews["Interviewer"].unique()
-            if value
-        )
-        job_options = sorted(managed_interviews["Job"].unique())
-        date_options = sorted(
-            value
-            for value in managed_interviews[
-                "_interview_day"
-            ].dropna().unique()
+        st.markdown(
+            '<div class="main-subtitle">'
+            "Review scheduled interviews, update outcomes and record feedback."
+            "</div>",
+            unsafe_allow_html=True,
         )
 
-        filter_col1, filter_col2, filter_col3, filter_col4 = (
-            st.columns(4)
+        interview_action_message = st.session_state.pop(
+            "interview_management_success",
+            None,
         )
 
-        with filter_col1:
-            selected_interview_status = st.selectbox(
-                "Interview status",
-                ["All"] + status_options,
-            )
+        if interview_action_message:
+            st.success(interview_action_message)
 
-        with filter_col2:
-            selected_interviewer = st.selectbox(
-                "Interviewer",
-                ["All"] + interviewer_options,
-            )
+        all_interviews = get_interviews()
 
-        with filter_col3:
-            selected_interview_date = st.selectbox(
-                "Interview date",
-                [None] + date_options,
-                format_func=lambda value: (
-                    "All dates"
-                    if value is None
-                    else value.strftime("%d %b %Y")
-                ),
-            )
-
-        with filter_col4:
-            selected_interview_job = st.selectbox(
-                "Job",
-                ["All"] + job_options,
-            )
-
-        filtered_interviews = managed_interviews.copy()
-
-        if selected_interview_status != "All":
-            filtered_interviews = filtered_interviews[
-                filtered_interviews["Status"]
-                == selected_interview_status
-            ]
-
-        if selected_interviewer != "All":
-            filtered_interviews = filtered_interviews[
-                filtered_interviews["Interviewer"]
-                == selected_interviewer
-            ]
-
-        if selected_interview_date is not None:
-            filtered_interviews = filtered_interviews[
-                filtered_interviews["_interview_day"]
-                == selected_interview_date
-            ]
-
-        if selected_interview_job != "All":
-            filtered_interviews = filtered_interviews[
-                filtered_interviews["Job"]
-                == selected_interview_job
-            ]
-
-        if filtered_interviews.empty:
-            st.info("No interviews match the selected filters.")
+        if all_interviews.empty:
+            st.info("No interviews are available.")
         else:
-            filtered_interviews = filtered_interviews.sort_values(
-                "_scheduled_for",
-                ascending=True,
-                na_position="last",
-            )
+            def safe_identifier(value) -> str:
+                """Return a safe identifier string for local joins."""
 
-            def save_interview_update(
-                interview_id: str,
-                updates: dict,
-                success_message: str,
-            ) -> None:
-                """Persist one interview update and refresh the page."""
+                if value is None or isinstance(
+                    value,
+                    (dict, list, tuple, set),
+                ):
+                    return ""
 
                 try:
-                    update_interview(interview_id, updates)
-                except Exception as error:
-                    st.error(
-                        "Could not update the interview: "
-                        f"{error}"
-                    )
-                    return
+                    if pd.isna(value):
+                        return ""
+                except (TypeError, ValueError):
+                    return ""
 
-                get_interviews.clear()
-                st.session_state[
-                    "interview_management_success"
-                ] = success_message
-                st.rerun()
+                return str(value).strip()
 
-            for _, interview_row in filtered_interviews.iterrows():
-                interview_id = interview_row["_interview_id"]
-                scheduled_for = interview_row["_scheduled_for"]
-                stored_feedback = parse_stored_value(
-                    interview_row.get("feedback")
-                )
+            applications_by_id = {}
 
-                if isinstance(stored_feedback, dict):
-                    feedback_text = stored_feedback.get(
-                        "feedback",
-                        "",
-                    )
-                    interview_type = stored_feedback.get(
-                        "interview_type",
-                    )
-                    meeting_location = stored_feedback.get(
-                        "meeting_link",
-                        stored_feedback.get(
-                            "meeting_location",
-                            stored_feedback.get("location"),
-                        ),
-                    )
-                    interview_notes = stored_feedback.get(
-                        "notes",
-                    )
-                elif stored_feedback is None:
-                    feedback_text = ""
-                    interview_type = None
-                    meeting_location = None
-                    interview_notes = None
-                else:
-                    feedback_text = str(stored_feedback)
-                    interview_type = None
-                    meeting_location = None
-                    interview_notes = None
-
-                rating_value = pd.to_numeric(
-                    interview_row.get("rating"),
-                    errors="coerce",
-                )
-                displayed_rating = (
-                    "Not rated"
-                    if pd.isna(rating_value)
-                    else f"{int(rating_value)}/5"
-                )
-                if pd.isna(scheduled_for):
-                    displayed_date = "Not available"
-                    displayed_time = "Not available"
-                else:
-                    displayed_date = scheduled_for.strftime(
-                        "%d %b %Y"
-                    )
-                    displayed_time = scheduled_for.strftime(
-                        "%I:%M %p IST"
-                    )
-                cand_name = str(interview_row['Candidate'])
-                job_title = str(interview_row['Job'])
-                status = str(interview_row['Status'] or 'Scheduled').strip()
-                interviewer = str(interview_row['Interviewer'] or 'Recruiter')
-                
-                initials = "".join([p[0].upper() for p in cand_name.split()[:2]]) if cand_name else "IV"
-
-                st_lower = status.lower()
-                if "complete" in st_lower or "done" in st_lower or "pass" in st_lower:
-                    st_bg, st_color, st_icon = "#dcfce7", "#15803d", "✅"
-                elif "cancel" in st_lower or "reject" in st_lower:
-                    st_bg, st_color, st_icon = "#fee2e2", "#b91c1c", "❌"
-                else:
-                    st_bg, st_color, st_icon = "#e0e7ff", "#4338ca", "📅"
-
-                with st.container(border=True):
-                    st.markdown(
-                        f'<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">'
-                        f'<div style="display:flex; align-items:center; gap:14px;">'
-                        f'<div style="width:44px; height:44px; border-radius:14px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-weight:750; font-size:15px; border:1px solid #a7f3d0;">{initials}</div>'
-                        f'<div>'
-                        f'<div style="font-weight:750; color:#0f172a; font-size:16px;">{cand_name}</div>'
-                        f'<div style="color:#64748b; font-size:13px;">{job_title}</div>'
-                        f'</div>'
-                        f'</div>'
-                        f'<div style="display:flex; align-items:center; gap:8px;">'
-                        f'<span style="background:#f8fafc; border:1px solid #e2e8f0; color:#334155; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:600;">⭐ {displayed_rating}</span>'
-                        f'<span style="background:{st_bg}; color:{st_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700;">{st_icon} {status}</span>'
-                        f'</div>'
-                        f'</div>',
-                        unsafe_allow_html=True
+            if (
+                not raw_applications.empty
+                and "id" in raw_applications.columns
+            ):
+                for _, application_row in raw_applications.iterrows():
+                    application_id = safe_identifier(
+                        application_row.get("id")
                     )
 
-                    details_col1, details_col2 = st.columns(2)
+                    if application_id:
+                        applications_by_id[application_id] = {
+                            "candidate_id": safe_identifier(
+                                application_row.get("candidate_id")
+                            ),
+                            "job_id": safe_identifier(
+                                application_row.get("job_id")
+                            ),
+                        }
 
-                    with details_col1:
-                        st.markdown(f"👤 **Interviewer:** `{interviewer}`")
-                        st.markdown(f"📅 **Date & Time:** `{displayed_date}` at `{displayed_time}`")
-                        if interview_type:
-                            st.markdown(f"💼 **Format:** `{interview_type}`")
+            candidate_names_by_id = {}
 
-                    with details_col2:
-                        if meeting_location:
-                            st.markdown(f"🔗 **Meeting Link / Room:** `{meeting_location}`")
-                        if feedback_text:
-                            st.markdown(f"💬 **Feedback:** *\"{feedback_text}\"*")
-                        if interview_notes:
-                            st.caption(f"📝 Notes: {interview_notes}")
+            if (
+                not raw_candidates.empty
+                and "id" in raw_candidates.columns
+            ):
+                for _, candidate_row in raw_candidates.iterrows():
+                    candidate_id = safe_identifier(
+                        candidate_row.get("id")
+                    )
+                    candidate_name = candidate_row.get("full_name")
 
-                    with st.container(horizontal=True):
-                        if st.button(
-                            "Mark Scheduled",
-                            key=f"scheduled_{interview_id}",
-                            disabled=not can_manage_interviews,
-                        ):
-                            save_interview_update(
-                                interview_id,
-                                {"status": "Scheduled"},
-                                "Interview marked as Scheduled.",
-                            )
-
-                        if st.button(
-                            "Mark Completed",
-                            key=f"completed_{interview_id}",
-                            disabled=not can_manage_interviews,
-                        ):
-                            save_interview_update(
-                                interview_id,
-                                {"status": "Completed"},
-                                "Interview marked as Completed.",
-                            )
-
-                        if st.button(
-                            "Mark Cancelled",
-                            key=f"cancelled_{interview_id}",
-                            disabled=not can_manage_interviews,
-                        ):
-                            save_interview_update(
-                                interview_id,
-                                {"status": "Cancelled"},
-                                "Interview marked as Cancelled.",
-                            )
-
-                    with st.expander(
-                        "Change schedule or meeting details",
-                        icon=":material/edit_calendar:",
-                    ):
-                        default_schedule = (
-                            scheduled_for.to_pydatetime().replace(tzinfo=None)
-                            if not pd.isna(scheduled_for)
-                            else datetime.now() + timedelta(minutes=30)
+                    if candidate_id:
+                        candidate_names_by_id[candidate_id] = (
+                            str(candidate_name).strip()
+                            if candidate_name is not None
+                            and str(candidate_name).strip()
+                            else "Unknown Candidate"
                         )
-                        with st.form(f"reschedule_{interview_id}"):
-                            reschedule_col1, reschedule_col2 = st.columns(2)
-                            with reschedule_col1:
-                                revised_date = st.date_input(
-                                    "New interview date",
-                                    value=default_schedule.date(),
-                                    key=f"reschedule_date_{interview_id}",
-                                )
-                                revised_interviewer = st.text_input(
-                                    "Interviewer",
-                                    value=interview_row["Interviewer"],
-                                    key=f"reschedule_interviewer_{interview_id}",
-                                )
-                            with reschedule_col2:
-                                revised_time = st.time_input(
-                                    "New interview time",
-                                    value=default_schedule.time(),
-                                    key=f"reschedule_time_{interview_id}",
-                                )
-                                revised_meeting_link = st.text_input(
-                                    "Meeting link or location",
-                                    value=str(meeting_location or ""),
-                                    key=f"reschedule_link_{interview_id}",
-                                )
-                            reschedule_submitted = st.form_submit_button(
-                                "Save interview changes",
-                                type="primary",
+
+            job_titles_by_id = {}
+
+            if (
+                not raw_jobs.empty
+                and "id" in raw_jobs.columns
+            ):
+                for _, job_row in raw_jobs.iterrows():
+                    job_id = safe_identifier(job_row.get("id"))
+                    job_title = job_row.get("title")
+
+                    if job_id:
+                        job_titles_by_id[job_id] = (
+                            str(job_title).strip()
+                            if job_title is not None
+                            and str(job_title).strip()
+                            else "Unknown Job"
+                        )
+
+            managed_interviews = all_interviews.copy()
+            managed_interviews["_interview_id"] = (
+                managed_interviews.get(
+                    "id",
+                    pd.Series("", index=managed_interviews.index),
+                ).apply(safe_identifier)
+            )
+            managed_interviews["_application_id"] = (
+                managed_interviews.get(
+                    "application_id",
+                    pd.Series("", index=managed_interviews.index),
+                ).apply(safe_identifier)
+            )
+
+            def related_value(
+                application_id: str,
+                relationship: str,
+            ) -> str:
+                """Resolve a candidate or job through an application."""
+
+                application = applications_by_id.get(
+                    application_id,
+                    {},
+                )
+
+                if relationship == "candidate":
+                    return candidate_names_by_id.get(
+                        application.get("candidate_id", ""),
+                        "Unknown Candidate",
+                    )
+
+                return job_titles_by_id.get(
+                    application.get("job_id", ""),
+                    "Unknown Job",
+                )
+
+            managed_interviews["Candidate"] = managed_interviews[
+                "_application_id"
+            ].apply(lambda value: related_value(value, "candidate"))
+            managed_interviews["Job"] = managed_interviews[
+                "_application_id"
+            ].apply(lambda value: related_value(value, "job"))
+            managed_interviews["Interviewer"] = managed_interviews.get(
+                "interviewer",
+                pd.Series("", index=managed_interviews.index),
+            ).fillna("").astype(str).str.strip()
+            managed_interviews["Status"] = managed_interviews.get(
+                "status",
+                pd.Series("", index=managed_interviews.index),
+            ).fillna("").astype(str).str.strip()
+            managed_interviews["_scheduled_for"] = parse_interview_datetime_series(
+                managed_interviews.get(
+                    "interview_date",
+                    pd.Series(None, index=managed_interviews.index),
+                )
+            )
+            managed_interviews["_interview_day"] = managed_interviews[
+                "_scheduled_for"
+            ].dt.date
+
+            status_options = sorted(
+                value
+                for value in managed_interviews["Status"].unique()
+                if value
+            )
+            interviewer_options = sorted(
+                value
+                for value in managed_interviews["Interviewer"].unique()
+                if value
+            )
+            job_options = sorted(managed_interviews["Job"].unique())
+            date_options = sorted(
+                value
+                for value in managed_interviews[
+                    "_interview_day"
+                ].dropna().unique()
+            )
+
+            filter_col1, filter_col2, filter_col3, filter_col4 = (
+                st.columns(4)
+            )
+
+            with filter_col1:
+                selected_interview_status = st.selectbox(
+                    "Interview status",
+                    ["All"] + status_options,
+                )
+
+            with filter_col2:
+                selected_interviewer = st.selectbox(
+                    "Interviewer",
+                    ["All"] + interviewer_options,
+                )
+
+            with filter_col3:
+                selected_interview_date = st.selectbox(
+                    "Interview date",
+                    [None] + date_options,
+                    format_func=lambda value: (
+                        "All dates"
+                        if value is None
+                        else value.strftime("%d %b %Y")
+                    ),
+                )
+
+            with filter_col4:
+                selected_interview_job = st.selectbox(
+                    "Job",
+                    ["All"] + job_options,
+                )
+
+            filtered_interviews = managed_interviews.copy()
+
+            if selected_interview_status != "All":
+                filtered_interviews = filtered_interviews[
+                    filtered_interviews["Status"]
+                    == selected_interview_status
+                ]
+
+            if selected_interviewer != "All":
+                filtered_interviews = filtered_interviews[
+                    filtered_interviews["Interviewer"]
+                    == selected_interviewer
+                ]
+
+            if selected_interview_date is not None:
+                filtered_interviews = filtered_interviews[
+                    filtered_interviews["_interview_day"]
+                    == selected_interview_date
+                ]
+
+            if selected_interview_job != "All":
+                filtered_interviews = filtered_interviews[
+                    filtered_interviews["Job"]
+                    == selected_interview_job
+                ]
+
+            if filtered_interviews.empty:
+                st.info("No interviews match the selected filters.")
+            else:
+                filtered_interviews = filtered_interviews.sort_values(
+                    "_scheduled_for",
+                    ascending=True,
+                    na_position="last",
+                )
+
+                def save_interview_update(
+                    interview_id: str,
+                    updates: dict,
+                    success_message: str,
+                ) -> None:
+                    """Persist one interview update and refresh the page."""
+
+                    try:
+                        update_interview(interview_id, updates)
+                    except Exception as error:
+                        st.error(
+                            "Could not update the interview: "
+                            f"{error}"
+                        )
+                        return
+
+                    get_interviews.clear()
+                    st.session_state[
+                        "interview_management_success"
+                    ] = success_message
+                    st.rerun()
+
+                for _, interview_row in filtered_interviews.iterrows():
+                    interview_id = interview_row["_interview_id"]
+                    scheduled_for = interview_row["_scheduled_for"]
+                    stored_feedback = parse_stored_value(
+                        interview_row.get("feedback")
+                    )
+
+                    if isinstance(stored_feedback, dict):
+                        feedback_text = stored_feedback.get(
+                            "feedback",
+                            "",
+                        )
+                        interview_type = stored_feedback.get(
+                            "interview_type",
+                        )
+                        meeting_location = stored_feedback.get(
+                            "meeting_link",
+                            stored_feedback.get(
+                                "meeting_location",
+                                stored_feedback.get("location"),
+                            ),
+                        )
+                        interview_notes = stored_feedback.get(
+                            "notes",
+                        )
+                    elif stored_feedback is None:
+                        feedback_text = ""
+                        interview_type = None
+                        meeting_location = None
+                        interview_notes = None
+                    else:
+                        feedback_text = str(stored_feedback)
+                        interview_type = None
+                        meeting_location = None
+                        interview_notes = None
+
+                    rating_value = pd.to_numeric(
+                        interview_row.get("rating"),
+                        errors="coerce",
+                    )
+                    displayed_rating = (
+                        "Not rated"
+                        if pd.isna(rating_value)
+                        else f"{int(rating_value)}/5"
+                    )
+                    if pd.isna(scheduled_for):
+                        displayed_date = "Not available"
+                        displayed_time = "Not available"
+                    else:
+                        displayed_date = scheduled_for.strftime(
+                            "%d %b %Y"
+                        )
+                        displayed_time = scheduled_for.strftime(
+                            "%I:%M %p IST"
+                        )
+                    cand_name = str(interview_row['Candidate'])
+                    job_title = str(interview_row['Job'])
+                    status = str(interview_row['Status'] or 'Scheduled').strip()
+                    interviewer = str(interview_row['Interviewer'] or 'Recruiter')
+                
+                    initials = "".join([p[0].upper() for p in cand_name.split()[:2]]) if cand_name else "IV"
+
+                    st_lower = status.lower()
+                    if "complete" in st_lower or "done" in st_lower or "pass" in st_lower:
+                        st_bg, st_color, st_icon = "#dcfce7", "#15803d", "✅"
+                    elif "cancel" in st_lower or "reject" in st_lower:
+                        st_bg, st_color, st_icon = "#fee2e2", "#b91c1c", "❌"
+                    else:
+                        st_bg, st_color, st_icon = "#e0e7ff", "#4338ca", "📅"
+
+                    with st.container(border=True):
+                        st.markdown(
+                            f'<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">'
+                            f'<div style="display:flex; align-items:center; gap:14px;">'
+                            f'<div style="width:44px; height:44px; border-radius:14px; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; font-weight:750; font-size:15px; border:1px solid #a7f3d0;">{initials}</div>'
+                            f'<div>'
+                            f'<div style="font-weight:750; color:#0f172a; font-size:16px;">{cand_name}</div>'
+                            f'<div style="color:#64748b; font-size:13px;">{job_title}</div>'
+                            f'</div>'
+                            f'</div>'
+                            f'<div style="display:flex; align-items:center; gap:8px;">'
+                            f'<span style="background:#f8fafc; border:1px solid #e2e8f0; color:#334155; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:600;">⭐ {displayed_rating}</span>'
+                            f'<span style="background:{st_bg}; color:{st_color}; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700;">{st_icon} {status}</span>'
+                            f'</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+                        details_col1, details_col2 = st.columns(2)
+
+                        with details_col1:
+                            st.markdown(f"👤 **Interviewer:** `{interviewer}`")
+                            st.markdown(f"📅 **Date & Time:** `{displayed_date}` at `{displayed_time}`")
+                            if interview_type:
+                                st.markdown(f"💼 **Format:** `{interview_type}`")
+
+                        with details_col2:
+                            if meeting_location:
+                                st.markdown(f"🔗 **Meeting Link / Room:** `{meeting_location}`")
+                            if feedback_text:
+                                st.markdown(f"💬 **Feedback:** *\"{feedback_text}\"*")
+                            if interview_notes:
+                                st.caption(f"📝 Notes: {interview_notes}")
+
+                        with st.container(horizontal=True):
+                            if st.button(
+                                "Mark Scheduled",
+                                key=f"scheduled_{interview_id}",
                                 disabled=not can_manage_interviews,
-                            )
-                        if reschedule_submitted:
-                            revised_datetime = datetime.combine(
-                                revised_date, revised_time
-                            )
-                            if revised_datetime < datetime.now():
-                                st.error(
-                                    "Interview date and time cannot be in the past."
-                                )
-                            elif not revised_interviewer.strip():
-                                st.error("Interviewer name is required.")
-                            elif not revised_meeting_link.strip():
-                                st.error("Meeting link or location is required.")
-                            else:
-                                reschedule_updates = (
-                                    build_interview_reschedule_updates(
-                                        current_interview_date=(
-                                            interview_row.get("interview_date")
-                                        ),
-                                        revised_date=revised_date,
-                                        revised_time=revised_time,
-                                        interviewer=(
-                                            revised_interviewer.strip()
-                                        ),
-                                        feedback=stored_feedback,
-                                        meeting_location=(
-                                            revised_meeting_link.strip()
-                                        ),
-                                    )
-                                )
+                            ):
                                 save_interview_update(
                                     interview_id,
-                                    reschedule_updates,
-                                    "Interview details updated.",
+                                    {"status": "Scheduled"},
+                                    "Interview marked as Scheduled.",
                                 )
 
-                    if (
-                        isinstance(stored_feedback, dict)
-                        and stored_feedback.get("_history")
-                    ):
+                            if st.button(
+                                "Mark Completed",
+                                key=f"completed_{interview_id}",
+                                disabled=not can_manage_interviews,
+                            ):
+                                save_interview_update(
+                                    interview_id,
+                                    {"status": "Completed"},
+                                    "Interview marked as Completed.",
+                                )
+
+                            if st.button(
+                                "Mark Cancelled",
+                                key=f"cancelled_{interview_id}",
+                                disabled=not can_manage_interviews,
+                            ):
+                                save_interview_update(
+                                    interview_id,
+                                    {"status": "Cancelled"},
+                                    "Interview marked as Cancelled.",
+                                )
+
                         with st.expander(
-                            "Change history",
-                            icon=":material/history:",
+                            "Change schedule or meeting details",
+                            icon=":material/edit_calendar:",
                         ):
-                            st.dataframe(
-                                pd.DataFrame(stored_feedback["_history"]),
-                                hide_index=True,
-                                width="stretch",
+                            default_schedule = (
+                                scheduled_for.to_pydatetime().replace(tzinfo=None)
+                                if not pd.isna(scheduled_for)
+                                else datetime.now() + timedelta(minutes=30)
                             )
-
-                    with st.form(f"feedback_{interview_id}"):
-                        edited_feedback = st.text_area(
-                            "Feedback",
-                            value=str(feedback_text or ""),
-                            key=f"feedback_text_{interview_id}",
-                        )
-                        initial_rating = (
-                            int(rating_value)
-                            if not pd.isna(rating_value)
-                            and 1 <= int(rating_value) <= 5
-                            else 1
-                        )
-                        edited_rating = st.number_input(
-                            "Rating",
-                            min_value=1,
-                            max_value=5,
-                            value=initial_rating,
-                            step=1,
-                            key=f"rating_{interview_id}",
-                        )
-                        feedback_submitted = st.form_submit_button(
-                            "Save feedback and rating",
-                            disabled=not can_manage_interviews,
-                        )
-
-                    if feedback_submitted:
-                        validated_rating = int(edited_rating)
-
-                        if validated_rating < 1 or validated_rating > 5:
-                            st.error("Rating must be between 1 and 5.")
-                        else:
-                            if isinstance(stored_feedback, dict):
-                                updated_feedback = dict(stored_feedback)
-                                updated_feedback["feedback"] = (
-                                    edited_feedback.strip()
+                            with st.form(f"reschedule_{interview_id}"):
+                                reschedule_col1, reschedule_col2 = st.columns(2)
+                                with reschedule_col1:
+                                    revised_date = st.date_input(
+                                        "New interview date",
+                                        value=default_schedule.date(),
+                                        key=f"reschedule_date_{interview_id}",
+                                    )
+                                    revised_interviewer = st.text_input(
+                                        "Interviewer",
+                                        value=interview_row["Interviewer"],
+                                        key=f"reschedule_interviewer_{interview_id}",
+                                    )
+                                with reschedule_col2:
+                                    revised_time = st.time_input(
+                                        "New interview time",
+                                        value=default_schedule.time(),
+                                        key=f"reschedule_time_{interview_id}",
+                                    )
+                                    revised_meeting_link = st.text_input(
+                                        "Meeting link or location",
+                                        value=str(meeting_location or ""),
+                                        key=f"reschedule_link_{interview_id}",
+                                    )
+                                reschedule_submitted = st.form_submit_button(
+                                    "Save interview changes",
+                                    type="primary",
+                                    disabled=not can_manage_interviews,
                                 )
-                            else:
-                                updated_feedback = edited_feedback.strip()
+                            if reschedule_submitted:
+                                revised_datetime = datetime.combine(
+                                    revised_date, revised_time
+                                )
+                                if revised_datetime < datetime.now():
+                                    st.error(
+                                        "Interview date and time cannot be in the past."
+                                    )
+                                elif not revised_interviewer.strip():
+                                    st.error("Interviewer name is required.")
+                                elif not revised_meeting_link.strip():
+                                    st.error("Meeting link or location is required.")
+                                else:
+                                    reschedule_updates = (
+                                        build_interview_reschedule_updates(
+                                            current_interview_date=(
+                                                interview_row.get("interview_date")
+                                            ),
+                                            revised_date=revised_date,
+                                            revised_time=revised_time,
+                                            interviewer=(
+                                                revised_interviewer.strip()
+                                            ),
+                                            feedback=stored_feedback,
+                                            meeting_location=(
+                                                revised_meeting_link.strip()
+                                            ),
+                                        )
+                                    )
+                                    save_interview_update(
+                                        interview_id,
+                                        reschedule_updates,
+                                        "Interview details updated.",
+                                    )
 
-                            save_interview_update(
-                                interview_id,
-                                {
-                                    "feedback": updated_feedback,
-                                    "rating": validated_rating,
-                                },
-                                "Interview feedback and rating saved.",
+                        if (
+                            isinstance(stored_feedback, dict)
+                            and stored_feedback.get("_history")
+                        ):
+                            with st.expander(
+                                "Change history",
+                                icon=":material/history:",
+                            ):
+                                st.dataframe(
+                                    pd.DataFrame(stored_feedback["_history"]),
+                                    hide_index=True,
+                                    width="stretch",
+                                )
+
+                        with st.form(f"feedback_{interview_id}"):
+                            edited_feedback = st.text_area(
+                                "Feedback",
+                                value=str(feedback_text or ""),
+                                key=f"feedback_text_{interview_id}",
+                            )
+                            initial_rating = (
+                                int(rating_value)
+                                if not pd.isna(rating_value)
+                                and 1 <= int(rating_value) <= 5
+                                else 1
+                            )
+                            edited_rating = st.number_input(
+                                "Rating",
+                                min_value=1,
+                                max_value=5,
+                                value=initial_rating,
+                                step=1,
+                                key=f"rating_{interview_id}",
+                            )
+                            feedback_submitted = st.form_submit_button(
+                                "Save feedback and rating",
+                                disabled=not can_manage_interviews,
                             )
 
+                        if feedback_submitted:
+                            validated_rating = int(edited_rating)
 
-# =========================================================
-# AI Interview Copilot page
-# =========================================================
+                            if validated_rating < 1 or validated_rating > 5:
+                                st.error("Rating must be between 1 and 5.")
+                            else:
+                                if isinstance(stored_feedback, dict):
+                                    updated_feedback = dict(stored_feedback)
+                                    updated_feedback["feedback"] = (
+                                        edited_feedback.strip()
+                                    )
+                                else:
+                                    updated_feedback = edited_feedback.strip()
+
+                                save_interview_update(
+                                    interview_id,
+                                    {
+                                        "feedback": updated_feedback,
+                                        "rating": validated_rating,
+                                    },
+                                    "Interview feedback and rating saved.",
+                                )
+
+
+    # =========================================================
+    # AI Interview Copilot page
+    # =========================================================
 elif selected_page == "AI Interview Copilot":
-    render_interview_copilot(
-        raw_candidates,
-        raw_applications,
-        raw_jobs,
-        get_recruiter_notes(),
-        get_interviews(),
-    )
-
-
-# =========================================================
-# Resume Semantic Search page
-# =========================================================
+    from ui.views.view_interview_copilot import render_interview_copilot_workspace
+    render_interview_copilot_workspace(candidates_df=raw_candidates, applications_df=raw_applications, jobs_df=raw_jobs, notes_df=get_recruiter_notes(), interviews_df=get_interviews())
 elif selected_page == "Resume Semantic Search":
     render_semantic_candidate_search(raw_candidates, raw_jobs)
 
@@ -6106,13 +6099,12 @@ elif selected_page == "🌐 Public Careers Portal":
     render_public_careers_portal(jobs=jobs_list)
 
 elif selected_page == "📅 Self-Service Booking":
-    apps_list = raw_applications.to_dict("records") if isinstance(raw_applications, pd.DataFrame) else []
-    render_self_service_booking(applications=apps_list)
-
+    apps_list = raw_applications.to_dict('records') if isinstance(raw_applications, pd.DataFrame) else []
+    from ui.views.view_self_service_booking import render_self_service_booking_workspace
+    render_self_service_booking_workspace(applications_list=apps_list)
 elif selected_page == "📝 Offer Letters & E-Sign":
-    apps_list = raw_applications.to_dict("records") if isinstance(raw_applications, pd.DataFrame) else []
-    render_offer_letter_generator(applications=apps_list)
-
+    from ui.views.view_offers import render_offer_workspace
+    render_offer_workspace(raw_applications_df=raw_applications, raw_candidates_df=raw_candidates, raw_jobs_df=raw_jobs, can_manage_offers=has_permission('candidate_write'))
 elif selected_page == "🔒 GDPR & Blind Hiring":
     cands_list = raw_candidates.to_dict("records") if isinstance(raw_candidates, pd.DataFrame) else []
     render_compliance_privacy(candidates=cands_list)
