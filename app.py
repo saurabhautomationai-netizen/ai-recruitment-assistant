@@ -1783,8 +1783,8 @@ elif selected_page == "Candidates":
                     st.rerun()
 
     else:
-        from components.candidate_kanban_board import render_candidate_kanban_board
-        render_candidate_kanban_board(visible_candidates, raw_applications)
+        from ui.views.view_candidates import render_candidate_workspace
+        render_candidate_workspace(visible_candidates, raw_applications, can_manage_candidates=can_manage_candidates)
         st.write("")
         st.divider()
 
